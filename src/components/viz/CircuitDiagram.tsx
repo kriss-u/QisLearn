@@ -15,6 +15,24 @@ const TOP_MARGIN = 28;
 const GATE_SIZE = 40;
 
 const TWO_QUBIT_GATES = new Set(["cx", "cnot", "cz", "swap"]);
+const MONO_FONT = "'Fira Code', ui-monospace, monospace";
+
+/** The standard meter-with-needle glyph used for measurement in circuit diagrams. */
+function MeasureGlyph({ x, y, color }: { x: number; y: number; color: string }) {
+  return (
+    <g>
+      <path
+        d={`M ${x - 9} ${y + 6} A 9 9 0 0 1 ${x + 9} ${y + 6}`}
+        stroke={color}
+        strokeWidth={2}
+        fill="none"
+        strokeLinecap="round"
+      />
+      <line x1={x} y1={y + 6} x2={x + 7} y2={y - 8} stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <circle cx={x} cy={y + 6} r={1.6} fill={color} />
+    </g>
+  );
+}
 
 export function CircuitDiagram({ circuit, activeGateIndex, showLegend = true }: CircuitDiagramProps) {
   const [wireColor, activeRing, textColor] = useToken("colors", ["border", "quantum.400", "fg"]);
@@ -28,6 +46,14 @@ export function CircuitDiagram({ circuit, activeGateIndex, showLegend = true }: 
 
   return (
     <Box borderWidth="1px" borderColor="border" rounded="l3" p="5" bg="bg.panel">
+      {circuit.name && (
+        <Text fontSize="xs" color="fg.muted" fontFamily="mono" mb="3">
+          circuit:{" "}
+          <Text as="span" color="colorPalette.fg" fontWeight="semibold">
+            {circuit.name}
+          </Text>
+        </Text>
+      )}
       <Box overflowX="auto">
         <svg width={width} height={Math.max(height, 80)} role="img" aria-label="Quantum circuit diagram">
           {Array.from({ length: circuit.numQubits }, (_, q) => (
@@ -40,8 +66,8 @@ export function CircuitDiagram({ circuit, activeGateIndex, showLegend = true }: 
                 stroke={wireColor}
                 strokeWidth={1.5}
               />
-              <text x={0} y={qubitY(q) + 5} fontSize={14} fill={textColor} fontFamily="monospace" fontWeight={600}>
-                {`q${q}`}
+              <text x={0} y={qubitY(q) + 5} fontSize={13} fill={textColor} fontFamily={MONO_FONT} fontWeight={600}>
+                {circuit.qubitLabels?.[q] ?? `q${q}`}
               </text>
             </g>
           ))}
@@ -129,17 +155,21 @@ export function CircuitDiagram({ circuit, activeGateIndex, showLegend = true }: 
                   rx={9}
                   fill={style.fill}
                 />
-                <text
-                  x={x}
-                  y={y + 5}
-                  fontSize={13}
-                  fontWeight={700}
-                  textAnchor="middle"
-                  fill={style.textColor}
-                  fontFamily="monospace"
-                >
-                  {style.label}
-                </text>
+                {name === "measure" ? (
+                  <MeasureGlyph x={x} y={y} color={style.textColor} />
+                ) : (
+                  <text
+                    x={x}
+                    y={y + 5}
+                    fontSize={13}
+                    fontWeight={700}
+                    textAnchor="middle"
+                    fill={style.textColor}
+                    fontFamily={MONO_FONT}
+                  >
+                    {style.label}
+                  </text>
+                )}
               </g>
             );
           })}

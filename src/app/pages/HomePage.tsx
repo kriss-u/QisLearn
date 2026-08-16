@@ -17,16 +17,11 @@ export function HomePage() {
             Runs 100% in your browser
           </Badge>
         </HStack>
-        <Heading
-          size="3xl"
-          mb="4"
-          bgGradient="to-r"
-          gradientFrom="quantum.500"
-          gradientTo="ember.400"
-          bgClip="text"
-          letterSpacing="tight"
-        >
-          Learn Quantum Computing with Qiskit
+        <Heading size="3xl" mb="4" letterSpacing="tight">
+          Learn Quantum Computing with{" "}
+          <Text as="span" color="colorPalette.fg">
+            Qiskit
+          </Text>
         </Heading>
         <Text color="fg.muted" fontSize="lg">
           Interactive lessons that run entirely in your browser. Progress is saved locally in
@@ -48,9 +43,12 @@ export function HomePage() {
                     h="full"
                     colorPalette="quantum"
                     variant="elevated"
+                    bg="bg.glass"
+                    backdropFilter="blur(12px)"
+                    boxShadow="glass"
                     _hover={{ borderColor: "colorPalette.solid", transform: "translateY(-3px)", boxShadow: "glow" }}
                     borderWidth="1px"
-                    borderColor="border"
+                    borderColor="border.glass"
                   >
                     <Card.Body gap="1">
                       <VStack align="stretch" gap="2.5">
@@ -58,6 +56,7 @@ export function HomePage() {
                           alignSelf="flex-start"
                           colorPalette={STATUS_COLOR_PALETTE[status]}
                           variant="subtle"
+                          textTransform="capitalize"
                         >
                           {status.replace("-", " ")}
                         </Badge>

@@ -7,6 +7,7 @@ import { compareCircuits } from "../../../features/python/compareCircuit";
 import { extractCircuit } from "../../../features/python/extractCircuit";
 import { CircuitDiagram } from "../../viz/CircuitDiagram";
 import { useLessonId } from "../LessonContext";
+import { useLessonProgress } from "../LessonProgressContext";
 import { Markdown } from "../Markdown";
 import { MdxCard } from "./MdxCard";
 
@@ -28,9 +29,16 @@ interface CheckResult {
 
 export function CodeExercise({ id: exerciseId, prompt, starterCode, expectedCircuit, hints = [] }: CodeExerciseProps) {
   const lessonId = useLessonId();
+  const { registerExercise, reportResult } = useLessonProgress();
   const [code, setCode] = useState(starterCode);
   const [result, setResult] = useState<CheckResult | null>(null);
   const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => registerExercise(exerciseId), [exerciseId, registerExercise]);
+
+  useEffect(() => {
+    reportResult(exerciseId, result?.ok ?? false);
+  }, [exerciseId, result?.ok, reportResult]);
 
   useEffect(() => {
     let cancelled = false;

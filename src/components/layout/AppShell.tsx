@@ -19,14 +19,19 @@ export function AppShell({ children }: PropsWithChildren) {
   const statusByLesson = useProgressStore((s) => s.statusByLesson);
 
   return (
-    <Flex minH="100dvh" bg="bg">
+    <Flex h="100dvh" bg="bg">
       <Flex
         as="nav"
         direction="column"
         w="300px"
         flexShrink={0}
+        h="100%"
+        position="sticky"
+        top="0"
         borderRightWidth="1px"
-        borderColor="border"
+        borderColor="border.glass"
+        bg="bg.glass"
+        backdropFilter="blur(16px)"
         overflowY="auto"
         display={{ base: "none", md: "flex" }}
       >
@@ -107,9 +112,15 @@ export function AppShell({ children }: PropsWithChildren) {
         <Box px="4" py="4">
           <ResetDataButton />
         </Box>
+
+        <Box as="footer" px="6" py="4" borderTopWidth="1px" borderColor="border.muted">
+          <Text fontSize="xs" color="fg.subtle">
+            Made by Krishna Upadhyay
+          </Text>
+        </Box>
       </Flex>
 
-      <Flex direction="column" flex="1" minW="0">
+      <Flex direction="column" flex="1" minW="0" h="100%">
         <HStack
           as="header"
           h="16"
@@ -117,7 +128,12 @@ export function AppShell({ children }: PropsWithChildren) {
           justify="space-between"
           px={{ base: "4", md: "8" }}
           borderBottomWidth="1px"
-          borderColor="border"
+          borderColor="border.glass"
+          bg="bg.glass"
+          backdropFilter="blur(16px)"
+          position="sticky"
+          top="0"
+          zIndex="1"
         >
           <Link to="/">
             <Heading size="sm" display={{ base: "block", md: "none" }}>

@@ -37,6 +37,10 @@ export async function getQuizAnswer(lessonId: string, quizId: string) {
   return db.answers.get(`${lessonId}::${quizId}`);
 }
 
+export async function deleteQuizAnswer(lessonId: string, quizId: string) {
+  await db.answers.delete(`${lessonId}::${quizId}`);
+}
+
 export async function getSetting<T>(key: string, fallback: T): Promise<T> {
   const row = await db.settings.get(key);
   return row ? (row.value as T) : fallback;

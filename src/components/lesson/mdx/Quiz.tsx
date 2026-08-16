@@ -1,9 +1,10 @@
-import { Alert, Box, Button, RadioCard, VStack } from "@chakra-ui/react";
+import { Alert, Box, Button, HStack, RadioCard, VStack } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { LuCircleHelp } from "react-icons/lu";
 import type { QuizChoice } from "../../../content/schema";
-import { getQuizAnswer, saveQuizAnswer } from "../../../db/repository";
+import { deleteQuizAnswer, getQuizAnswer, saveQuizAnswer } from "../../../db/repository";
 import { useLessonId } from "../LessonContext";
+import { useLessonProgress } from "../LessonProgressContext";
 import { Markdown } from "../Markdown";
 import { MdxCard } from "./MdxCard";
 
@@ -16,8 +17,11 @@ export interface QuizProps {
 
 export function Quiz({ id: quizId, question, choices, explanation }: QuizProps) {
   const lessonId = useLessonId();
+  const { registerExercise, reportResult } = useLessonProgress();
   const [selected, setSelected] = useState<string | null>(null);
   const [checked, setChecked] = useState(false);
+
+  useEffect(() => registerExercise(quizId), [quizId, registerExercise]);
 
   useEffect(() => {
     let cancelled = false;
@@ -33,9 +37,12 @@ export function Quiz({ id: quizId, question, choices, explanation }: QuizProps) 
 
   const choice = choices.find((c) => c.id === selected);
 
+  useEffect(() => {
+    reportResult(quizId, checked && !!choice?.correct);
+  }, [quizId, checked, choice?.correct, reportResult]);
+
   function handleSelect(value: string) {
     setSelected(value);
-    setChecked(false);
     saveQuizAnswer(lessonId, quizId, value, false);
   }
 
@@ -43,6 +50,12 @@ export function Quiz({ id: quizId, question, choices, explanation }: QuizProps) 
     if (!selected) return;
     setChecked(true);
     saveQuizAnswer(lessonId, quizId, selected, true);
+  }
+
+  function handleReset() {
+    setSelected(null);
+    setChecked(false);
+    deleteQuizAnswer(lessonId, quizId);
   }
 
   return (
@@ -54,6 +67,7 @@ export function Quiz({ id: quizId, question, choices, explanation }: QuizProps) 
       <RadioCard.Root
         name={quizId}
         value={selected}
+        disabled={checked}
         onValueChange={(details) => {
           if (details.value) handleSelect(details.value);
         }}
@@ -73,9 +87,16 @@ export function Quiz({ id: quizId, question, choices, explanation }: QuizProps) 
         </VStack>
       </RadioCard.Root>
 
-      <Button alignSelf="flex-start" colorPalette="quantum" disabled={!selected} onClick={handleSubmit}>
-        Submit answer
-      </Button>
+      <HStack>
+        <Button colorPalette="quantum" disabled={!selected || checked} onClick={handleSubmit}>
+          Submit answer
+        </Button>
+        {checked && (
+          <Button variant="outline" onClick={handleReset}>
+            Reset
+          </Button>
+        )}
+      </HStack>
 
       {checked && choice && (
         <Alert.Root status={choice.correct ? "success" : "error"} rounded="l2">

@@ -19,7 +19,7 @@ export function LessonLayout({ lesson, children }: PropsWithChildren<{ lesson: L
   return (
     <Container maxW={config.maxW} px="0">
       <HStack mb="3" gap="2">
-        <Badge colorPalette="quantum" variant="subtle" size="lg">
+        <Badge colorPalette="quantum" variant="subtle" size="lg" textTransform="capitalize">
           {lesson.track}
         </Badge>
         {config.note && (

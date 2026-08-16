@@ -12,6 +12,10 @@ export type Gate = z.infer<typeof GateSchema>;
 
 export const CircuitSchema = z.object({
   numQubits: z.number().int().positive(),
+  /** From `QuantumCircuit(..., name="...")` — shown as a caption above the diagram. */
+  name: z.string().optional(),
+  /** Per-qubit wire labels, e.g. `["q_0", "q_1"]` from a named `QuantumRegister`. */
+  qubitLabels: z.array(z.string()).optional(),
   gates: z.array(GateSchema),
 });
 export type Circuit = z.infer<typeof CircuitSchema>;

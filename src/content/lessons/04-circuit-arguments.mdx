@@ -1,0 +1,113 @@
+---
+id: basics-04-circuit-arguments
+track: foundations
+order: 4
+title: "How Circuits and Gates Take Their Arguments"
+summary: The different shapes qubit and parameter arguments come in — single values, lists, registers, and register indices.
+layout: circuit-focus
+estimatedMinutes: 15
+prerequisites: [basics-03-entanglement]
+---
+
+You've been writing `qc.h(0)`, `qc.cx(0, 1)` for a few lessons now. Before going further, it's worth pinning down exactly what these methods accept — Qiskit is fairly flexible here, and knowing the options will make circuits you read (and write) elsewhere much less mysterious.
+
+## One Gate, Many Qubits
+
+Most single-qubit gate methods accept either a single qubit index, **or a list of qubit indices** — applying the gate to each one independently, in one call:
+
+```python
+from qiskit import QuantumCircuit
+
+qc = QuantumCircuit(3)
+qc.h([0, 1, 2])
+```
+
+That's exactly equivalent to writing `qc.h(0)`, `qc.h(1)`, `qc.h(2)` on three separate lines — Qiskit just expands the list for you. This is called **broadcasting**, and it's purely a convenience: the resulting circuit has three independent H gates in it either way.
+
+<Visualization
+  title="qc.h([0, 1, 2])"
+  description="Three independent Hadamards — one per qubit — from a single broadcast call."
+  circuit={{
+    numQubits: 3,
+    gates: [
+      { gate: "h", qubits: [0] },
+      { gate: "h", qubits: [1] },
+      { gate: "h", qubits: [2] },
+    ],
+  }}
+  views={["circuit", "probabilities"]}
+/>
+
+<CodeExercise
+  id="code-broadcast-h"
+  prompt="Put all three qubits of a 3-qubit circuit into superposition — using a single call to `.h(...)`."
+  starterCode={`from qiskit import QuantumCircuit\n\nqc = QuantumCircuit(3)\n# your code here\n`}
+  expectedCircuit={{
+    numQubits: 3,
+    gates: [
+      { gate: "h", qubits: [0] },
+      { gate: "h", qubits: [1] },
+      { gate: "h", qubits: [2] },
+    ],
+  }}
+  hints={[
+    "qc.h([0, 1, 2]) applies H to all three qubits in one call.",
+    "Three separate qc.h(0) / qc.h(1) / qc.h(2) calls produce the same circuit and also pass.",
+  ]}
+/>
+
+Broadcasting works for the plain single-qubit gates (`x`, `y`, `z`, `h`, `s`, `t`, ...). Two-qubit gates like `cx` don't broadcast the same way — `qc.cx(0, 1)` always means exactly one control and one target.
+
+## Registers Are Objects, Not Just Numbers
+
+When you build a circuit from a `QuantumRegister`, indexing into it — `qr[0]` — gives you back a `Qubit` object, not a plain number. You can pass that object anywhere a gate expects a qubit, and it means exactly the same thing as the plain index:
+
+```python
+from qiskit import QuantumCircuit, QuantumRegister
+
+qr = QuantumRegister(2, "q")
+qc = QuantumCircuit(qr)
+
+qc.x(qr[0])   # identical to qc.x(0)
+qc.h(qr[1])   # identical to qc.h(1)
+qc.cx(qr[0], qr[1])   # identical to qc.cx(0, 1)
+```
+
+Why bother, if it means the same thing? Once circuits use *multiple* registers, `qr[0]` and `ancilla[0]` are both "qubit 0 of some register" — the register makes it unambiguous which one you mean. For a circuit with a single register, it's purely a style choice.
+
+<CodeExercise
+  id="code-register-indexing"
+  prompt="Using the register qr already in the starter code, apply X to qr[0] and H to qr[1]."
+  starterCode={`from qiskit import QuantumCircuit, QuantumRegister\n\nqr = QuantumRegister(2, "q")\nqc = QuantumCircuit(qr)\n# your code here\n`}
+  expectedCircuit={{
+    numQubits: 2,
+    gates: [
+      { gate: "x", qubits: [0] },
+      { gate: "h", qubits: [1] },
+    ],
+  }}
+  hints={["qc.x(qr[0]) and qc.h(qr[1]) — or the plain qc.x(0) / qc.h(1) forms both work."]}
+/>
+
+## Gate Parameters: One Value, or Several
+
+`rx`, `ry`, `rz` each take a single numeric angle before the qubit: `qc.rx(theta, 0)`. Some gates need more than one number. The most general single-qubit gate, `u`, takes **three** angles:
+
+```python
+from qiskit import QuantumCircuit
+import math
+
+qc = QuantumCircuit(1)
+qc.u(math.pi / 2, 0, math.pi, 0)   # theta, phi, lambda, qubit
+```
+
+Every single-qubit gate you've learned so far — X, H, Z, and the rest — can be written as some particular choice of `u(theta, phi, lambda)`. You won't need `u` directly in these lessons, but it's worth recognizing when you see it: it's not a "different kind" of gate, just the fully general form the specific ones are special cases of.
+
+## Recap: The Shapes You'll See
+
+| What | Shapes it accepts |
+| --- | --- |
+| A qubit argument | plain `int` (`0`), or a register index (`qr[0]`) — both mean the same qubit |
+| A "which qubits" argument for a broadcastable gate | a single qubit, or a `list` of qubits (`[0, 1, 2]`) |
+| A two-qubit gate's qubits | exactly two: `(control, target)` for `cx`, or `(a, b)` for `swap` |
+| A gate's numeric parameters | one angle (`rx`, `ry`, `rz`), or several (`u` takes three) |

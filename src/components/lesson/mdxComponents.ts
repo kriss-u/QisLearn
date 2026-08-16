@@ -1,5 +1,6 @@
 import { markdownElements } from "./markdownElements";
 import { CodeExercise } from "./mdx/CodeExercise";
+import { Measurement } from "./mdx/Measurement";
 import { Quiz } from "./mdx/Quiz";
 import { Visualization } from "./mdx/Visualization";
 
@@ -13,4 +14,5 @@ export const mdxComponents = {
   CodeExercise,
   Quiz,
   Visualization,
+  Measurement,
 };

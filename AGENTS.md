@@ -32,14 +32,64 @@ is put together and the conventions to follow when changing it.
 - **Editor**: CodeMirror 6 via `@uiw/react-codemirror`, Python mode from
   `@codemirror/lang-python`
 - **Python analysis**: `py-ast` — a TypeScript Python parser/AST walker. Used to
-  statically extract a `Circuit` (gate list) from learner-written Qiskit-style code
-  without running anything. See `src/features/python/extractCircuit.ts`.
+  statically extract a `Circuit` (gate list, plus optional `name`/`qubitLabels`)
+  from learner-written Qiskit-style code without running anything. Recognizes
+  `QuantumCircuit(n)`, register-based construction (`QuantumRegister(n, "q")` →
+  `QuantumCircuit(qr, ...)`), a `name=` keyword, and both gate-application styles
+  (`qc.h(0)` and `qc.append(HGate(), [0])`) as equivalent — see
+  `src/features/python/extractCircuit.ts`. Qubit/clbit arguments accept the same
+  shapes Qiskit does: a plain int, `register[i]` (resolves to the same index as
+  the register's tracked size — real slice objects aren't supported), and, for
+  single-qubit gate methods only, a broadcast list (`qc.h([0, 1, 2])` expands to
+  three separate `Gate` entries, exactly like Qiskit's own circuit would record).
+
+  It also catches the mistakes real Qiskit/Python would refuse to run, instead of
+  silently building a nonsense `Circuit`:
+  - an out-of-range qubit or classical-bit index (what Qiskit raises as
+    `CircuitError`) — checked against the circuit's declared size everywhere a
+    gate, `.append(...)`, or `.measure(...)` uses one;
+  - `QuantumCircuit`/`QuantumRegister`/`ClassicalRegister`, or a gate class used
+    in `.append(...)`, referenced without an import — mirrors Python's
+    `NameError`, with a message suggesting the missing `import` line;
+  - a circuit variable used before assignment (e.g. calling `.x(0)` on a typo'd
+    name) — same idea, flagged only when the name matches a known
+    circuit-method-shaped call (`CIRCUIT_METHOD_NAMES`) to avoid false positives
+    on unrelated code;
+  - `.measure(qubits, clbits)` where the two sides resolve to different lengths
+    (Qiskit refuses this too — there's no sensible way to zip a 3-qubit list
+    against a 2-clbit list).
+
+  `.measure(...)`'s qubit/clbit arguments accept everything Qiskit's does, not
+  just a bare int: a `List`/`Tuple`, `range(...)`, or a whole register passed
+  directly (every index in it, in order) — see `resolveIndexSet` in
+  `extractCircuit.ts`. `.measure_all()` and `.measure_active()` are understood
+  too (expanded into per-qubit `measure` gates, bumping the tracked classical-bit
+  count), so the checker doesn't choke if a learner tries them — but **no lesson
+  exercise's `expectedCircuit` should ever require them**. Per-lesson content
+  intentionally standardizes on the explicit `.measure(qubit, clbit)` form as the
+  one graded pattern (see `05-measurement.mdx`); `measure_all`/`measure_active`
+  are covered as reading-only material, not exercised, since what classical bits
+  they implicitly create is exactly the kind of thing that's clear to *read* but
+  awkward to grade unambiguously.
+
+  All of this is a **single linear pass with no real scope/control-flow
+  analysis** — it tracks "what's been imported/assigned so far" as the walk
+  proceeds in source order and nothing more (no branches, loops, or function
+  bodies). That's deliberately enough for flat lesson-exercise snippets and no
+  more; don't reach for a real Python type-checker to extend this further.
 - **Quantum simulation**: hand-rolled statevector simulator in
   `src/features/quantum/` (complex numbers, gate matrices, statevector evolution,
   Bloch-vector reduction). No external quantum SDK — it only needs to support the
   gate set lessons actually use.
 - **Visualization**:
-  - SVG for circuit diagrams (`src/components/viz/CircuitDiagram.tsx`)
+  - SVG for circuit diagrams (`src/components/viz/CircuitDiagram.tsx`) — gate/wire
+    label text is set to the brand mono font explicitly (`MONO_FONT` constant,
+    `"'Fira Code', ui-monospace, monospace"`), since raw SVG `<text>` doesn't pick
+    up Chakra's theme font tokens the way styled components do. The `measure`
+    gate renders the standard meter-with-needle glyph (`MeasureGlyph`) instead of
+    a text label — keep that distinction if you add other non-unitary
+    instructions later; a plain lettered box reads as "gate", the meter reads as
+    "measurement", and that's the whole point of the glyph.
   - `three.js` / `@react-three/fiber` / `@react-three/drei` for the Bloch sphere
   - `plotly.js` / `react-plotly.js` for amplitude bar charts
   - Chakra `Progress` for measurement probability bars
@@ -62,11 +112,12 @@ src/
     layout/                AppShell (sidebar nav + header), ResetDataButton
     editor/                 PyEditor (CodeMirror wrapper)
     viz/                    CircuitDiagram, BlochSphere, StateVectorChart,
-                             ProbabilityBars, GateTimeline, VizSection, gateStyles
+                             ProbabilityBars, ShotsHistogram, GateTimeline,
+                             VizSection, gateStyles
     lesson/
-      mdx/                   CodeExercise, Quiz, Visualization — the tags authors
-                             drop into lesson .mdx bodies — plus MdxCard (shared
-                             card chrome)
+      mdx/                   CodeExercise, Quiz, Visualization, Measurement — the
+                             tags authors drop into lesson .mdx bodies — plus
+                             MdxCard (shared card chrome)
       mdxComponents.ts        the `components` map passed to every compiled lesson
       markdownElements.tsx    h1/p/code/... overrides shared by mdxComponents.ts
                              and the standalone Markdown.tsx
@@ -80,7 +131,8 @@ src/
     index.ts                 lesson registry — see Content model below
   db/                     Dexie database, zod models, repository helpers
   features/
-    quantum/                Complex numbers, gate matrices, statevector simulate, Bloch vector
+    quantum/                Complex numbers, gate matrices, statevector simulate,
+                             Bloch vector, sampleShots (client-side shot sampling)
     python/                  py-ast circuit extraction + comparison against expected circuits
   store/                  zustand stores (progress), statusColor
   theme/                  Chakra `createSystem` theme (tokens, semantic tokens)
@@ -112,6 +164,24 @@ below the frontmatter is free-form MDX: normal Markdown prose (LaTeX via `$...$`
   answer key (`db.answers`, `lessonId::quizId`). The selected choice is saved as
   soon as it's picked (before "Submit"), and whether it was submitted; both restore
   on revisit.
+- `<Measurement title="..." circuit={{...}} shotsOptions={[10,100,1000,10000]} />`
+  — no persisted state (there's nothing to grade or restore). Simulates
+  `AerSimulator`-style sampling client-side: computes the circuit's exact final
+  probabilities once via `simulateCircuit`, then `features/quantum/sampleShots.ts`
+  draws `shots` random outcomes from that distribution on demand ("Run again"
+  re-samples). Shown side-by-side with the exact `ProbabilityBars` panel so a
+  learner can see measured counts converge as shots increase — this is the
+  "shots" teaching tool; it does not run real Aer (there is no Python here).
+
+`Circuit` (`content/schema.ts`) also carries optional `name` and `qubitLabels`,
+which `CircuitDiagram` renders as a caption and per-wire labels respectively —
+this is what makes `QuantumCircuit(..., name="...")` and a named `QuantumRegister`
+visibly "do something" for a learner, not just be inert syntax. When authoring a
+`Visualization`, set these directly in the `circuit` prop if you want the diagram
+to demonstrate naming (see `03-entanglement.mdx`'s Bell-state visualization). When
+a learner types the equivalent Python in a `CodeExercise`, `extractCircuit` derives
+both automatically — grading (`compareCircuits`) ignores both, though, since it
+only compares qubit count and gates.
 
 Both `CodeExercise` and `Quiz` require an explicit `id` prop rather than deriving
 one from render position (e.g. `useId()`) — a position-derived id can silently
@@ -227,14 +297,18 @@ npm run preview    # preview the production build
 
 ## Known limitations / natural next steps
 
-- **No real Python execution.** `py-ast` gives static analysis only (pattern-matches
-  `QuantumCircuit(...)` assignment + `.gate(...)` calls on that variable). It doesn't
-  handle loops, functions, imports of custom gates, or `qc.append(...)`. If real
-  execution becomes a requirement, that's a Pyodide/WASM integration — a materially
-  different feature, not an extension of `extractCircuit`.
-- **No classical registers / measurement modeling.** Circuits are gate-lists only;
-  there's no `ClassicalRegister`, no `measure`, no mid-circuit measurement, no
-  classical wires in the diagram.
+- **No real Python execution.** `py-ast` gives static analysis only — a flat,
+  single-pass read of top-level statements (see the "Python analysis" bullet
+  above for exactly what it does and doesn't catch). It doesn't handle loops,
+  conditionals, functions, or custom gate classes it doesn't recognize by name.
+  If real execution becomes a requirement, that's a Pyodide/WASM integration — a
+  materially different feature, not an extension of `extractCircuit`.
+- **No classical-register modeling beyond bounds-checking.** `.measure(qubit,
+  clbit)` index bounds are checked (see above), and a bare `measure` marker
+  renders in the diagram at the qubit's position, but there's no
+  `ClassicalRegister` bit tracking, no mid-circuit measurement semantics, and no
+  classical wires drawn in `CircuitDiagram` — `Circuit` still only models the
+  qubit-gate sequence.
 - **`plotly.js` is a large dependency** (~4.6MB pre-gzip in its own chunk). It's
   lazy-loaded so it doesn't block initial page load, but if bundle size becomes a
   concern, swapping to a lighter charting approach (custom SVG bars, or

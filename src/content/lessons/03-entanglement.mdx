@@ -9,22 +9,38 @@ estimatedMinutes: 25
 prerequisites: [basics-02-single-qubit-gates]
 ---
 
+## Two Qubits, Two Registers
+
+Everything so far has been a single qubit, so the plain `QuantumCircuit(1)` form was enough. With two qubits, this is a good moment to reach for the register style from the previous lesson — a named `QuantumRegister` for the qubits, and (since real Qiskit circuits eventually need somewhere to put measurement results) a named `ClassicalRegister` for classical bits:
+
+```python
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
+
+qr = QuantumRegister(2, "q")
+cr = ClassicalRegister(2, "c")
+qc = QuantumCircuit(qr, cr, name="bell_pair")
+```
+
+Nothing about *how gates get applied* changes — you still call `qc.h(0)`, `qc.cx(0, 1)`, etc. with plain qubit indices, register or no register. What the register buys you is a name: the circuit diagrams throughout this lesson use exactly this pattern, and you'll see the `q_0` / `q_1` wire labels and the `bell_pair` name it produces.
+
 ## The CNOT Gate
 
 **CNOT** (controlled-X) flips its target qubit only when the control qubit is $|1\rangle$. Combined with Hadamard, it produces **entanglement** — correlations that have no classical explanation.
 
 ```python
-from qiskit import QuantumCircuit
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 
-qc = QuantumCircuit(2)
+qr = QuantumRegister(2, "q")
+cr = ClassicalRegister(2, "c")
+qc = QuantumCircuit(qr, cr, name="bell_pair")
 qc.h(0)
 qc.cx(0, 1)
 ```
 
 <CodeExercise
   id="code-bell-state"
-  prompt="Create a 2-qubit circuit that produces the Bell state $\frac{1}{\sqrt{2}}(|00\rangle + |11\rangle)$: apply H to qubit 0, then CNOT with qubit 0 as control and qubit 1 as target."
-  starterCode={`from qiskit import QuantumCircuit\n\nqc = QuantumCircuit(2)\n# your code here\n`}
+  prompt="Create a 2-qubit circuit named `bell_pair` (using a `QuantumRegister`, as above, or just `QuantumCircuit(2, name='bell_pair')` — either is fine) that produces the Bell state $\frac{1}{\sqrt{2}}(|00\rangle + |11\rangle)$: apply H to qubit 0, then CNOT with qubit 0 as control and qubit 1 as target."
+  starterCode={`from qiskit import QuantumCircuit, QuantumRegister\n\nqr = QuantumRegister(2, "q")\nqc = QuantumCircuit(qr, name="bell_pair")\n# your code here\n`}
   expectedCircuit={{
     numQubits: 2,
     gates: [
@@ -35,6 +51,7 @@ qc.cx(0, 1)
   hints={[
     "Start with qc.h(0) to create superposition on qubit 0.",
     "Then use qc.cx(0, 1): control=0, target=1.",
+    "The circuit's name and register label don't affect whether the check passes — only the gates do.",
   ]}
 />
 
@@ -46,6 +63,8 @@ Notice the two qubits are never independently on the Bloch sphere surface once e
   title="The Bell State"
   circuit={{
     numQubits: 2,
+    name: "bell_pair",
+    qubitLabels: ["q_0", "q_1"],
     gates: [
       { gate: "h", qubits: [0] },
       { gate: "cx", qubits: [0, 1] },
