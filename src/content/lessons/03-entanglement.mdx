@@ -1,0 +1,67 @@
+---
+id: basics-03-entanglement
+track: foundations
+order: 3
+title: Entanglement & Bell States
+summary: Combine Hadamard and CNOT to build the Bell state and see two-qubit correlation.
+layout: lab
+estimatedMinutes: 25
+prerequisites: [basics-02-single-qubit-gates]
+---
+
+## The CNOT Gate
+
+**CNOT** (controlled-X) flips its target qubit only when the control qubit is $|1\rangle$. Combined with Hadamard, it produces **entanglement** — correlations that have no classical explanation.
+
+```python
+from qiskit import QuantumCircuit
+
+qc = QuantumCircuit(2)
+qc.h(0)
+qc.cx(0, 1)
+```
+
+<CodeExercise
+  id="code-bell-state"
+  prompt="Create a 2-qubit circuit that produces the Bell state $\frac{1}{\sqrt{2}}(|00\rangle + |11\rangle)$: apply H to qubit 0, then CNOT with qubit 0 as control and qubit 1 as target."
+  starterCode={`from qiskit import QuantumCircuit\n\nqc = QuantumCircuit(2)\n# your code here\n`}
+  expectedCircuit={{
+    numQubits: 2,
+    gates: [
+      { gate: "h", qubits: [0] },
+      { gate: "cx", qubits: [0, 1] },
+    ],
+  }}
+  hints={[
+    "Start with qc.h(0) to create superposition on qubit 0.",
+    "Then use qc.cx(0, 1): control=0, target=1.",
+  ]}
+/>
+
+## The Bell State
+
+Notice the two qubits are never independently on the Bloch sphere surface once entangled — only the joint state is pure.
+
+<Visualization
+  title="The Bell State"
+  circuit={{
+    numQubits: 2,
+    gates: [
+      { gate: "h", qubits: [0] },
+      { gate: "cx", qubits: [0, 1] },
+    ],
+  }}
+  views={["circuit", "statevector", "probabilities"]}
+/>
+
+<Quiz
+  id="quiz-bell-measurement"
+  question="After measuring qubit 0 of a Bell pair and getting 1, what do you know about qubit 1?"
+  choices={[
+    { id: "a", text: "It is now definitely 1", correct: true },
+    { id: "b", text: "It is still in superposition", correct: false },
+    { id: "c", text: "It is definitely 0", correct: false },
+    { id: "d", text: "Nothing can be known", correct: false },
+  ]}
+  explanation="The Bell state $\frac{1}{\sqrt{2}}(|00\rangle + |11\rangle)$ only has correlated outcomes: measuring 1 on qubit 0 collapses qubit 1 to 1 as well."
+/>

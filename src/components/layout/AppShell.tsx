@@ -1,0 +1,136 @@
+import { Badge, Box, Flex, HStack, Heading, Separator, Text, VStack } from "@chakra-ui/react";
+import type { PropsWithChildren } from "react";
+import { Link, useParams } from "react-router";
+import { lessonsByTrack } from "../../content";
+import { useProgressStore } from "../../store/progressStore";
+import { STATUS_COLOR_PALETTE } from "../../store/statusColor";
+import { Logo } from "../ui/Logo";
+import { ColorModeButton } from "../ui/color-mode";
+import { ResetDataButton } from "./ResetDataButton";
+
+const STATUS_LABEL: Record<string, string> = {
+  "not-started": "",
+  "in-progress": "In progress",
+  completed: "Done",
+};
+
+export function AppShell({ children }: PropsWithChildren) {
+  const { lessonId } = useParams();
+  const statusByLesson = useProgressStore((s) => s.statusByLesson);
+
+  return (
+    <Flex minH="100dvh" bg="bg">
+      <Flex
+        as="nav"
+        direction="column"
+        w="300px"
+        flexShrink={0}
+        borderRightWidth="1px"
+        borderColor="border"
+        overflowY="auto"
+        display={{ base: "none", md: "flex" }}
+      >
+        <Box px="6" pt="7" pb="5">
+          <Link to="/">
+            <HStack gap="2.5" mb="1.5">
+              <Logo boxSize="8" flexShrink={0} />
+              <Heading size="md" colorPalette="quantum" color="colorPalette.fg">
+                QisLearn
+              </Heading>
+            </HStack>
+          </Link>
+          <Text fontSize="xs" color="fg.muted">
+            Learn quantum computing with Qiskit, entirely in your browser.
+          </Text>
+        </Box>
+
+        <Separator borderColor="border.muted" />
+
+        <Box flex="1" px="4" py="5">
+          {Object.entries(lessonsByTrack).map(([track, lessons]) => (
+            <Box key={track} mb="7">
+              <Text
+                fontSize="xs"
+                fontWeight="bold"
+                textTransform="uppercase"
+                letterSpacing="wide"
+                color="fg.subtle"
+                mb="2.5"
+                px="2"
+              >
+                {track}
+              </Text>
+              <VStack align="stretch" gap="1">
+                {lessons.map((lesson) => {
+                  const status = statusByLesson[lesson.id];
+                  const active = lesson.id === lessonId;
+                  return (
+                    <Link key={lesson.id} to={`/lesson/${lesson.id}`}>
+                      <HStack
+                        justify="space-between"
+                        px="3"
+                        py="2.5"
+                        rounded="l2"
+                        bg={active ? "colorPalette.subtle" : "transparent"}
+                        borderLeftWidth="3px"
+                        borderLeftColor={active ? "colorPalette.solid" : "transparent"}
+                        transition="background 0.15s ease"
+                        _hover={{ bg: active ? "colorPalette.subtle" : "bg.muted" }}
+                      >
+                        <Text
+                          fontSize="sm"
+                          fontWeight={active ? "semibold" : "normal"}
+                          color={active ? "colorPalette.fg" : "fg"}
+                        >
+                          {lesson.title}
+                        </Text>
+                        {status && status !== "not-started" && (
+                          <Badge
+                            size="sm"
+                            colorPalette={STATUS_COLOR_PALETTE[status]}
+                            variant="subtle"
+                            flexShrink={0}
+                          >
+                            {STATUS_LABEL[status]}
+                          </Badge>
+                        )}
+                      </HStack>
+                    </Link>
+                  );
+                })}
+              </VStack>
+            </Box>
+          ))}
+        </Box>
+
+        <Separator borderColor="border.muted" />
+        <Box px="4" py="4">
+          <ResetDataButton />
+        </Box>
+      </Flex>
+
+      <Flex direction="column" flex="1" minW="0">
+        <HStack
+          as="header"
+          h="16"
+          flexShrink={0}
+          justify="space-between"
+          px={{ base: "4", md: "8" }}
+          borderBottomWidth="1px"
+          borderColor="border"
+        >
+          <Link to="/">
+            <Heading size="sm" display={{ base: "block", md: "none" }}>
+              QisLearn
+            </Heading>
+          </Link>
+          <Box flex="1" />
+          <ColorModeButton />
+        </HStack>
+        <Box as="main" flex="1" minH="0" overflowY="auto" px={{ base: "5", md: "10" }}>
+          {children}
+        </Box>
+      </Flex>
+    </Flex>
+  );
+}

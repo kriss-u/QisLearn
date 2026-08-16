@@ -1,0 +1,64 @@
+---
+id: basics-02-single-qubit-gates
+track: foundations
+order: 2
+title: "Single-Qubit Gates: X, H, and Z"
+summary: Apply the Pauli-X, Hadamard, and Pauli-Z gates and watch the state vector move on the Bloch sphere.
+layout: circuit-focus
+estimatedMinutes: 20
+prerequisites: [basics-01-what-is-a-qubit]
+---
+
+## The Pauli-X Gate
+
+The **X gate** is the quantum analogue of a classical NOT gate: it flips $|0\rangle \leftrightarrow |1\rangle$. On the Bloch sphere it is a 180-degree rotation about the X axis.
+
+```python
+from qiskit import QuantumCircuit
+
+qc = QuantumCircuit(1)
+qc.x(0)
+```
+
+<CodeExercise
+  id="code-x-gate"
+  prompt="Write a circuit with one qubit and apply an X gate so the qubit ends in the $|1\rangle$ state."
+  starterCode={`from qiskit import QuantumCircuit\n\nqc = QuantumCircuit(1)\n# your code here\n`}
+  expectedCircuit={{ numQubits: 1, gates: [{ gate: "x", qubits: [0] }] }}
+  hints={[
+    "Use qc.x(0) to apply a Pauli-X gate to qubit 0.",
+    "The X gate is applied as a method call on the QuantumCircuit object.",
+  ]}
+/>
+
+## The Hadamard Gate
+
+The **Hadamard gate (H)** creates an equal superposition:
+
+$$H|0\rangle = \frac{1}{\sqrt{2}}(|0\rangle + |1\rangle) = |+\rangle$$
+
+On the Bloch sphere, H rotates the state from the pole to the equator.
+
+<CodeExercise
+  id="code-hadamard"
+  prompt="Apply a Hadamard gate to qubit 0 to put it into an equal superposition."
+  starterCode={`from qiskit import QuantumCircuit\n\nqc = QuantumCircuit(1)\n# your code here\n`}
+  expectedCircuit={{ numQubits: 1, gates: [{ gate: "h", qubits: [0] }] }}
+  hints={["Use qc.h(0)."]}
+/>
+
+## Putting It Together: H Then Z
+
+Applying Z after H rotates $|+\rangle$ to $|-\rangle$. Watch the Bloch vector swing across the equator.
+
+<Visualization
+  title="H followed by Z"
+  circuit={{
+    numQubits: 1,
+    gates: [
+      { gate: "h", qubits: [0] },
+      { gate: "z", qubits: [0] },
+    ],
+  }}
+  views={["circuit", "bloch", "statevector"]}
+/>

@@ -1,0 +1,52 @@
+---
+id: basics-01-what-is-a-qubit
+track: foundations
+order: 1
+title: What is a Qubit?
+summary: Classical bits vs. qubits, superposition, and how Qiskit represents quantum state.
+layout: theory-heavy
+estimatedMinutes: 12
+prerequisites: []
+---
+
+## Classical Bits vs. Qubits
+
+A classical bit is always **0** or **1**. A qubit can exist in a *superposition* of both states at once:
+
+$$|\psi\rangle = \alpha|0\rangle + \beta|1\rangle$$
+
+where $|\alpha|^2 + |\beta|^2 = 1$. Measuring the qubit collapses it to $|0\rangle$ with probability $|\alpha|^2$ or $|1\rangle$ with probability $|\beta|^2$.
+
+In Qiskit, a qubit always starts in the $|0\rangle$ state:
+
+```python
+from qiskit import QuantumCircuit
+
+qc = QuantumCircuit(1)
+qc.draw()
+```
+
+## Visualizing State: the Bloch Sphere
+
+Any single-qubit pure state can be drawn as a point on the surface of the **Bloch sphere**. The north pole is $|0\rangle$, the south pole is $|1\rangle$, and the equator holds equal-superposition states such as $|+\rangle$ and $|-\rangle$.
+
+The visualization below shows how the starting state sits at the north pole before any gates are applied.
+
+<Visualization
+  title="The |0⟩ State on the Bloch Sphere"
+  description="An untouched qubit, fresh from qc = QuantumCircuit(1), always starts at the north pole."
+  circuit={{ numQubits: 1, gates: [] }}
+  views={["bloch", "statevector", "probabilities"]}
+/>
+
+<Quiz
+  id="quiz-superposition"
+  question="If $|\alpha|^2 = 0.25$ for a qubit in state $\alpha|0\rangle + \beta|1\rangle$, what is the probability of measuring $|1\rangle$?"
+  choices={[
+    { id: "a", text: "$0.25$", correct: false },
+    { id: "b", text: "$0.75$", correct: true },
+    { id: "c", text: "$0.5$", correct: false },
+    { id: "d", text: "Cannot be determined", correct: false },
+  ]}
+  explanation="Probabilities must sum to 1, so $|\beta|^2 = 1 - 0.25 = 0.75$."
+/>
