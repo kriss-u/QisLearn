@@ -1,11 +1,15 @@
 import { Accordion, Alert, Box, Button, HStack, Skeleton, Text, VStack } from "@chakra-ui/react";
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { LuCode } from "react-icons/lu";
 import type { Circuit } from "../../../content/schema";
 import { getCodeSnapshot, saveCodeSnapshot } from "../../../db/repository";
 import { compareCircuits } from "../../../features/python/compareCircuit";
 import { extractCircuit } from "../../../features/python/extractCircuit";
+import { copyPngToClipboard, downloadBlob } from "../../../features/export/clipboard";
+import { svgElementToPngBlob } from "../../../features/export/pngExport";
 import { CircuitDiagram } from "../../viz/CircuitDiagram";
+import { VizLatexToggle } from "../../viz/latexLabels";
+import { VizActions } from "../../viz/VizActions";
 import { useLessonId } from "../LessonContext";
 import { useLessonProgress } from "../LessonProgressContext";
 import { Markdown } from "../Markdown";
@@ -33,6 +37,7 @@ export function CodeExercise({ id: exerciseId, prompt, starterCode, expectedCirc
   const [code, setCode] = useState(starterCode);
   const [result, setResult] = useState<CheckResult | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const previewSvgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => registerExercise(exerciseId), [exerciseId, registerExercise]);
 
@@ -63,6 +68,15 @@ export function CodeExercise({ id: exerciseId, prompt, starterCode, expectedCirc
   }, [code, result, lessonId, exerciseId, loaded]);
 
   const extracted = extractCircuit(code);
+
+  async function handlePreviewCopy() {
+    if (!previewSvgRef.current) return;
+    await copyPngToClipboard(svgElementToPngBlob(previewSvgRef.current));
+  }
+  async function handlePreviewDownload() {
+    if (!previewSvgRef.current) return;
+    downloadBlob(await svgElementToPngBlob(previewSvgRef.current), "circuit.png");
+  }
 
   function handleCodeChange(value: string) {
     setCode(value);
@@ -126,12 +140,25 @@ export function CodeExercise({ id: exerciseId, prompt, starterCode, expectedCirc
       )}
 
       {extracted.circuit && extracted.circuit.numQubits > 0 && (
-        <Box>
-          <Text fontSize="xs" color="fg.muted" mb="2">
-            Live preview of the circuit detected in your code
-          </Text>
-          <CircuitDiagram circuit={extracted.circuit} />
-        </Box>
+        <VizLatexToggle>
+          {(latexAction) => {
+            const previewCircuit = extracted.circuit!;
+            return (
+              <Box>
+                <HStack justify="space-between" mb="2">
+                  <Text fontSize="xs" color="fg.muted">
+                    Live preview of the circuit detected in your code
+                  </Text>
+                  <HStack gap="1">
+                    {latexAction}
+                    <VizActions onCopy={handlePreviewCopy} onDownload={handlePreviewDownload} />
+                  </HStack>
+                </HStack>
+                <CircuitDiagram ref={previewSvgRef} circuit={previewCircuit} />
+              </Box>
+            );
+          }}
+        </VizLatexToggle>
       )}
 
       {hints.length > 0 && (

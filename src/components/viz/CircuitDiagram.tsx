@@ -1,6 +1,9 @@
 import { Box, HStack, Text, useToken } from "@chakra-ui/react";
+import { forwardRef, useMemo, type HTMLAttributes } from "react";
 import type { Circuit } from "../../content/schema";
 import { getControlGateStyle, getGateStyle } from "./gateStyles";
+import { getGateLatex, qubitLatex } from "./gateLatexLabels";
+import { renderKatex, useVizLatex } from "./latexLabels";
 import { defaultQubitLabel } from "./qubitLabel";
 
 export interface CircuitDiagramProps {
@@ -104,6 +107,47 @@ function ClassicalRegisterCut({ x, y, size, color }: { x: number; y: number; siz
   );
 }
 
+/** Hosts a KaTeX-rendered label inside the SVG via a foreignObject, since raw SVG <text> can't render KaTeX markup. */
+function SvgKatexLabel({
+  x,
+  y,
+  width,
+  height,
+  align,
+  tex,
+  color,
+  fontSizePx,
+}: {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  align: "start" | "center";
+  tex: string;
+  color: string;
+  fontSizePx: number;
+}) {
+  const html = useMemo(() => renderKatex(tex), [tex]);
+  const xhtmlProps = { xmlns: "http://www.w3.org/1999/xhtml" } as HTMLAttributes<HTMLDivElement>;
+  return (
+    <foreignObject x={x} y={y - height / 2} width={width} height={height} style={{ overflow: "visible" }}>
+      <div
+        {...xhtmlProps}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: align === "center" ? "center" : "flex-start",
+          height: "100%",
+          color,
+          fontSize: fontSizePx,
+          lineHeight: 1,
+        }}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    </foreignObject>
+  );
+}
+
 /** Straight double line from a measure gate down to the classical wire, arrowhead at the landing point. */
 function MeasureConnector({ x, fromY, toY, color }: { x: number; fromY: number; toY: number; color: string }) {
   return (
@@ -119,8 +163,12 @@ function MeasureConnector({ x, fromY, toY, color }: { x: number; fromY: number; 
   );
 }
 
-export function CircuitDiagram({ circuit, activeGateIndex, showLegend = true }: CircuitDiagramProps) {
+export const CircuitDiagram = forwardRef<SVGSVGElement, CircuitDiagramProps>(function CircuitDiagram(
+  { circuit, activeGateIndex, showLegend = true },
+  ref,
+) {
   const [wireColor, activeRing, textColor] = useToken("colors", ["border", "quantum.400", "fg"]);
+  const latex = useVizLatex();
 
   const { columns, columnOf } = layoutColumns(circuit);
   const width = LEFT_MARGIN + (columns + 1) * COLUMN_WIDTH;
@@ -178,22 +226,38 @@ export function CircuitDiagram({ circuit, activeGateIndex, showLegend = true }: 
         </Text>
       )}
       <Box overflowX="auto">
-        <svg width={width} height={Math.max(height, 80)} role="img" aria-label="Quantum circuit diagram">
-          {Array.from({ length: circuit.numQubits }, (_, q) => (
-            <g key={`wire-${q}`}>
-              <line
-                x1={LEFT_MARGIN}
-                y1={qubitY(q)}
-                x2={width - COLUMN_WIDTH / 2}
-                y2={qubitY(q)}
-                stroke={wireColor}
-                strokeWidth={1.5}
-              />
-              <text x={0} y={qubitY(q) + 5} fontSize={13} fill={textColor} fontFamily={MONO_FONT} fontWeight={600}>
-                {circuit.qubitLabels?.[q] ?? defaultQubitLabel(q, circuit.numQubits)}
-              </text>
-            </g>
-          ))}
+        <svg ref={ref} width={width} height={Math.max(height, 80)} role="img" aria-label="Quantum circuit diagram">
+          {Array.from({ length: circuit.numQubits }, (_, q) => {
+            const plainLabel = circuit.qubitLabels?.[q] ?? defaultQubitLabel(q, circuit.numQubits);
+            return (
+              <g key={`wire-${q}`}>
+                <line
+                  x1={LEFT_MARGIN}
+                  y1={qubitY(q)}
+                  x2={width - COLUMN_WIDTH / 2}
+                  y2={qubitY(q)}
+                  stroke={wireColor}
+                  strokeWidth={1.5}
+                />
+                {latex && !circuit.qubitLabels?.[q] ? (
+                  <SvgKatexLabel
+                    x={0}
+                    y={qubitY(q)}
+                    width={LEFT_MARGIN - 6}
+                    height={20}
+                    align="start"
+                    tex={qubitLatex(q, circuit.numQubits)}
+                    color={textColor}
+                    fontSizePx={13}
+                  />
+                ) : (
+                  <text x={0} y={qubitY(q) + 5} fontSize={13} fill={textColor} fontFamily={MONO_FONT} fontWeight={600}>
+                    {plainLabel}
+                  </text>
+                )}
+              </g>
+            );
+          })}
 
           {registers.map((reg, i) => (
             <g key={`creg-${i}`}>
@@ -331,6 +395,17 @@ export function CircuitDiagram({ circuit, activeGateIndex, showLegend = true }: 
                       </>
                     );
                   })()
+                ) : latex ? (
+                  <SvgKatexLabel
+                    x={x - GATE_SIZE / 2}
+                    y={y}
+                    width={GATE_SIZE}
+                    height={GATE_SIZE}
+                    align="center"
+                    tex={getGateLatex(name, style.label)}
+                    color={style.textColor}
+                    fontSizePx={13}
+                  />
                 ) : (
                   <text
                     x={x}
@@ -367,4 +442,4 @@ export function CircuitDiagram({ circuit, activeGateIndex, showLegend = true }: 
       )}
     </Box>
   );
-}
+});

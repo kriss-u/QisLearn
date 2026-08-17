@@ -6,6 +6,7 @@ import { useProgressStore } from "../../store/progressStore";
 import { STATUS_COLOR_PALETTE } from "../../store/statusColor";
 import { Logo } from "../ui/Logo";
 import { ColorModeButton } from "../ui/color-mode";
+import { LatexModeButton } from "../ui/latex-mode";
 import { ResetDataButton } from "./ResetDataButton";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -141,6 +142,7 @@ export function AppShell({ children }: PropsWithChildren) {
             </Heading>
           </Link>
           <Box flex="1" />
+          <LatexModeButton />
           <ColorModeButton />
         </HStack>
         <Box as="main" flex="1" minH="0" overflowY="auto" px={{ base: "5", md: "10" }}>

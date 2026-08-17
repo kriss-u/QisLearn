@@ -1,7 +1,9 @@
 import { Box } from "@chakra-ui/react";
 import { Html, Line, OrbitControls, Text } from "@react-three/drei";
-import { Canvas } from "@react-three/fiber";
-import type { CSSProperties } from "react";
+import { Canvas, useThree } from "@react-three/fiber";
+import { useEffect, type CSSProperties } from "react";
+import { ketLatex } from "./gateLatexLabels";
+import { KatexSpan, useVizLatex } from "./latexLabels";
 
 const ketLabelStyle: CSSProperties = {
   color: "#a3a3a3",
@@ -13,6 +15,7 @@ const ketLabelStyle: CSSProperties = {
 
 export interface BlochSphereProps {
   vector: [number, number, number];
+  onCanvasReady?: (canvas: HTMLCanvasElement) => void;
 }
 
 function Axis({ from, to, color, label }: { from: [number, number, number]; to: [number, number, number]; color: string; label: string }) {
@@ -26,8 +29,23 @@ function Axis({ from, to, color, label }: { from: [number, number, number]; to: 
   );
 }
 
-function BlochScene({ vector }: { vector: [number, number, number] }) {
+function CanvasReadyReporter({ onCanvasReady }: { onCanvasReady?: (canvas: HTMLCanvasElement) => void }) {
+  const gl = useThree((s) => s.gl);
+  useEffect(() => {
+    onCanvasReady?.(gl.domElement);
+  }, [gl, onCanvasReady]);
+  return null;
+}
+
+function BlochScene({
+  vector,
+  onCanvasReady,
+}: {
+  vector: [number, number, number];
+  onCanvasReady?: (canvas: HTMLCanvasElement) => void;
+}) {
   const [x, y, z] = vector;
+  const latex = useVizLatex();
   // Bloch (x, y, z) -> three.js (x, z, y) so the |0> pole points up.
   const tip: [number, number, number] = [x, z, y];
 
@@ -49,10 +67,10 @@ function BlochScene({ vector }: { vector: [number, number, number] }) {
       <Axis from={[0, 0, -1.2]} to={[0, 0, 1.2]} color="#60a5fa" label="y" />
 
       <Html position={[0, 1.32, 0]} center style={ketLabelStyle}>
-        |0⟩
+        {latex ? <KatexSpan tex={ketLatex("0")} /> : "|0⟩"}
       </Html>
       <Html position={[0, -1.32, 0]} center style={ketLabelStyle}>
-        |1⟩
+        {latex ? <KatexSpan tex={ketLatex("1")} /> : "|1⟩"}
       </Html>
 
       <Line points={[[0, 0, 0], tip]} color="#22d3ee" lineWidth={3} />
@@ -62,15 +80,16 @@ function BlochScene({ vector }: { vector: [number, number, number] }) {
       </mesh>
 
       <OrbitControls enablePan={false} minDistance={2.5} maxDistance={6} />
+      <CanvasReadyReporter onCanvasReady={onCanvasReady} />
     </>
   );
 }
 
-export function BlochSphere({ vector }: BlochSphereProps) {
+export function BlochSphere({ vector, onCanvasReady }: BlochSphereProps) {
   return (
     <Box borderWidth="1px" borderColor="border" rounded="l3" bg="bg.panel" h="320px" position="relative" overflow="hidden">
-      <Canvas camera={{ position: [2.4, 1.8, 2.4], fov: 45 }}>
-        <BlochScene vector={vector} />
+      <Canvas camera={{ position: [2.4, 1.8, 2.4], fov: 45 }} gl={{ preserveDrawingBuffer: true }} dpr={[1, 3]}>
+        <BlochScene vector={vector} onCanvasReady={onCanvasReady} />
       </Canvas>
     </Box>
   );

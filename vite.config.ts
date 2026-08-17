@@ -27,6 +27,10 @@ function mdxPlugin() {
 
 export default defineConfig({
   plugins: [mdxPlugin(), react({ include: /\.(jsx|js|tsx|ts|mdx)$/ })],
+  // plotly.js references the Node-style `global` object at module scope; needed for the
+  // standalone `import("plotly.js")` in pngExport.ts (react-plotly.js's own bundling already
+  // works around this, but a bare dynamic import of the package does not).
+  define: { global: "globalThis" },
   build: {
     chunkSizeWarningLimit: 1200,
     rollupOptions: {

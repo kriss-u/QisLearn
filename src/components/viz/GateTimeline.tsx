@@ -1,15 +1,22 @@
 import { HStack, IconButton, Slider, Text } from "@chakra-ui/react";
 import { LuChevronLeft, LuChevronRight, LuChevronsLeft, LuChevronsRight } from "react-icons/lu";
+import { getGateLatex } from "./gateLatexLabels";
+import { KatexSpan, useVizLatex } from "./latexLabels";
+
+export interface GateTimelineStep {
+  gateName: string | null;
+}
 
 export interface GateTimelineProps {
   index: number;
-  labels: string[];
+  labels: GateTimelineStep[];
   onChange: (index: number) => void;
 }
 
 export function GateTimeline({ index, labels, onChange }: GateTimelineProps) {
+  const latex = useVizLatex();
   const max = labels.length - 1;
-  const marks = labels.map((label, i) => ({ value: i, label }));
+  const marks = labels.map((step, i) => ({ value: i, step }));
 
   return (
     <HStack gap="3" align="center">
@@ -49,14 +56,18 @@ export function GateTimeline({ index, labels, onChange }: GateTimelineProps) {
           </Slider.Thumb>
         </Slider.Control>
         <Slider.MarkerGroup>
-          {marks.map((mark) => (
-            <Slider.Marker key={mark.value} value={mark.value}>
-              <Slider.MarkerIndicator />
-              <Slider.MarkerLabel fontSize="2xs" color="fg.muted" fontFamily="mono" mt="1.5" whiteSpace="nowrap">
-                {mark.label}
-              </Slider.MarkerLabel>
-            </Slider.Marker>
-          ))}
+          {marks.map((mark) => {
+            const { gateName } = mark.step;
+            const plainLabel = gateName == null ? "Start" : gateName.toUpperCase();
+            return (
+              <Slider.Marker key={mark.value} value={mark.value}>
+                <Slider.MarkerIndicator />
+                <Slider.MarkerLabel fontSize="2xs" color="fg.muted" fontFamily="mono" mt="1.5" whiteSpace="nowrap">
+                  {latex && gateName != null ? <KatexSpan tex={getGateLatex(gateName, plainLabel)} /> : plainLabel}
+                </Slider.MarkerLabel>
+              </Slider.Marker>
+            );
+          })}
         </Slider.MarkerGroup>
       </Slider.Root>
 

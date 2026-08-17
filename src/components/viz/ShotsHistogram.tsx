@@ -1,5 +1,7 @@
 import { Box, HStack, Progress, Text, VStack } from "@chakra-ui/react";
 import { basisLabels } from "../../features/quantum/simulate";
+import { ketLatex } from "./gateLatexLabels";
+import { KatexSpan, useVizLatex } from "./latexLabels";
 
 export interface ShotsHistogramProps {
   numQubits: number;
@@ -9,6 +11,7 @@ export interface ShotsHistogramProps {
 
 export function ShotsHistogram({ numQubits, counts, shots }: ShotsHistogramProps) {
   const labels = basisLabels(numQubits);
+  const latex = useVizLatex();
 
   return (
     <Box borderWidth="1px" borderColor="border" rounded="l3" bg="bg.panel" p="5" h="full">
@@ -18,7 +21,7 @@ export function ShotsHistogram({ numQubits, counts, shots }: ShotsHistogramProps
           return (
             <HStack key={label} gap="3">
               <Text fontFamily="mono" fontSize="sm" fontWeight="semibold" w="16">
-                {`|${label}⟩`}
+                {latex ? <KatexSpan tex={ketLatex(label)} /> : `|${label}⟩`}
               </Text>
               <Progress.Root value={pct} flex="1" size="md" colorPalette="ember">
                 <Progress.Track rounded="full" bg="bg.muted">

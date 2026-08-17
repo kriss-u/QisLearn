@@ -1,5 +1,7 @@
 import { Box, HStack, Progress, Text, VStack } from "@chakra-ui/react";
 import { basisLabels, probabilities, type StateVector } from "../../features/quantum/simulate";
+import { ketLatex } from "./gateLatexLabels";
+import { KatexSpan, useVizLatex } from "./latexLabels";
 
 export interface ProbabilityBarsProps {
   amplitudes: StateVector;
@@ -9,6 +11,7 @@ export interface ProbabilityBarsProps {
 export function ProbabilityBars({ amplitudes, numQubits }: ProbabilityBarsProps) {
   const labels = basisLabels(numQubits);
   const probs = probabilities(amplitudes);
+  const latex = useVizLatex();
 
   return (
     <Box borderWidth="1px" borderColor="border" rounded="l3" bg="bg.panel" p="5">
@@ -16,7 +19,7 @@ export function ProbabilityBars({ amplitudes, numQubits }: ProbabilityBarsProps)
         {labels.map((label, i) => (
           <HStack key={label} gap="3">
             <Text fontFamily="mono" fontSize="sm" fontWeight="semibold" w="16">
-              {`|${label}⟩`}
+              {latex ? <KatexSpan tex={ketLatex(label)} /> : `|${label}⟩`}
             </Text>
             <Progress.Root value={probs[i] * 100} flex="1" size="md" colorPalette="quantum">
               <Progress.Track rounded="full" bg="bg.muted">
