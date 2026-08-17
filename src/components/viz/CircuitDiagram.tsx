@@ -2,7 +2,7 @@ import { Box, HStack, Text, useToken } from "@chakra-ui/react";
 import { forwardRef } from "react";
 import type { Circuit } from "../../content/schema";
 import { getControlGateStyle, getGateStyle } from "./gateStyles";
-import { getGateLatex, qubitLatex } from "./gateLatexLabels";
+import { customLabelLatex, getGateLatex, qubitLatex } from "./gateLatexLabels";
 import { SvgKatexLabel, useVizLatex } from "./latexLabels";
 import { defaultQubitLabel } from "./qubitLabel";
 
@@ -211,14 +211,14 @@ export const CircuitDiagram = forwardRef<SVGSVGElement, CircuitDiagramProps>(fun
                   stroke={wireColor}
                   strokeWidth={1.5}
                 />
-                {latex && !circuit.qubitLabels?.[q] ? (
+                {latex ? (
                   <SvgKatexLabel
                     x={0}
                     y={qubitY(q)}
                     width={leftMargin - 6}
                     height={20}
                     align="start"
-                    tex={qubitLatex(q, circuit.numQubits)}
+                    tex={circuit.qubitLabels?.[q] ? customLabelLatex(circuit.qubitLabels[q]) : qubitLatex(q, circuit.numQubits)}
                     color={textColor}
                     fontSizePx={13}
                   />
@@ -250,9 +250,22 @@ export const CircuitDiagram = forwardRef<SVGSVGElement, CircuitDiagramProps>(fun
                 strokeWidth={1.5}
               />
               <ClassicalRegisterCut x={leftMargin + 14} y={reg.y} size={reg.size} color={textColor} />
-              <text x={0} y={reg.y + 5} fontSize={13} fill={textColor} fontFamily={MONO_FONT} fontWeight={600}>
-                {reg.name}
-              </text>
+              {latex ? (
+                <SvgKatexLabel
+                  x={0}
+                  y={reg.y}
+                  width={leftMargin - 6}
+                  height={20}
+                  align="start"
+                  tex={customLabelLatex(reg.name)}
+                  color={textColor}
+                  fontSizePx={13}
+                />
+              ) : (
+                <text x={0} y={reg.y + 5} fontSize={13} fill={textColor} fontFamily={MONO_FONT} fontWeight={600}>
+                  {reg.name}
+                </text>
+              )}
             </g>
           ))}
 

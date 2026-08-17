@@ -54,7 +54,7 @@ qc.h([0, 1])
   description="Watch the input qubits (0 and 1) in the Exact State table: whichever outcome the ancilla (qubit 2) lands on, the input bits are always 0. Check the Measurement Probabilities panel: every nonzero outcome has 00 as its input bits."
   circuit={{
     numQubits: 3,
-    qubitLabels: ["x0", "x1", "ancilla"],
+    qubitLabels: ["x_0", "x_1", "ancilla"],
     gates: [
       { gate: "x", qubits: [2] },
       { gate: "h", qubits: [0] },
@@ -77,7 +77,7 @@ from qiskit import QuantumCircuit
 qc = QuantumCircuit(3)
 qc.x(2)
 qc.h([0, 1, 2])
-qc.cx(0, 2)   # oracle for f(x0, x1) = x0
+qc.cx(0, 2)   # oracle for f(x_0, x_1) = x_0
 qc.h([0, 1])
 ```
 
@@ -86,7 +86,7 @@ qc.h([0, 1])
   description="Qubit 0 (whose phase got kicked back by the oracle) no longer cancels back to $|0\rangle$; it's flipped to $|1\rangle$ instead. Qubit 1, which the oracle never touched, still cancels back to $|0\rangle$ exactly as in the constant case."
   circuit={{
     numQubits: 3,
-    qubitLabels: ["x0", "x1", "ancilla"],
+    qubitLabels: ["x_0", "x_1", "ancilla"],
     gates: [
       { gate: "x", qubits: [2] },
       { gate: "h", qubits: [0] },

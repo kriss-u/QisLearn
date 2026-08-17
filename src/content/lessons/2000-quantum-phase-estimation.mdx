@@ -52,7 +52,7 @@ qc.h(1)
   description="Step through gate by gate. Check the final Measurement Probabilities: the counting register (qubits 0, 1) lands on $q_1=0$, $q_0=1$ with certainty, reading out $0.01_2 = 1/4$, exactly $\theta$. Qubit 2 (the eigenstate) never leaves $|1\rangle$, exactly as an eigenvector should."
   circuit={{
     numQubits: 3,
-    qubitLabels: ["count0", "count1", "eigenstate"],
+    qubitLabels: ["count_0", "count_1", "eigenstate"],
     gates: [
       { gate: "x", qubits: [2] },
       { gate: "h", qubits: [0] },
