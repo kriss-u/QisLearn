@@ -202,6 +202,18 @@ rendered there and Python doesn't use LaTeX syntax anyway.
   body prose does, e.g. a choice reading "applies $X$ to $q_1$" rather than
   "applies X to q1". Plain English framing around the math (the actual
   question being asked) doesn't need LaTeX, only the notation itself.
+- **`choices[].text` must be written as `` String.raw`...` ``, not a plain
+  `"..."` string.** `question`/`explanation` are JSX attribute strings, so a
+  backslash there is passed through literally (`question="$U_a$"` needs no
+  escaping). `choices` is a JS array literal inside `{...}`, so a plain
+  double-quoted `text: "..."` would have its backslashes parsed as JS escape
+  sequences (`\r`, `\t`, etc.), silently mangling LaTeX like `\rangle` or
+  `\text`. `String.raw` suppresses that, so `text` can use the exact same
+  unescaped LaTeX syntax as `question`/`explanation`:
+  `` text: String.raw`$|00\rangle$, unchanged.` ``, not
+  `text: "$|00\\rangle$, unchanged."`. (Choice text can't contain a backtick
+  or `` ${ ``, since those terminate/interpolate a template literal, but
+  quiz choices never need either.)
 
 `Circuit` (`content/schema.ts`) also carries optional `name` and `qubitLabels`,
 which `CircuitDiagram` renders as a caption and per-wire labels respectively;

@@ -83,10 +83,10 @@ The $n$-qubit QFT repeats the same idea per qubit: $H$, then a cascade of $CP$ g
   id="quiz-qft-of-zero"
   question="What is $\text{QFT}|00\rangle$ ($j = 0$)?"
   choices={[
-    { id: "a", text: "$|00\\rangle$, unchanged.", correct: false },
-    { id: "b", text: "The uniform superposition $\\frac{1}{2}(|00\\rangle+|01\\rangle+|10\\rangle+|11\\rangle)$, with every phase equal to 0.", correct: true },
-    { id: "c", text: "$|11\\rangle$", correct: false },
-    { id: "d", text: "It's undefined for $j = 0$.", correct: false },
+    { id: "a", text: String.raw`$|00\rangle$, unchanged.`, correct: false },
+    { id: "b", text: String.raw`The uniform superposition $\frac{1}{2}(|00\rangle+|01\rangle+|10\rangle+|11\rangle)$, with every phase equal to 0.`, correct: true },
+    { id: "c", text: String.raw`$|11\rangle$`, correct: false },
+    { id: "d", text: String.raw`It's undefined for $j = 0$.`, correct: false },
   ]}
   explanation="Plugging $j=0$ into the definition, every term $e^{2\pi i\cdot0\cdot k/N} = e^0 = 1$, so $\text{QFT}|0\rangle = (1/\sqrt N)\sum_k|k\rangle$: a perfectly uniform superposition with no relative phase at all, the same state $H^{\otimes n}|0\rangle^{\otimes n}$ already produces directly."
 />
@@ -95,10 +95,10 @@ The $n$-qubit QFT repeats the same idea per qubit: $H$, then a cascade of $CP$ g
   id="quiz-cp-symmetry"
   question="Why does CircuitDiagram draw $CP$ the same way it draws $CZ$ (a dot on each wire), rather than $CX$'s dot-and-target-ring?"
   choices={[
-    { id: "a", text: "It's a simplification with no physical basis.", correct: false },
-    { id: "b", text: "$CP$ (like $CZ$) is physically symmetric between its two qubits (swapping which one is 'control' gives an identical gate), unlike $CX$, which genuinely treats its two qubits differently.", correct: true },
-    { id: "c", text: "$CP$ doesn't actually need two qubits.", correct: false },
-    { id: "d", text: "The diagram can't distinguish parameterized gates from unparameterized ones.", correct: false },
+    { id: "a", text: String.raw`It's a simplification with no physical basis.`, correct: false },
+    { id: "b", text: String.raw`$CP$ (like $CZ$) is physically symmetric between its two qubits (swapping which one is 'control' gives an identical gate), unlike $CX$, which genuinely treats its two qubits differently.`, correct: true },
+    { id: "c", text: String.raw`$CP$ doesn't actually need two qubits.`, correct: false },
+    { id: "d", text: String.raw`The diagram can't distinguish parameterized gates from unparameterized ones.`, correct: false },
   ]}
   explanation="$CX$ flips its target only when the control is $|1\rangle$, a genuinely asymmetric role between the two qubits. $CP$ and $CZ$ both apply a phase only when *both* qubits are $|1\rangle$, a condition unchanged by swapping which qubit is labeled 'control', so the symmetric dot-dot drawing is the physically accurate one, not just a convenient shortcut."
 />

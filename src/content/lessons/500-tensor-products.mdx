@@ -44,10 +44,10 @@ This is the formal definition of **entanglement**: a multi-qubit state is entang
   id="quiz-tensor-basis"
   question="What is $|1\rangle \otimes |0\rangle$?"
   choices={[
-    { id: "a", text: "$|01\\rangle$", correct: false },
-    { id: "b", text: "$|10\\rangle$", correct: true },
-    { id: "c", text: "$|11\\rangle$", correct: false },
-    { id: "d", text: "$|00\\rangle$", correct: false },
+    { id: "a", text: String.raw`$|01\rangle$`, correct: false },
+    { id: "b", text: String.raw`$|10\rangle$`, correct: true },
+    { id: "c", text: String.raw`$|11\rangle$`, correct: false },
+    { id: "d", text: String.raw`$|00\rangle$`, correct: false },
   ]}
   explanation="The left operand of $\\otimes$ becomes the more-significant qubit and the right operand the less-significant one in this labeling convention, so $|1\\rangle\\otimes|0\\rangle = |10\\rangle$: the first ket in the tensor product supplies the first digit of the resulting basis label."
 />
@@ -56,10 +56,10 @@ This is the formal definition of **entanglement**: a multi-qubit state is entang
   id="quiz-entangled-or-product"
   question="Is the state $\frac{1}{2}(|00\rangle + |01\rangle + |10\rangle + |11\rangle)$ entangled?"
   choices={[
-    { id: "a", text: "Yes, since it has 4 nonzero terms.", correct: false },
-    { id: "b", text: "No: it factors as $|+\\rangle \\otimes |+\\rangle$, an equal superposition on each qubit independently, so it's a product state, not entangled.", correct: true },
-    { id: "c", text: "Impossible to tell without measuring it.", correct: false },
-    { id: "d", text: "Yes, any state with more than one nonzero amplitude is entangled.", correct: false },
+    { id: "a", text: String.raw`Yes, since it has 4 nonzero terms.`, correct: false },
+    { id: "b", text: String.raw`No: it factors as $|+\rangle \otimes |+\rangle$, an equal superposition on each qubit independently, so it's a product state, not entangled.`, correct: true },
+    { id: "c", text: String.raw`Impossible to tell without measuring it.`, correct: false },
+    { id: "d", text: String.raw`Yes, any state with more than one nonzero amplitude is entangled.`, correct: false },
   ]}
   explanation="$|+\\rangle\\otimes|+\\rangle = \\frac{1}{2}(1,1,1,1)^T = \\frac{1}{2}(|00\\rangle+|01\\rangle+|10\\rangle+|11\\rangle)$ by the tensor-product formula, an exact match. Number of nonzero terms has nothing to do with entanglement; what matters is whether the state factors into independent per-qubit pieces at all, and this one does."
 />

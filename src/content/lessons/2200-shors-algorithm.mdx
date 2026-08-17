@@ -49,10 +49,10 @@ Factoring a large $N$ is believed to be classically hard, no known classical alg
   id="quiz-why-start-at-one"
   question="Why does the algorithm start the eigenstate register at $|1\rangle$ instead of trying to prepare a specific $|u_s\rangle$?"
   choices={[
-    { id: "a", text: "$|1\\rangle$ happens to be the eigenstate with the largest eigenvalue.", correct: false },
-    { id: "b", text: "Preparing a specific $|u_s\\rangle$ would require already knowing $r$, which is circular; $|1\\rangle$ needs no special preparation and is exactly the equal-weighted superposition of every $|u_s\\rangle$, so QPE run on it samples a uniformly random $s/r$ instead.", correct: true },
-    { id: "c", text: "$|1\\rangle$ is not actually used; it's a simplification for teaching purposes only.", correct: false },
-    { id: "d", text: "Because $r$ is always 1 when $a=1$.", correct: false },
+    { id: "a", text: String.raw`$|1\rangle$ happens to be the eigenstate with the largest eigenvalue.`, correct: false },
+    { id: "b", text: String.raw`Preparing a specific $|u_s\rangle$ would require already knowing $r$, which is circular; $|1\rangle$ needs no special preparation and is exactly the equal-weighted superposition of every $|u_s\rangle$, so QPE run on it samples a uniformly random $s/r$ instead.`, correct: true },
+    { id: "c", text: String.raw`$|1\rangle$ is not actually used; it's a simplification for teaching purposes only.`, correct: false },
+    { id: "d", text: String.raw`Because $r$ is always 1 when $a=1$.`, correct: false },
   ]}
   explanation="$|u_s\\rangle$'s own definition depends on $r$ (it's a sum over $r$ terms with phases involving $r$), so you can't build the circuit that prepares it without already knowing the answer you're trying to find. $|1\\rangle$ sidesteps this entirely: it's the trivial computational basis state $|a^0 \\bmod N\\rangle$, and it equals $(1/\\sqrt r)\\sum|u_s\\rangle$ exactly, so using it as the starting eigenstate register is both free to prepare and mathematically exact, not an approximation."
 />
@@ -61,10 +61,10 @@ Factoring a large $N$ is believed to be classically hard, no known classical alg
   id="quiz-shor-retry"
   question="In step 3 of the algorithm, continued fractions on a particular run's $\theta$ returns a candidate $r$ that turns out to be odd. What should happen next?"
   choices={[
-    { id: "a", text: "The algorithm has failed permanently for this $N$; try a different $N$.", correct: false },
-    { id: "b", text: "Round $r$ up to the nearest even number and continue.", correct: false },
-    { id: "c", text: "Go back to step 1, pick a new random $a$, and try the whole subroutine again, since an odd $r$ (or $a^{r/2} \\equiv -1$) just means this particular $a$ didn't produce usable factors, not that no $a$ will.", correct: true },
-    { id: "d", text: "Use $r$ directly as a factor of $N$.", correct: false },
+    { id: "a", text: String.raw`The algorithm has failed permanently for this $N$; try a different $N$.`, correct: false },
+    { id: "b", text: String.raw`Round $r$ up to the nearest even number and continue.`, correct: false },
+    { id: "c", text: String.raw`Go back to step 1, pick a new random $a$, and try the whole subroutine again, since an odd $r$ (or $a^{r/2} \equiv -1$) just means this particular $a$ didn't produce usable factors, not that no $a$ will.`, correct: true },
+    { id: "d", text: String.raw`Use $r$ directly as a factor of $N$.`, correct: false },
   ]}
   explanation="The even + not-(-1) conditions on $r$ are needed for the gcd step to produce a genuine nontrivial factor; when a particular random $a$'s order fails those conditions (or continued fractions returns a proper divisor of the true $r$ instead of $r$ itself, from an unlucky $s$), the fix is simply to retry with a fresh random $a$. Since a majority of choices of $a$ succeed, the expected number of retries before success is a small constant, keeping the whole algorithm efficient."
 />

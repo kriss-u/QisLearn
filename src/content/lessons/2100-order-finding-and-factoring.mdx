@@ -61,10 +61,10 @@ with eigenvalue $e^{2\pi i s/r}$ (check: applying $U_a$ shifts every $a^k\bmod N
   id="quiz-order-finding-different-a"
   question="For $N = 15$, $a = 2$: powers of 2 mod 15 are 2, 4, 8, 1 (repeating). What is the order $r$, and does it satisfy the even + not-(-1) conditions needed to extract factors?"
   choices={[
-    { id: "a", text: "$r = 3$, and it's odd, so this $a$ doesn't work; a different $a$ would be needed.", correct: false },
-    { id: "b", text: "$r = 4$ ($2^4 = 16 \\equiv 1 \\bmod 15$), even, and $2^2 = 4 \\not\\equiv 14 \\equiv -1 \\bmod 15$, so both conditions hold.", correct: true },
-    { id: "c", text: "$r = 4$, but since $2^2 = 4$ happens to equal $a^2/2$ the conditions fail.", correct: false },
-    { id: "d", text: "There is no valid $r$ for $a = 2$ and $N = 15$.", correct: false },
+    { id: "a", text: String.raw`$r = 3$, and it's odd, so this $a$ doesn't work; a different $a$ would be needed.`, correct: false },
+    { id: "b", text: String.raw`$r = 4$ ($2^4 = 16 \equiv 1 \bmod 15$), even, and $2^2 = 4 \not\equiv 14 \equiv -1 \bmod 15$, so both conditions hold.`, correct: true },
+    { id: "c", text: String.raw`$r = 4$, but since $2^2 = 4$ happens to equal $a^2/2$ the conditions fail.`, correct: false },
+    { id: "d", text: String.raw`There is no valid $r$ for $a = 2$ and $N = 15$.`, correct: false },
   ]}
   explanation="$2^1=2$, $2^2=4$, $2^3=8$, $2^4=16\\equiv1 \\bmod 15$: four steps back to 1, so $r=4$, even. $a^{r/2} = 2^2 = 4$, and 4 is not $\\equiv -1$ ($\\equiv14$) mod 15, so the conditions hold: $\\gcd(4-1,15)=3$ and $\\gcd(4+1,15)=5$, the same factors as the $a=7$ example, unsurprising since 15 only has one factorization to find, different valid $a$'s just arrive at it from different angles."
 />
@@ -73,10 +73,10 @@ with eigenvalue $e^{2\pi i s/r}$ (check: applying $U_a$ shifts every $a^k\bmod N
   id="quiz-ua-unitary-reason"
   question="Why is $U_a|x\rangle = |ax \bmod N\rangle$ guaranteed to be unitary, for any $a$ coprime to $N$?"
   choices={[
-    { id: "a", text: "It isn't guaranteed; it depends on the specific value of a.", correct: false },
-    { id: "b", text: "Because $\\gcd(a,N)=1$ makes $x \\mapsto ax \\bmod N$ a bijection on $\\{0,\\ldots,N-1\\}$, so $U_a$ is a permutation matrix, and every permutation matrix is automatically unitary.", correct: true },
-    { id: "c", text: "Because modular arithmetic is always reversible, regardless of gcd.", correct: false },
-    { id: "d", text: "It isn't actually unitary; QPE tolerates a small amount of non-unitarity.", correct: false },
+    { id: "a", text: String.raw`It isn't guaranteed; it depends on the specific value of a.`, correct: false },
+    { id: "b", text: String.raw`Because $\gcd(a,N)=1$ makes $x \mapsto ax \bmod N$ a bijection on $\{0,\ldots,N-1\}$, so $U_a$ is a permutation matrix, and every permutation matrix is automatically unitary.`, correct: true },
+    { id: "c", text: String.raw`Because modular arithmetic is always reversible, regardless of gcd.`, correct: false },
+    { id: "d", text: String.raw`It isn't actually unitary; QPE tolerates a small amount of non-unitarity.`, correct: false },
   ]}
   explanation="$\\gcd(a,N)=1$ means $a$ has a multiplicative inverse mod $N$, which is exactly what makes $x \\mapsto ax \\bmod N$ invertible (and therefore a bijection, since it's a function from a finite set to itself). A bijection's matrix representation is a permutation matrix (one 1 per row and column, zeros elsewhere), and permutation matrices satisfy $U^\\dagger U=I$ automatically, no matter how complicated the underlying permutation is."
 />

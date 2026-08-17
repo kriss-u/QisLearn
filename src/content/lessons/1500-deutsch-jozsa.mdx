@@ -129,10 +129,10 @@ Every nonzero outcome now has input bits $10$, never $00$: one query, and you kn
   id="quiz-dj-conclusion"
   question="After running Deutsch-Jozsa once, you measure the input register and get all zeros. What can you conclude?"
   choices={[
-    { id: "a", text: "$f$ is definitely balanced.", correct: false },
-    { id: "b", text: "$f$ is definitely constant: a single query has fully resolved the promise.", correct: true },
-    { id: "c", text: "$f$ could be either; you need to run it again to be sure.", correct: false },
-    { id: "d", text: "Nothing: the ancilla's outcome also has to be checked.", correct: false },
+    { id: "a", text: String.raw`$f$ is definitely balanced.`, correct: false },
+    { id: "b", text: String.raw`$f$ is definitely constant: a single query has fully resolved the promise.`, correct: true },
+    { id: "c", text: String.raw`$f$ could be either; you need to run it again to be sure.`, correct: false },
+    { id: "d", text: String.raw`Nothing: the ancilla's outcome also has to be checked.`, correct: false },
   ]}
   explanation="All-zero on the input register only happens when the $H$-then-$H$ interference on every input qubit was left completely undisturbed by the oracle, which only happens for a constant $f$. Any balanced $f$ disturbs at least one input qubit's phase enough to flip its measured outcome away from 0 with certainty, so all-zero is conclusive, in a single query, given the constant-or-balanced promise."
 />

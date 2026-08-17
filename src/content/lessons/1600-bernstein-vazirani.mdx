@@ -82,12 +82,12 @@ Unlike Deutsch-Jozsa's "is it all-zero or not," here every input qubit lands on 
   choices={[
     {
       id: "a",
-      text: "Deutsch-Jozsa gets 1 bit of information (constant vs. balanced); Bernstein-Vazirani gets all $n$ bits of the hidden string, because its oracle is restricted to the linear $f = s \\cdot x$ form where every input qubit's outcome directly encodes one bit of $s$.",
+      text: String.raw`Deutsch-Jozsa gets 1 bit of information (constant vs. balanced); Bernstein-Vazirani gets all $n$ bits of the hidden string, because its oracle is restricted to the linear $f = s \cdot x$ form where every input qubit's outcome directly encodes one bit of $s$.`,
       correct: true,
     },
-    { id: "b", text: "They extract exactly the same information; Bernstein-Vazirani is just a renamed version of Deutsch-Jozsa.", correct: false },
-    { id: "c", text: "Bernstein-Vazirani needs the ancilla and Deutsch-Jozsa doesn't.", correct: false },
-    { id: "d", text: "Deutsch-Jozsa works for any n, but Bernstein-Vazirani only works for n = 1.", correct: false },
+    { id: "b", text: String.raw`They extract exactly the same information; Bernstein-Vazirani is just a renamed version of Deutsch-Jozsa.`, correct: false },
+    { id: "c", text: String.raw`Bernstein-Vazirani needs the ancilla and Deutsch-Jozsa doesn't.`, correct: false },
+    { id: "d", text: String.raw`Deutsch-Jozsa works for any n, but Bernstein-Vazirani only works for n = 1.`, correct: false },
   ]}
   explanation="The circuit shape (superposition, phase-kickback oracle query, interference, measure) is identical; what differs is the promise on $f$. Deutsch-Jozsa's $f$ could be any constant-or-balanced function, so a single query only distinguishes those two cases (1 bit). Bernstein-Vazirani restricts to linear $f = s \\cdot x$ specifically, which is structured enough that the same one query pins down all $n$ bits of $s$ at once."
 />

@@ -51,10 +51,10 @@ $|0\rangle,|1\rangle$ form a complete basis of eigenvectors for $Z$ (its **eigen
   id="quiz-eigenvalue-check"
   question="Is $v = \begin{pmatrix}1\\2\end{pmatrix}$ an eigenvector of $A = \begin{pmatrix}2 & 0\\0 & 3\end{pmatrix}$?"
   choices={[
-    { id: "a", text: "Yes, with eigenvalue 2.", correct: false },
-    { id: "b", text: "Yes, with eigenvalue 3.", correct: false },
-    { id: "c", text: "No: $Av = (2, 6)^T$, which isn't any scalar multiple of $(1, 2)^T$.", correct: true },
-    { id: "d", text: "No, because $A$ isn't a valid quantum gate.", correct: false },
+    { id: "a", text: String.raw`Yes, with eigenvalue 2.`, correct: false },
+    { id: "b", text: String.raw`Yes, with eigenvalue 3.`, correct: false },
+    { id: "c", text: String.raw`No: $Av = (2, 6)^T$, which isn't any scalar multiple of $(1, 2)^T$.`, correct: true },
+    { id: "d", text: String.raw`No, because $A$ isn't a valid quantum gate.`, correct: false },
   ]}
   explanation="$Av = (2\\cdot1, 3\\cdot2)^T = (2, 6)^T$. For $v$ to be an eigenvector this would need to equal $\\lambda(1,2)^T = (\\lambda, 2\\lambda)$ for a single $\\lambda$, but concretely $\\lambda$ would have to be both 2 (from the first entry) and 3 (from the second), a contradiction. $A$'s actual eigenvectors are $(1,0)^T$ and $(0,1)^T$, since $A$ is already diagonal."
 />
@@ -63,10 +63,10 @@ $|0\rangle,|1\rangle$ form a complete basis of eigenvectors for $Z$ (its **eigen
   id="quiz-eigenbasis-meaning"
   question="What does it mean for $|+\rangle$ and $|-\rangle$ to form an 'eigenbasis' of $X$?"
   choices={[
-    { id: "a", text: "$X$ can only be applied to states written in that basis.", correct: false },
-    { id: "b", text: "Every state can be written as a combination of $|+\\rangle$ and $|-\\rangle$, and $X$ acts on each of those two by pure scaling ($\\pm1$), not by mixing them into new directions.", correct: true },
-    { id: "c", text: "$|+\\rangle$ and $|-\\rangle$ are the only two states $X$ can ever produce.", correct: false },
-    { id: "d", text: "$X$ and $|+\\rangle$/$|-\\rangle$ commute, which is unrelated to eigenvectors.", correct: false },
+    { id: "a", text: String.raw`$X$ can only be applied to states written in that basis.`, correct: false },
+    { id: "b", text: String.raw`Every state can be written as a combination of $|+\rangle$ and $|-\rangle$, and $X$ acts on each of those two by pure scaling ($\pm1$), not by mixing them into new directions.`, correct: true },
+    { id: "c", text: String.raw`$|+\rangle$ and $|-\rangle$ are the only two states $X$ can ever produce.`, correct: false },
+    { id: "d", text: String.raw`$X$ and $|+\rangle$/$|-\rangle$ commute, which is unrelated to eigenvectors.`, correct: false },
   ]}
   explanation="A basis of eigenvectors just means: a full basis (so any state decomposes into it) where the matrix's action on each basis vector is 'multiply by this vector's own eigenvalue,' nothing more exotic. $|0\\rangle$/$|1\\rangle$ is $Z$'s eigenbasis; $|+\\rangle$/$|-\\rangle$ is $X$'s."
 />

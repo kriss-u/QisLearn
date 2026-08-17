@@ -40,10 +40,10 @@ Different matrices ($XH \neq HX$), confirming $H$ then $X$ isn't the same circui
   id="quiz-matrix-apply"
   question="What is $Z|1\rangle$, where $Z = \begin{pmatrix} 1 & 0 \\ 0 & -1 \end{pmatrix}$ and $|1\rangle = \begin{pmatrix}0\\1\end{pmatrix}$?"
   choices={[
-    { id: "a", text: "$|0\\rangle$", correct: false },
-    { id: "b", text: "$|1\\rangle$, unchanged.", correct: false },
-    { id: "c", text: "$-|1\\rangle$", correct: true },
-    { id: "d", text: "$-|0\\rangle$", correct: false },
+    { id: "a", text: String.raw`$|0\rangle$`, correct: false },
+    { id: "b", text: String.raw`$|1\rangle$, unchanged.`, correct: false },
+    { id: "c", text: String.raw`$-|1\rangle$`, correct: true },
+    { id: "d", text: String.raw`$-|0\rangle$`, correct: false },
   ]}
   explanation="Row 1 of $Z$ dotted with $(0,1)$ gives $1\\cdot0 + 0\\cdot1 = 0$. Row 2 gives $0\\cdot0 + (-1)\\cdot1 = -1$. So $Z|1\\rangle = (0, -1)^T = -|1\\rangle$: same basis state, flipped sign. $Z$ leaves $|0\\rangle$ and $|1\\rangle$'s 'location' alone and only touches phase, which is exactly why it's called a phase gate."
 />
@@ -52,10 +52,10 @@ Different matrices ($XH \neq HX$), confirming $H$ then $X$ isn't the same circui
   id="quiz-noncommuting"
   question="Why does gate order matter in a quantum circuit?"
   choices={[
-    { id: "a", text: "It's a Qiskit implementation detail, not a mathematical necessity.", correct: false },
-    { id: "b", text: "Matrix multiplication is generally non-commutative ($AB \\neq BA$), so applying gates in a different order composes to a genuinely different matrix.", correct: true },
-    { id: "c", text: "Gate order only matters for gates acting on different qubits.", correct: false },
-    { id: "d", text: "It doesn't; any two gates can be freely reordered.", correct: false },
+    { id: "a", text: String.raw`It's a Qiskit implementation detail, not a mathematical necessity.`, correct: false },
+    { id: "b", text: String.raw`Matrix multiplication is generally non-commutative ($AB \neq BA$), so applying gates in a different order composes to a genuinely different matrix.`, correct: true },
+    { id: "c", text: String.raw`Gate order only matters for gates acting on different qubits.`, correct: false },
+    { id: "d", text: String.raw`It doesn't; any two gates can be freely reordered.`, correct: false },
   ]}
   explanation="Composing linear maps is matrix multiplication, and matrix multiplication doesn't commute in general. $XH$ and $HX$ above are a concrete counterexample: same two gates, different order, different resulting matrix."
 />

@@ -45,10 +45,10 @@ Measurement. Collapsing a superposition down to a single definite outcome is fun
   id="quiz-unitary-check"
   question="Is $M = \begin{pmatrix}1 & 1\\0 & 1\end{pmatrix}$ unitary?"
   choices={[
-    { id: "a", text: "Yes, since it's a valid 2×2 matrix.", correct: false },
-    { id: "b", text: "No: $M^\\dagger M = \\begin{pmatrix}1&0\\\\1&1\\end{pmatrix}\\begin{pmatrix}1&1\\\\0&1\\end{pmatrix} = \\begin{pmatrix}1&1\\\\1&2\\end{pmatrix} \\neq I$.", correct: true },
-    { id: "c", text: "Only if it's also symmetric.", correct: false },
-    { id: "d", text: "Yes, because its determinant is 1.", correct: false },
+    { id: "a", text: String.raw`Yes, since it's a valid 2×2 matrix.`, correct: false },
+    { id: "b", text: String.raw`No: $M^\dagger M = \begin{pmatrix}1&0\\1&1\end{pmatrix}\begin{pmatrix}1&1\\0&1\end{pmatrix} = \begin{pmatrix}1&1\\1&2\end{pmatrix} \neq I$.`, correct: true },
+    { id: "c", text: String.raw`Only if it's also symmetric.`, correct: false },
+    { id: "d", text: String.raw`Yes, because its determinant is 1.`, correct: false },
   ]}
   explanation="Computing $M^\\dagger M$ directly ($M$ is real, so $M^\\dagger$ is just its transpose) gives a matrix that isn't the identity, so $M$ fails the unitary test. Concretely, $M$ applied to $|1\\rangle = (0,1)^T$ gives $(1,1)^T$, which has norm $\\sqrt2$, not 1: $M$ doesn't preserve norm, so it can't be a valid quantum gate."
 />
@@ -57,10 +57,10 @@ Measurement. Collapsing a superposition down to a single definite outcome is fun
   id="quiz-unitary-why-measurement-isnt"
   question="Why can't measurement be represented as a unitary matrix?"
   choices={[
-    { id: "a", text: "Measurement matrices haven't been discovered yet.", correct: false },
-    { id: "b", text: "Measurement is many-to-one (many different states can collapse to the same outcome), and a many-to-one map can't have an inverse, but every unitary matrix is invertible (its own adjoint).", correct: true },
-    { id: "c", text: "Measurement only applies to single qubits, and unitary matrices need at least 2 qubits.", correct: false },
-    { id: "d", text: "It can; Qiskit just chooses not to represent it that way.", correct: false },
+    { id: "a", text: String.raw`Measurement matrices haven't been discovered yet.`, correct: false },
+    { id: "b", text: String.raw`Measurement is many-to-one (many different states can collapse to the same outcome), and a many-to-one map can't have an inverse, but every unitary matrix is invertible (its own adjoint).`, correct: true },
+    { id: "c", text: String.raw`Measurement only applies to single qubits, and unitary matrices need at least 2 qubits.`, correct: false },
+    { id: "d", text: String.raw`It can; Qiskit just chooses not to represent it that way.`, correct: false },
   ]}
   explanation="Unitarity forces invertibility ($U^{-1} = U^\\dagger$ always exists), and invertible maps are always one-to-one. Measurement collapses a whole family of superpositions down to the same definite outcome, which is inherently not one-to-one, so it sits outside the unitary-gate model entirely; Qiskit and every other framework treat it as a fundamentally different kind of operation."
 />

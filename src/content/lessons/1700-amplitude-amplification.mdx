@@ -48,10 +48,10 @@ $O(\sqrt N)$ iterations, each one query to the oracle, versus $O(N)$ classically
   id="quiz-reflection-rotation"
   question="Why does composing the oracle reflection and the diffusion reflection produce a rotation, specifically, toward the marked state?"
   choices={[
-    { id: "a", text: "Reflecting twice about the same line always rotates by 90°.", correct: false },
-    { id: "b", text: "Composing two reflections about two lines that meet at angle $\\theta$ is a rotation by $2\\theta$, and here the diffusion axis $|s\\rangle$ sits at angle $\\theta$ from the oracle's axis $|s'\\rangle$, rotating the state toward $|\\omega\\rangle$ by construction.", correct: true },
-    { id: "c", text: "The oracle and diffusion operators happen to be inverses of each other.", correct: false },
-    { id: "d", text: "It's a numerical coincidence specific to $N=4$.", correct: false },
+    { id: "a", text: String.raw`Reflecting twice about the same line always rotates by 90°.`, correct: false },
+    { id: "b", text: String.raw`Composing two reflections about two lines that meet at angle $\theta$ is a rotation by $2\theta$, and here the diffusion axis $|s\rangle$ sits at angle $\theta$ from the oracle's axis $|s'\rangle$, rotating the state toward $|\omega\rangle$ by construction.`, correct: true },
+    { id: "c", text: String.raw`The oracle and diffusion operators happen to be inverses of each other.`, correct: false },
+    { id: "d", text: String.raw`It's a numerical coincidence specific to $N=4$.`, correct: false },
   ]}
   explanation="This is a general fact about reflections in a plane, not specific to any particular $N$: reflect about line $A$, then about line $B$ at angle $\\theta$ to $A$, and the net effect on any vector is a rotation by $2\\theta$. The oracle reflects about $|s'\\rangle$ and the diffusion operator reflects about $|s\\rangle$, which sits at exactly angle $\\theta$ away, so one Grover iteration is always a rotation by $2\\theta$ toward $|\\omega\\rangle$, for any $N$."
 />
@@ -60,10 +60,10 @@ $O(\sqrt N)$ iterations, each one query to the oracle, versus $O(N)$ classically
   id="quiz-overshoot"
   question="If you keep applying Grover iterations well past the optimal count $k_{\text{opt}}$, what happens to the success probability?"
   choices={[
-    { id: "a", text: "It keeps increasing, approaching 1 asymptotically.", correct: false },
-    { id: "b", text: "It stays flat at its peak value forever.", correct: false },
-    { id: "c", text: "It decreases again, since the rotation keeps going past $|\\omega\\rangle$ and starts rotating back away from it.", correct: true },
-    { id: "d", text: "It immediately drops to 0.", correct: false },
+    { id: "a", text: String.raw`It keeps increasing, approaching 1 asymptotically.`, correct: false },
+    { id: "b", text: String.raw`It stays flat at its peak value forever.`, correct: false },
+    { id: "c", text: String.raw`It decreases again, since the rotation keeps going past $|\omega\rangle$ and starts rotating back away from it.`, correct: true },
+    { id: "d", text: String.raw`It immediately drops to 0.`, correct: false },
   ]}
   explanation="$P(\\omega) = \\sin^2((2k+1)\\theta)$ is periodic in $k$, not monotonically increasing: once $(2k+1)\\theta$ passes $\\pi/2$, further iterations keep rotating the state vector past $|\\omega\\rangle$ and back toward $|s'\\rangle$, decreasing the success probability. Unlike classical search, doing extra work in Grover's algorithm can actively make your answer worse, which is why picking $k$ close to $k_{\\text{opt}}$ actually matters."
 />

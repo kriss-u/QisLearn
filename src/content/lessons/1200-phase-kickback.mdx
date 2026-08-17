@@ -80,10 +80,10 @@ Every oracle-based algorithm coming up (Deutsch-Jozsa and Bernstein-Vazirani) qu
   id="quiz-phase-kickback-target"
   question="After the $CX$ in the circuit above, what happened to qubit 1 (the ancilla)?"
   choices={[
-    { id: "a", text: "It flipped to $|+\\rangle$.", correct: false },
-    { id: "b", text: "It's still $|-\\rangle$: completely unchanged, since $X|-\\rangle = -|-\\rangle$ just reproduces the same state times a global-looking factor that lands on the control instead.", correct: true },
-    { id: "c", text: "It became entangled and has no well-defined single-qubit state.", correct: false },
-    { id: "d", text: "It collapsed to $|1\\rangle$.", correct: false },
+    { id: "a", text: String.raw`It flipped to $|+\rangle$.`, correct: false },
+    { id: "b", text: String.raw`It's still $|-\rangle$: completely unchanged, since $X|-\rangle = -|-\rangle$ just reproduces the same state times a global-looking factor that lands on the control instead.`, correct: true },
+    { id: "c", text: String.raw`It became entangled and has no well-defined single-qubit state.`, correct: false },
+    { id: "d", text: String.raw`It collapsed to $|1\rangle$.`, correct: false },
   ]}
   explanation="$X|-\\rangle = -|-\\rangle$ means applying $X$ to $|-\\rangle$ reproduces $|-\\rangle$ exactly, times $-1$. Because that $-1$ only appears on the control=$|1\\rangle$ branch, it attaches to the control's amplitude, not the ancilla's state: the ancilla is left exactly as it was."
 />

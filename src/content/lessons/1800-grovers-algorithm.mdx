@@ -98,10 +98,10 @@ This lesson's oracle only marks $|11\rangle$, because that's exactly what $CZ$ f
   id="quiz-grover-iteration-count"
   question="For $N = 16$ items (4 qubits) with one marked item, roughly how many Grover iterations are needed, and how does that compare to the classical worst case?"
   choices={[
-    { id: "a", text: "About 3 iterations, versus up to 16 classically.", correct: true },
-    { id: "b", text: "About 8 iterations, versus up to 16 classically.", correct: false },
-    { id: "c", text: "Exactly 1 iteration, same as $N=4$.", correct: false },
-    { id: "d", text: "16 iterations, no better than classical.", correct: false },
+    { id: "a", text: String.raw`About 3 iterations, versus up to 16 classically.`, correct: true },
+    { id: "b", text: String.raw`About 8 iterations, versus up to 16 classically.`, correct: false },
+    { id: "c", text: String.raw`Exactly 1 iteration, same as $N=4$.`, correct: false },
+    { id: "d", text: String.raw`16 iterations, no better than classical.`, correct: false },
   ]}
   explanation="$k_{\\text{opt}} \\approx \\frac{\\pi}{4}\\sqrt N = \\frac{\\pi}{4}\\cdot4 \\approx 3.14$, so 3 iterations (rounding down). Classically, an unstructured search over 16 items can require checking up to all 16 in the worst case. The gap ($\\sqrt N$ vs $N$) is Grover's quadratic speedup, smaller than Deutsch-Jozsa's exponential one, but it applies to any black-box search problem, not just constant-vs-balanced promises."
 />

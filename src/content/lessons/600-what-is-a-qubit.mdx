@@ -42,10 +42,10 @@ The visualization below shows how the starting state sits at the north pole befo
   id="quiz-superposition"
   question="If $|\alpha|^2 = 0.25$ for a qubit in state $\alpha|0\rangle + \beta|1\rangle$, what is the probability of measuring $|1\rangle$?"
   choices={[
-    { id: "a", text: "$0.25$", correct: false },
-    { id: "b", text: "$0.75$", correct: true },
-    { id: "c", text: "$0.5$", correct: false },
-    { id: "d", text: "Cannot be determined", correct: false },
+    { id: "a", text: String.raw`$0.25$`, correct: false },
+    { id: "b", text: String.raw`$0.75$`, correct: true },
+    { id: "c", text: String.raw`$0.5$`, correct: false },
+    { id: "d", text: String.raw`Cannot be determined`, correct: false },
   ]}
   explanation="Probabilities must sum to 1, so $|\beta|^2 = 1 - 0.25 = 0.75$."
 />

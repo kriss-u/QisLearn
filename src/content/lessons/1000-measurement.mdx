@@ -118,14 +118,14 @@ We can't run real Aer in your browser: there's no Python here, just a static che
   id="quiz-shots"
   question="You run a circuit with AerSimulator at shots=10 and get counts {'00': 7, '11': 3}. Is this circuit's true probability necessarily 70% / 30%?"
   choices={[
-    { id: "a", text: "Yes: the counts are the probabilities.", correct: false },
+    { id: "a", text: String.raw`Yes: the counts are the probabilities.`, correct: false },
     {
       id: "b",
-      text: "Not necessarily: with only 10 shots the counts are a noisy estimate; more shots would narrow it down.",
+      text: String.raw`Not necessarily: with only 10 shots the counts are a noisy estimate; more shots would narrow it down.`,
       correct: true,
     },
-    { id: "c", text: "No: you'd need to run it exactly 100 times to know.", correct: false },
-    { id: "d", text: "Counts are meaningless without Aer's noise model.", correct: false },
+    { id: "c", text: String.raw`No: you'd need to run it exactly 100 times to know.`, correct: false },
+    { id: "d", text: String.raw`Counts are meaningless without Aer's noise model.`, correct: false },
   ]}
   explanation="10 shots is a small sample: the true probability could easily be 50/50 (or many other splits) and still produce 7/3 by chance. This is exactly the coin-flip problem: more shots narrow the estimate, they don't retroactively fix a small sample."
 />

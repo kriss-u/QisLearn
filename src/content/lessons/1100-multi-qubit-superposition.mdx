@@ -79,14 +79,14 @@ This (steering amplitude toward a "yes" answer and cancelling it away from every
   id="quiz-interference-cancellation"
   question="In the $H$-then-$H$ circuit above, why does the amplitude on $|1\rangle$ end up at exactly 0.000 rather than just something small?"
   choices={[
-    { id: "a", text: "Rounding error in the simulator happens to hit zero.", correct: false },
+    { id: "a", text: String.raw`Rounding error in the simulator happens to hit zero.`, correct: false },
     {
       id: "b",
-      text: "Two paths to $|1\\rangle$ contribute equal-and-opposite amplitudes, which cancel exactly: destructive interference, not approximation.",
+      text: String.raw`Two paths to $|1\rangle$ contribute equal-and-opposite amplitudes, which cancel exactly: destructive interference, not approximation.`,
       correct: true,
     },
-    { id: "c", text: "The second $H$ gate doesn't actually do anything to a qubit already in superposition.", correct: false },
-    { id: "d", text: "Measurement forces it to zero.", correct: false },
+    { id: "c", text: String.raw`The second $H$ gate doesn't actually do anything to a qubit already in superposition.`, correct: false },
+    { id: "d", text: String.raw`Measurement forces it to zero.`, correct: false },
   ]}
   explanation="$H^2 = I$ is an exact mathematical identity, not an approximation: the two contributing paths have amplitudes that are exact negatives of each other, so they cancel precisely. This exactness is what algorithms like Deutsch-Jozsa depend on: 'wrong answer' amplitudes don't just get small, they vanish."
 />

@@ -97,10 +97,10 @@ qc.h(1)
   id="quiz-qpe-eigenstate-unchanged"
   question="Throughout the QPE circuit above, qubit 2 (the eigenstate register) never changes from $|1\rangle$. Why?"
   choices={[
-    { id: "a", text: "It's a coincidence specific to this example.", correct: false },
-    { id: "b", text: "$|1\\rangle$ is an eigenvector of $U$, so applying any power of $U$ to it can only ever multiply it by a phase (an eigenvalue), never move it to a different state.", correct: true },
-    { id: "c", text: "The controlled-$U$ gates only fire when the counting qubits are $|0\\rangle$.", correct: false },
-    { id: "d", text: "Qubit 2 is never actually targeted by any gate.", correct: false },
+    { id: "a", text: String.raw`It's a coincidence specific to this example.`, correct: false },
+    { id: "b", text: String.raw`$|1\rangle$ is an eigenvector of $U$, so applying any power of $U$ to it can only ever multiply it by a phase (an eigenvalue), never move it to a different state.`, correct: true },
+    { id: "c", text: String.raw`The controlled-$U$ gates only fire when the counting qubits are $|0\rangle$.`, correct: false },
+    { id: "d", text: String.raw`Qubit 2 is never actually targeted by any gate.`, correct: false },
   ]}
   explanation="This is the entire mechanism QPE relies on: by definition, $U|\\psi\\rangle = e^{2\\pi i\\theta}|\\psi\\rangle$ for an eigenvector $|\\psi\\rangle$, so no power of $U$ can ever move $|\\psi\\rangle$ elsewhere, it can only attach a phase. That phase gets kicked back onto the controlling qubit instead (the same phase-kickback idea from Phase Kickback), which is exactly why the eigenstate register looks completely untouched at the end while the counting register ends up holding the answer."
 />
@@ -109,10 +109,10 @@ qc.h(1)
   id="quiz-qpe-precision"
   question="If $\theta$ isn't exactly representable in $n$ bits (e.g. $\theta = 1/3$ with only 2 counting qubits), what does QPE return?"
   choices={[
-    { id: "a", text: "An error; QPE only works for exactly representable $\\theta$.", correct: false },
-    { id: "b", text: "The single closest $n$-bit approximation, with certainty.", correct: false },
-    { id: "c", text: "A probability distribution over $n$-bit strings, concentrated near the best $n$-bit approximation of $\\theta$, most likely (but not certainly) returning the closest one.", correct: true },
-    { id: "d", text: "Always 0, since $\\theta$ can't be represented.", correct: false },
+    { id: "a", text: String.raw`An error; QPE only works for exactly representable $\theta$.`, correct: false },
+    { id: "b", text: String.raw`The single closest $n$-bit approximation, with certainty.`, correct: false },
+    { id: "c", text: String.raw`A probability distribution over $n$-bit strings, concentrated near the best $n$-bit approximation of $\theta$, most likely (but not certainly) returning the closest one.`, correct: true },
+    { id: "d", text: String.raw`Always 0, since $\theta$ can't be represented.`, correct: false },
   ]}
   explanation="When $\\theta$ isn't an exact multiple of $1/2^n$, the final state isn't a single basis state anymore, it's a superposition peaked around the best $n$-bit approximation, so measurement returns that approximation with high (not certain) probability. More counting qubits narrow the peak and raise that probability, which is exactly the precision/qubit-count tradeoff QPE-based algorithms like Shor's have to manage."
 />
