@@ -6,6 +6,7 @@ import { getLesson, getNextLesson, loadLessonContent } from "../../content";
 import type { LessonFrontmatter } from "../../content/schema";
 import { LessonLayout } from "../../components/lesson/LessonLayout";
 import { LessonProvider } from "../../components/lesson/LessonContext";
+import { PrerequisitesList } from "../../components/lesson/PrerequisitesList";
 import { LessonProgressProvider, useLessonProgress } from "../../components/lesson/LessonProgressContext";
 import { mdxComponents } from "../../components/lesson/mdxComponents";
 import { useProgressStore } from "../../store/progressStore";
@@ -90,6 +91,7 @@ export function LessonPage() {
       <LessonProvider value={{ lessonId: lesson.id }}>
         <LessonProgressProvider lessonId={lesson.id}>
           <LessonLayout lesson={lesson}>
+            <PrerequisitesList prerequisiteIds={lesson.prerequisites} />
             <Suspense fallback={<Skeleton h="50vh" rounded="l3" />}>
               <LessonContent components={mdxComponents} />
             </Suspense>

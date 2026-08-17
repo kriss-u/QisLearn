@@ -42,7 +42,6 @@ export const LessonFrontmatterSchema = z.object({
   title: z.string(),
   summary: z.string(),
   layout: LessonLayoutSchema.default("standard"),
-  estimatedMinutes: z.number().int().positive().default(15),
   prerequisites: z.array(z.string()).default([]),
 });
-export type LessonFrontmatter = z.infer<typeof LessonFrontmatterSchema>;
+export type LessonFrontmatter = z.infer<typeof LessonFrontmatterSchema> & { estimatedMinutes: number };
