@@ -43,7 +43,10 @@ export function CodeExercise({ id: exerciseId, prompt, starterCode, expectedCirc
   useEffect(() => {
     let cancelled = false;
     getCodeSnapshot(lessonId, exerciseId).then((snapshot) => {
-      if (!cancelled && snapshot) setCode(snapshot.code);
+      if (!cancelled && snapshot) {
+        setCode(snapshot.code);
+        setResult(snapshot.result);
+      }
       if (!cancelled) setLoaded(true);
     });
     return () => {
@@ -54,10 +57,10 @@ export function CodeExercise({ id: exerciseId, prompt, starterCode, expectedCirc
   useEffect(() => {
     if (!loaded) return;
     const timeout = setTimeout(() => {
-      saveCodeSnapshot(lessonId, exerciseId, code);
+      saveCodeSnapshot(lessonId, exerciseId, code, result);
     }, 500);
     return () => clearTimeout(timeout);
-  }, [code, lessonId, exerciseId, loaded]);
+  }, [code, result, lessonId, exerciseId, loaded]);
 
   const extracted = extractCircuit(code);
 

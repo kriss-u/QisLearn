@@ -11,11 +11,18 @@ export const LessonProgressSchema = z.object({
 });
 export type LessonProgress = z.infer<typeof LessonProgressSchema>;
 
+export const CodeCheckResultSchema = z.object({
+  ok: z.boolean(),
+  messages: z.array(z.string()),
+});
+export type CodeCheckResult = z.infer<typeof CodeCheckResultSchema>;
+
 export const CodeSnapshotSchema = z.object({
   id: z.string(),
   lessonId: z.string(),
   exerciseId: z.string(),
   code: z.string(),
+  result: CodeCheckResultSchema.nullable(),
   savedAt: z.number(),
 });
 export type CodeSnapshot = z.infer<typeof CodeSnapshotSchema>;

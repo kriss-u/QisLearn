@@ -1,5 +1,5 @@
 import { db } from "./db";
-import type { LessonStatus } from "./models";
+import type { CodeCheckResult, LessonStatus } from "./models";
 
 export async function markLessonStatus(lessonId: string, status: LessonStatus) {
   await db.progress.put({
@@ -14,9 +14,14 @@ export async function getLessonProgress(lessonId: string) {
   return db.progress.get(lessonId);
 }
 
-export async function saveCodeSnapshot(lessonId: string, exerciseId: string, code: string) {
+export async function saveCodeSnapshot(
+  lessonId: string,
+  exerciseId: string,
+  code: string,
+  result: CodeCheckResult | null = null,
+) {
   const id = `${lessonId}::${exerciseId}`;
-  await db.snapshots.put({ id, lessonId, exerciseId, code, savedAt: Date.now() });
+  await db.snapshots.put({ id, lessonId, exerciseId, code, result, savedAt: Date.now() });
 }
 
 export async function getCodeSnapshot(lessonId: string, exerciseId: string) {
