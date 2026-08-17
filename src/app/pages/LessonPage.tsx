@@ -36,8 +36,17 @@ function LessonNextAction({ lessonId, next }: { lessonId: string; next: LessonFr
 
   return (
     <>
-      <Button colorPalette="quantum" size="lg" disabled={!contentReady} onClick={handleClick}>
-        {label}
+      <Button
+        colorPalette="quantum"
+        size="lg"
+        disabled={!contentReady}
+        onClick={handleClick}
+        w={{ base: "full", sm: "auto" }}
+        minW="0"
+      >
+        <Text as="span" truncate minW="0">
+          {label}
+        </Text>
         <LuArrowRight />
       </Button>
 

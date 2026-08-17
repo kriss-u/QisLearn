@@ -65,8 +65,6 @@ function NavContent({ onNavigate }: { onNavigate?: () => void }) {
                       py="2.5"
                       rounded="l2"
                       bg={active ? "colorPalette.subtle" : "transparent"}
-                      borderLeftWidth="3px"
-                      borderLeftColor={active ? "colorPalette.solid" : "transparent"}
                       transition="background 0.15s ease"
                       _hover={{ bg: active ? "colorPalette.subtle" : "bg.muted" }}
                     >
@@ -182,7 +180,9 @@ export function AppShell({ children }: PropsWithChildren) {
           overflowY="auto"
           px={{ base: "4", sm: "5", md: "10" }}
         >
-          {children}
+          <Box maxW={{ base: "900px", xl: "1100px", "2xl": "1400px" }} mx="auto">
+            {children}
+          </Box>
         </Box>
       </Flex>
     </Flex>
