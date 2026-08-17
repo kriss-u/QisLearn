@@ -14,7 +14,9 @@ export interface CircuitDiagramProps {
 
 const COLUMN_WIDTH = 72;
 const ROW_HEIGHT = 64;
-const LEFT_MARGIN = 40;
+const MIN_LEFT_MARGIN = 40;
+const LABEL_CHAR_WIDTH = 7.8;
+const LABEL_PADDING = 16;
 const TOP_MARGIN = 28;
 const GATE_SIZE = 40;
 const CLASSICAL_GAP = 56;
@@ -171,10 +173,13 @@ export const CircuitDiagram = forwardRef<SVGSVGElement, CircuitDiagramProps>(fun
   const latex = useVizLatex();
 
   const { columns, columnOf } = layoutColumns(circuit);
-  const width = LEFT_MARGIN + (columns + 1) * COLUMN_WIDTH;
   const measureGates = circuit.gates.filter((g) => g.gate.toLowerCase() === "measure");
 
   const qubitY = (q: number) => TOP_MARGIN + q * ROW_HEIGHT + GATE_SIZE / 2;
+
+  const qubitLabels = Array.from({ length: circuit.numQubits }, (_, q) =>
+    circuit.qubitLabels?.[q] ?? defaultQubitLabel(q, circuit.numQubits),
+  );
 
   /**
    * One wire per classical register. If the circuit declares explicit
@@ -205,6 +210,14 @@ export const CircuitDiagram = forwardRef<SVGSVGElement, CircuitDiagramProps>(fun
     return registers.find((r) => clbit >= r.offset && clbit < r.offset + r.size) ?? registers[0];
   }
 
+  const maxLabelChars = Math.max(
+    0,
+    ...qubitLabels.map((label) => label.length),
+    ...registers.map((r) => r.name.length),
+  );
+  const leftMargin = Math.max(MIN_LEFT_MARGIN, LABEL_PADDING + maxLabelChars * LABEL_CHAR_WIDTH);
+  const width = leftMargin + (columns + 1) * COLUMN_WIDTH;
+
   const height =
     TOP_MARGIN * 2 +
     (circuit.numQubits - 1) * ROW_HEIGHT +
@@ -232,7 +245,7 @@ export const CircuitDiagram = forwardRef<SVGSVGElement, CircuitDiagramProps>(fun
             return (
               <g key={`wire-${q}`}>
                 <line
-                  x1={LEFT_MARGIN}
+                  x1={leftMargin}
                   y1={qubitY(q)}
                   x2={width - COLUMN_WIDTH / 2}
                   y2={qubitY(q)}
@@ -243,7 +256,7 @@ export const CircuitDiagram = forwardRef<SVGSVGElement, CircuitDiagramProps>(fun
                   <SvgKatexLabel
                     x={0}
                     y={qubitY(q)}
-                    width={LEFT_MARGIN - 6}
+                    width={leftMargin - 6}
                     height={20}
                     align="start"
                     tex={qubitLatex(q, circuit.numQubits)}
@@ -262,7 +275,7 @@ export const CircuitDiagram = forwardRef<SVGSVGElement, CircuitDiagramProps>(fun
           {registers.map((reg, i) => (
             <g key={`creg-${i}`}>
               <line
-                x1={LEFT_MARGIN}
+                x1={leftMargin}
                 y1={reg.y - CLASSICAL_LINE_OFFSET}
                 x2={width - COLUMN_WIDTH / 2}
                 y2={reg.y - CLASSICAL_LINE_OFFSET}
@@ -270,14 +283,14 @@ export const CircuitDiagram = forwardRef<SVGSVGElement, CircuitDiagramProps>(fun
                 strokeWidth={1.5}
               />
               <line
-                x1={LEFT_MARGIN}
+                x1={leftMargin}
                 y1={reg.y + CLASSICAL_LINE_OFFSET}
                 x2={width - COLUMN_WIDTH / 2}
                 y2={reg.y + CLASSICAL_LINE_OFFSET}
                 stroke={wireColor}
                 strokeWidth={1.5}
               />
-              <ClassicalRegisterCut x={LEFT_MARGIN + 14} y={reg.y} size={reg.size} color={textColor} />
+              <ClassicalRegisterCut x={leftMargin + 14} y={reg.y} size={reg.size} color={textColor} />
               <text x={0} y={reg.y + 5} fontSize={13} fill={textColor} fontFamily={MONO_FONT} fontWeight={600}>
                 {reg.name}
               </text>
@@ -285,7 +298,7 @@ export const CircuitDiagram = forwardRef<SVGSVGElement, CircuitDiagramProps>(fun
           ))}
 
           {circuit.gates.map((gate, index) => {
-            const x = LEFT_MARGIN + (columnOf[index] + 0.75) * COLUMN_WIDTH;
+            const x = leftMargin + (columnOf[index] + 0.75) * COLUMN_WIDTH;
             const isActive = activeGateIndex === index;
             const name = gate.gate.toLowerCase();
 

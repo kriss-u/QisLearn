@@ -28,9 +28,9 @@ Now put a second qubit — the **control** — into superposition with `H`, and 
 from qiskit import QuantumCircuit
 
 qc = QuantumCircuit(2)
-qc.x(1)    # ancilla -> |1>
-qc.h(1)    # ancilla -> |->
-qc.h(0)    # control -> |+>
+qc.x(1)    # ancilla -> |1⟩
+qc.h(1)    # ancilla -> |−⟩
+qc.h(0)    # control -> |+⟩
 qc.cx(0, 1)
 ```
 

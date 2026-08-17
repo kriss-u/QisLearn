@@ -32,11 +32,11 @@ export interface VisualizationProps {
 
 const DEFAULT_VIEWS: VisualizationView[] = ["circuit", "statevector"];
 
-function BlochQubitLabel({ index, numQubits }: { index: number; numQubits: number }) {
+function BlochQubitLabel({ index, numQubits, label }: { index: number; numQubits: number; label?: string }) {
   const latex = useVizLatex();
   return (
     <Text fontSize="sm" fontFamily="mono" fontWeight="semibold" color="colorPalette.fg">
-      {latex ? <KatexSpan tex={qubitLatex(index, numQubits)} /> : defaultQubitLabel(index, numQubits)}
+      {label ?? (latex ? <KatexSpan tex={qubitLatex(index, numQubits)} /> : defaultQubitLabel(index, numQubits))}
     </Text>
   );
 }
@@ -209,7 +209,7 @@ export function Visualization({ title, description, circuit, views = DEFAULT_VIE
                   {Array.from({ length: circuit.numQubits }, (_, q) => (
                     <VStack key={q} gap="3">
                       <HStack justify="space-between" w="full">
-                        <BlochQubitLabel index={q} numQubits={circuit.numQubits} />
+                        <BlochQubitLabel index={q} numQubits={circuit.numQubits} label={circuit.qubitLabels?.[q]} />
                         <VizActions onCopy={() => handleBlochCopy(q)} onDownload={() => handleBlochDownload(q)} />
                       </HStack>
                       <Suspense fallback={<Skeleton h="320px" rounded="l3" w="full" />}>

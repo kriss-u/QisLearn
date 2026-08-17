@@ -46,7 +46,7 @@ function BlochScene({
 }) {
   const [x, y, z] = vector;
   const latex = useVizLatex();
-  // Bloch (x, y, z) -> three.js (x, z, y) so the |0> pole points up.
+  // Bloch (x, y, z) -> three.js (x, z, y) so the |0⟩ pole points up.
   const tip: [number, number, number] = [x, z, y];
 
   return (
