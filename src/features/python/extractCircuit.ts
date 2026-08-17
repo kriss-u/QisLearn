@@ -484,7 +484,7 @@ export function extractCircuit(source: string): ExtractResult {
           continue;
         }
         if (node.args.length === 1) {
-          const broadcastQubits = resolveIndexList(node.args[0], resolveQubitIndex);
+          const broadcastQubits = resolveQubitSet(node.args[0]);
           if (broadcastQubits) {
             if (broadcastQubits.length === 0) {
               reportMissingQubit(`${circuitVar}.${attr}(qubit)`);
