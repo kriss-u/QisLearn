@@ -1,4 +1,4 @@
-import { Box, IconButton } from "@chakra-ui/react";
+import { Box, HStack, IconButton, Text } from "@chakra-ui/react";
 import { python } from "@codemirror/lang-python";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { EditorView } from "@codemirror/view";
@@ -37,42 +37,38 @@ export function PyEditor({
   }
 
   return (
-    <Box
-      position="relative"
-      borderWidth="1px"
-      borderColor="border"
-      rounded="l3"
-      overflow="hidden"
-      fontFamily="mono"
-      fontSize="sm"
-    >
-      <IconButton
-        className="no-print"
-        aria-label="Copy code"
-        size="xs"
-        variant="ghost"
-        position="absolute"
-        top="2"
-        right="2"
-        zIndex="1"
-        onClick={handleCopy}
+    <Box>
+      <HStack className="no-print" justify="space-between" mb="1">
+        <Text fontSize="xs" fontWeight="semibold" textTransform="uppercase" letterSpacing="wide" color="fg.muted">
+          Python
+        </Text>
+        <IconButton aria-label="Copy code" size="xs" variant="ghost" onClick={handleCopy}>
+          {copied ? <LuCheck /> : <LuCopy />}
+        </IconButton>
+      </HStack>
+      <Box
+        borderWidth="1px"
+        borderColor="border"
+        rounded="l3"
+        overflow="hidden"
+        fontFamily="mono"
+        fontSize="sm"
       >
-        {copied ? <LuCheck /> : <LuCopy />}
-      </IconButton>
-      <CodeMirror
-        value={value}
-        onChange={onChange}
-        minHeight={minHeight}
-        theme={colorMode === "dark" ? oneDark : "light"}
-        extensions={[python(), fontTheme]}
-        readOnly={readOnly}
-        basicSetup={{
-          lineNumbers: showLineNumbers,
-          foldGutter: false,
-          highlightActiveLine: !readOnly,
-          highlightActiveLineGutter: !readOnly,
-        }}
-      />
+        <CodeMirror
+          value={value}
+          onChange={onChange}
+          minHeight={minHeight}
+          theme={colorMode === "dark" ? oneDark : "light"}
+          extensions={[python(), fontTheme]}
+          readOnly={readOnly}
+          basicSetup={{
+            lineNumbers: showLineNumbers,
+            foldGutter: false,
+            highlightActiveLine: !readOnly,
+            highlightActiveLineGutter: !readOnly,
+          }}
+        />
+      </Box>
     </Box>
   );
 }
