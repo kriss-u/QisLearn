@@ -103,17 +103,21 @@ export function CodeExercise({ id: exerciseId, prompt, starterCode, expectedCirc
     });
   }
 
+  const solved = result?.ok === true;
+
   return (
-    <MdxCard eyebrow="Exercise" icon={<LuCode />}>
+    <MdxCard eyebrow="Exercise" icon={<LuCode />} className={solved ? undefined : "no-print"}>
       <Box color="fg.muted" fontSize="md">
         <Markdown inline>{prompt}</Markdown>
       </Box>
 
-      <Suspense fallback={<Skeleton h="220px" rounded="l3" />}>
-        <PyEditor value={code} onChange={handleCodeChange} readOnly={result?.ok === true} />
-      </Suspense>
+      <Box className="no-print">
+        <Suspense fallback={<Skeleton h="220px" rounded="l3" />}>
+          <PyEditor value={code} onChange={handleCodeChange} readOnly={result?.ok === true} />
+        </Suspense>
+      </Box>
 
-      <HStack gap="3">
+      <HStack className="no-print" gap="3">
         <Button colorPalette="quantum" onClick={handleCheck} disabled={result?.ok === true}>
           Check my circuit
         </Button>
@@ -129,7 +133,7 @@ export function CodeExercise({ id: exerciseId, prompt, starterCode, expectedCirc
       </HStack>
 
       {result && (
-        <Alert.Root status={result.ok ? "success" : "error"} rounded="l2">
+        <Alert.Root className="no-print" status={result.ok ? "success" : "error"} rounded="l2">
           <Alert.Indicator />
           <Alert.Content>
             {result.messages.map((message, i) => (
@@ -144,7 +148,7 @@ export function CodeExercise({ id: exerciseId, prompt, starterCode, expectedCirc
           {(latexAction) => {
             const previewCircuit = extracted.circuit!;
             return (
-              <Box>
+              <Box className="no-print">
                 <HStack justify="space-between" mb="2">
                   <Text fontSize="xs" color="fg.muted">
                     Live preview of the circuit detected in your code
@@ -161,8 +165,30 @@ export function CodeExercise({ id: exerciseId, prompt, starterCode, expectedCirc
         </VizLatexToggle>
       )}
 
+      {solved && extracted.circuit && extracted.circuit.numQubits > 0 && (
+        <Box className="print-only">
+          <Text fontSize="xs" color="fg.muted" mb="2">
+            Solution
+          </Text>
+          <Text
+            as="pre"
+            fontSize="sm"
+            fontFamily="mono"
+            whiteSpace="pre-wrap"
+            borderWidth="1px"
+            borderColor="border"
+            rounded="l2"
+            p="3"
+            mb="4"
+          >
+            {code}
+          </Text>
+          <CircuitDiagram circuit={extracted.circuit} />
+        </Box>
+      )}
+
       {hints.length > 0 && (
-        <Accordion.Root collapsible variant="enclosed">
+        <Accordion.Root className="no-print" collapsible variant="enclosed">
           <Accordion.Item value="hints">
             <Accordion.ItemTrigger>
               <Text fontSize="sm" fontWeight="medium">

@@ -7,3 +7,31 @@ body,
 body {
   margin: 0;
 }
+
+.print-only {
+  display: none;
+}
+
+@media print {
+  .print-only {
+    display: block;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  html,
+  body,
+  #root,
+  .app-shell-root,
+  .app-shell-col,
+  .app-shell-main {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  body {
+    margin: 0;
+  }
+}

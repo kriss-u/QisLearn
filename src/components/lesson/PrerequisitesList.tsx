@@ -20,7 +20,7 @@ export function PrerequisitesList({ prerequisiteIds }: { prerequisiteIds: string
   if (prerequisiteIds.length === 0) return null;
 
   return (
-    <Box mb="8" p="4" rounded="l3" borderWidth="1px" borderColor="border" bg="bg.subtle">
+    <Box className="no-print" mb="8" p="4" rounded="l3" borderWidth="1px" borderColor="border" bg="bg.subtle">
       <Text fontSize="sm" fontWeight="medium" mb="2.5">
         Suggested before this lesson
       </Text>

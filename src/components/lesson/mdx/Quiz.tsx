@@ -87,7 +87,7 @@ export function Quiz({ id: quizId, question, choices, explanation }: QuizProps) 
         </VStack>
       </RadioCard.Root>
 
-      <HStack>
+      <HStack className="no-print">
         <Button colorPalette="quantum" disabled={!selected || checked} onClick={handleSubmit}>
           Submit answer
         </Button>

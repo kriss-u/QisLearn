@@ -1,5 +1,5 @@
 import { Badge, Box, Flex, HStack, Heading, Separator, Text, VStack } from "@chakra-ui/react";
-import type { PropsWithChildren } from "react";
+import { useEffect, type PropsWithChildren } from "react";
 import { Link, useParams } from "react-router";
 import { lessonsByTrack } from "../../content";
 import { useProgressStore } from "../../store/progressStore";
@@ -19,9 +19,37 @@ export function AppShell({ children }: PropsWithChildren) {
   const { lessonId } = useParams();
   const statusByLesson = useProgressStore((s) => s.statusByLesson);
 
+  useEffect(() => {
+    const root = document.documentElement;
+
+    function forceLightForPrint() {
+      if (root.classList.contains("dark")) {
+        root.dataset.printRestoreDark = "true";
+        root.classList.remove("dark");
+        root.classList.add("light");
+      }
+    }
+
+    function restoreThemeAfterPrint() {
+      if (root.dataset.printRestoreDark) {
+        delete root.dataset.printRestoreDark;
+        root.classList.remove("light");
+        root.classList.add("dark");
+      }
+    }
+
+    window.addEventListener("beforeprint", forceLightForPrint);
+    window.addEventListener("afterprint", restoreThemeAfterPrint);
+    return () => {
+      window.removeEventListener("beforeprint", forceLightForPrint);
+      window.removeEventListener("afterprint", restoreThemeAfterPrint);
+    };
+  }, []);
+
   return (
-    <Flex h="100dvh" bg="bg">
+    <Flex className="app-shell-root" h="100dvh" bg="bg">
       <Flex
+        className="no-print"
         as="nav"
         direction="column"
         w="300px"
@@ -120,8 +148,9 @@ export function AppShell({ children }: PropsWithChildren) {
         </Box>
       </Flex>
 
-      <Flex direction="column" flex="1" minW="0" h="100%">
+      <Flex className="app-shell-col" direction="column" flex="1" minW="0" h="100%">
         <HStack
+          className="no-print"
           as="header"
           h="16"
           flexShrink={0}
@@ -144,7 +173,7 @@ export function AppShell({ children }: PropsWithChildren) {
           <LatexModeButton />
           <ColorModeButton />
         </HStack>
-        <Box as="main" flex="1" minH="0" overflowY="auto" px={{ base: "5", md: "10" }}>
+        <Box as="main" className="app-shell-main" flex="1" minH="0" overflowY="auto" px={{ base: "5", md: "10" }}>
           {children}
         </Box>
       </Flex>

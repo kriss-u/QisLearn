@@ -47,6 +47,7 @@ export function PyEditor({
       fontSize="sm"
     >
       <IconButton
+        className="no-print"
         aria-label="Copy code"
         size="xs"
         variant="ghost"

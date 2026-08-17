@@ -1,7 +1,7 @@
 import katex from "katex";
 import "katex/dist/katex.min.css";
 import { createContext, useContext, useMemo, useState, type HTMLAttributes, type ReactNode } from "react";
-import { IconButton } from "@chakra-ui/react";
+import { Box, IconButton } from "@chakra-ui/react";
 import { LuSigma } from "react-icons/lu";
 import { useSettingsStore } from "../../store/settingsStore";
 import { Tooltip } from "../ui/tooltip";
@@ -76,11 +76,13 @@ export function VizLatexToggle({ children }: { children: (action: ReactNode) => 
 
   const label = resolved ? "Use plain-text labels for this card" : "Use LaTeX-style labels for this card";
   const action = (
-    <Tooltip content={label}>
-      <IconButton aria-label={label} size="xs" variant={resolved ? "subtle" : "ghost"} onClick={() => setOverride(!resolved)}>
-        <LuSigma />
-      </IconButton>
-    </Tooltip>
+    <Box className="no-print" as="span">
+      <Tooltip content={label}>
+        <IconButton aria-label={label} size="xs" variant={resolved ? "subtle" : "ghost"} onClick={() => setOverride(!resolved)}>
+          <LuSigma />
+        </IconButton>
+      </Tooltip>
+    </Box>
   );
 
   return <VizLatexOverrideContext.Provider value={override}>{children(action)}</VizLatexOverrideContext.Provider>;

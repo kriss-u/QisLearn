@@ -81,7 +81,7 @@ export function Measurement({ title, description, circuit, shotsOptions = DEFAUL
   }
 
   return (
-    <MdxCard eyebrow={title} icon={<LuDices />}>
+    <MdxCard eyebrow={title} icon={<LuDices />} className="no-print">
       {description && (
         <Text color="fg.muted" fontSize="md" mt="-2">
           <Markdown inline>{description}</Markdown>

@@ -135,7 +135,7 @@ export function Visualization({ title, description, circuit, views = DEFAULT_VIE
   }
 
   return (
-    <MdxCard eyebrow={title} icon={<LuAtom />}>
+    <MdxCard eyebrow={title} icon={<LuAtom />} className="no-print">
       {description && (
         <Box color="fg.muted" fontSize="md" mt="-2">
           <Markdown inline>{description}</Markdown>

@@ -1,10 +1,10 @@
-import { Box, Button, CloseButton, Dialog, HStack, Portal, Skeleton, Text } from "@chakra-ui/react";
+import { Box, Button, CloseButton, Container, Dialog, HStack, Portal, Skeleton, Text } from "@chakra-ui/react";
 import { Suspense, lazy, useMemo, useState } from "react";
 import { LuArrowRight } from "react-icons/lu";
 import { Navigate, useNavigate, useParams } from "react-router";
 import { getLesson, getNextLesson, loadLessonContent } from "../../content";
 import type { LessonFrontmatter } from "../../content/schema";
-import { LessonLayout } from "../../components/lesson/LessonLayout";
+import { LessonLayout, getLessonMaxWidth } from "../../components/lesson/LessonLayout";
 import { LessonProvider } from "../../components/lesson/LessonContext";
 import { PrerequisitesList } from "../../components/lesson/PrerequisitesList";
 import { LessonProgressProvider, useLessonProgress } from "../../components/lesson/LessonProgressContext";
@@ -95,11 +95,13 @@ export function LessonPage() {
             <Suspense fallback={<Skeleton h="50vh" rounded="l3" />}>
               <LessonContent components={mdxComponents} />
             </Suspense>
+          </LessonLayout>
 
+          <Container className="no-print" maxW={getLessonMaxWidth(lesson.layout)} px="0">
             <HStack justify="flex-end" mt="12" pt="6" borderTopWidth="1px" borderColor="border">
               <LessonNextAction lessonId={lesson.id} next={next} />
             </HStack>
-          </LessonLayout>
+          </Container>
         </LessonProgressProvider>
       </LessonProvider>
     </Box>

@@ -18,7 +18,7 @@ export function VizActions({ onCopy, onDownload }: VizActionsProps) {
   }
 
   return (
-    <HStack gap="1">
+    <HStack className="no-print" gap="1">
       <Tooltip content={copied ? "Copied!" : "Copy as image"}>
         <IconButton aria-label="Copy as image" size="xs" variant="ghost" onClick={handleCopy}>
           {copied ? <LuCheck /> : <LuCopy />}
@@ -50,7 +50,7 @@ export function VizFormatActions({ onCopyImage, onCopyCsv, onDownloadImage, onDo
   }
 
   return (
-    <HStack gap="1">
+    <HStack className="no-print" gap="1">
       <Menu.Root positioning={{ placement: "bottom-end" }}>
         <Menu.Trigger asChild>
           <IconButton aria-label={copied ? "Copied!" : "Copy"} size="xs" variant="ghost">
