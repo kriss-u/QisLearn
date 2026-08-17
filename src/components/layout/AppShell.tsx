@@ -1,4 +1,17 @@
-import { Badge, Box, Drawer, Flex, HStack, Heading, IconButton, Portal, Separator, Text, VStack } from "@chakra-ui/react";
+import {
+  Badge,
+  Box,
+  CloseButton,
+  Drawer,
+  Flex,
+  HStack,
+  Heading,
+  IconButton,
+  Portal,
+  Separator,
+  Text,
+  VStack,
+} from "@chakra-ui/react";
 import type { PropsWithChildren } from "react";
 import { useState } from "react";
 import { LuMenu } from "react-icons/lu";
@@ -117,9 +130,8 @@ export function AppShell({ children }: PropsWithChildren) {
         position="sticky"
         top="0"
         borderRightWidth="1px"
-        borderColor="border.glass"
-        bg="bg.glass"
-        backdropFilter="blur(16px)"
+        borderColor="border"
+        bg="bg.panel"
         display={{ base: "none", md: "block" }}
       >
         <NavContent />
@@ -129,7 +141,10 @@ export function AppShell({ children }: PropsWithChildren) {
         <Portal>
           <Drawer.Backdrop />
           <Drawer.Positioner>
-            <Drawer.Content bg="bg.glass" backdropFilter="blur(16px)">
+            <Drawer.Content bg="bg.panel">
+              <Drawer.CloseTrigger asChild position="absolute" top="4" right="4" zIndex="1">
+                <CloseButton size="sm" />
+              </Drawer.CloseTrigger>
               <NavContent onNavigate={() => setNavOpen(false)} />
             </Drawer.Content>
           </Drawer.Positioner>
@@ -162,10 +177,11 @@ export function AppShell({ children }: PropsWithChildren) {
             >
               <LuMenu />
             </IconButton>
-            <Link to="/">
-              <Heading size="sm" display={{ base: "block", md: "none" }}>
-                QisLearn
-              </Heading>
+            <Link to="/" style={{ display: "contents" }}>
+              <HStack gap="2" display={{ base: "flex", md: "none" }}>
+                <Logo boxSize="6" flexShrink={0} />
+                <Heading size="sm">QisLearn</Heading>
+              </HStack>
             </Link>
           </HStack>
           <Box flex="1" />
