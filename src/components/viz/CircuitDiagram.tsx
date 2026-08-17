@@ -219,19 +219,6 @@ export function CircuitDiagram({ circuit, activeGateIndex, showLegend = true }: 
             </g>
           ))}
 
-          {circuit.gates.length === 0 && (
-            <text
-              x={LEFT_MARGIN + 12}
-              y={qubitY(0) + 5}
-              fontSize={13}
-              fill={textColor}
-              opacity={0.5}
-              fontStyle="italic"
-            >
-              (no gates — identity circuit)
-            </text>
-          )}
-
           {circuit.gates.map((gate, index) => {
             const x = LEFT_MARGIN + (columnOf[index] + 0.75) * COLUMN_WIDTH;
             const isActive = activeGateIndex === index;

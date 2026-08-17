@@ -125,7 +125,7 @@ export function CodeExercise({ id: exerciseId, prompt, starterCode, expectedCirc
         </Alert.Root>
       )}
 
-      {extracted.circuit && extracted.circuit.gates.length > 0 && (
+      {extracted.circuit && extracted.circuit.numQubits > 0 && (
         <Box>
           <Text fontSize="xs" color="fg.muted" mb="2">
             Live preview of the circuit detected in your code
