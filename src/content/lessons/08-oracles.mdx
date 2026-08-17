@@ -8,17 +8,17 @@ layout: theory-heavy
 prerequisites: [algorithms-07-phase-kickback]
 ---
 
-Deutsch-Jozsa and Bernstein-Vazirani, the two algorithms this track builds toward, are both phrased as "you're given a black-box function $f$ — figure out a property of it using as few queries as possible." Before either algorithm makes sense, it's worth being precise about what that black box actually is as a circuit.
+Deutsch-Jozsa and Bernstein-Vazirani, the two algorithms this track builds toward, are both phrased as "you're given a black-box function $f$: figure out a property of it using as few queries as possible." Before either algorithm makes sense, it's worth being precise about what that black box actually is as a circuit.
 
 ## The Oracle Convention
 
-A classical function $f:\{0,1\}^n \to \{0,1\}$ isn't automatically something you can turn into a quantum gate — quantum gates are unitary, which means *reversible*: you must always be able to undo them. A generic classical function usually isn't reversible (many inputs can map to the same output), so you can't just "compute $f(x)$ and overwrite the answer."
+A classical function $f:\{0,1\}^n \to \{0,1\}$ isn't automatically something you can turn into a quantum gate: quantum gates are unitary, which means *reversible*: you must always be able to undo them. A generic classical function usually isn't reversible (many inputs can map to the same output), so you can't just "compute $f(x)$ and overwrite the answer."
 
-The standard fix is to never overwrite anything — XOR the result into a fresh **ancilla** qubit instead:
+The standard fix is to never overwrite anything: XOR the result into a fresh **ancilla** qubit instead:
 
 $$U_f: |x\rangle|y\rangle \longrightarrow |x\rangle|y \oplus f(x)\rangle$$
 
-$x$ (the input register) passes through unchanged. $y$ (the ancilla) comes out XORed with $f(x)$. This is always reversible — applying $U_f$ twice XORs $f(x)$ back out — no matter what $f$ itself does, which is exactly why it works as a gate even when $f$ isn't invertible.
+$x$ (the input register) passes through unchanged. $y$ (the ancilla) comes out XORed with $f(x)$. This is always reversible (applying $U_f$ twice XORs $f(x)$ back out), no matter what $f$ itself does, which is exactly why it works as a gate even when $f$ isn't invertible.
 
 <OracleFigure
   title="Uf as a Black Box"
@@ -31,7 +31,7 @@ $x$ (the input register) passes through unchanged. $y$ (the ancilla) comes out X
 
 ## Building One From X and CX
 
-For any $f$ that's a linear function of its inputs — $f(x_0, x_1, \ldots) = x_0 \oplus x_1 \oplus \ldots$ (XOR together whichever inputs the function actually depends on) — the oracle is just a `CX` from each relevant input qubit into the ancilla. Each `CX` flips the ancilla exactly when that one input is 1, and XOR is exactly "flip an odd number of times."
+For any $f$ that's a linear function of its inputs, $f(x_0, x_1, \ldots) = x_0 \oplus x_1 \oplus \ldots$ (XOR together whichever inputs the function actually depends on), the oracle is just a `CX` from each relevant input qubit into the ancilla. Each `CX` flips the ancilla exactly when that one input is 1, and XOR is exactly "flip an odd number of times."
 
 Take $f(x_0, x_1) = x_0 \oplus x_1$ over 2 input qubits, with qubit 2 as the ancilla:
 
@@ -45,12 +45,12 @@ qc.cx(1, 2)
 
 <Visualization
   title="Uf for f(x0, x1) = x0 ⊕ x1"
-  description="Set the input qubits (0, 1) and watch qubit 2 in the Exact State table — it lands on |0⟩ when the two inputs agree and |1⟩ when they differ, exactly XOR."
+  description="Set the input qubits (0, 1) and watch qubit 2 in the Exact State table: it lands on |0⟩ when the two inputs agree and |1⟩ when they differ, exactly XOR."
   circuit={{ numQubits: 3, gates: [{ gate: "cx", qubits: [0, 2] }, { gate: "cx", qubits: [1, 2] }] }}
   views={["circuit", "table"]}
 />
 
-This kind of $f$ — depends on some but not all inputs in a perfectly balanced way — is called a **balanced** function: exactly half of all possible inputs give $f(x)=0$ and half give $f(x)=1$. The other extreme is a **constant** function, $f(x) = 0$ for every $x$ (an oracle that does nothing at all) or $f(x)=1$ for every $x$ (an oracle that's just `X` on the ancilla, ignoring the input register completely). Constant vs. balanced is exactly the distinction Deutsch-Jozsa is built to tell apart.
+This kind of $f$ (depends on some but not all inputs in a perfectly balanced way) is called a **balanced** function: exactly half of all possible inputs give $f(x)=0$ and half give $f(x)=1$. The other extreme is a **constant** function, $f(x) = 0$ for every $x$ (an oracle that does nothing at all) or $f(x)=1$ for every $x$ (an oracle that's just `X` on the ancilla, ignoring the input register completely). Constant vs. balanced is exactly the distinction Deutsch-Jozsa is built to tell apart.
 
 <CodeExercise
   id="code-xor-oracle"
@@ -66,7 +66,7 @@ This kind of $f$ — depends on some but not all inputs in a perfectly balanced 
   hints={[
     "qc.cx(0, 2) first: qubit 0 controls, qubit 2 (the ancilla) is the target.",
     "Then qc.cx(1, 2): qubit 1 controls, same target.",
-    "Order matters here since both target the same ancilla — but for this particular f, either CX-first order actually computes the same XOR either way.",
+    "Order matters here since both target the same ancilla, but for this particular f, either CX-first order actually computes the same XOR either way.",
   ]}
 />
 
@@ -77,7 +77,7 @@ This kind of $f$ — depends on some but not all inputs in a perfectly balanced 
     { id: "a", text: "It's purely a stylistic convention with no real reason.", correct: false },
     {
       id: "b",
-      text: "Quantum gates must be reversible (unitary), and XOR-into-an-ancilla is always reversible no matter what f is — even when f itself loses information (many x map to the same output).",
+      text: "Quantum gates must be reversible (unitary), and XOR-into-an-ancilla is always reversible no matter what f is, even when f itself loses information (many x map to the same output).",
       correct: true,
     },
     { id: "c", text: "It makes the circuit shorter.", correct: false },

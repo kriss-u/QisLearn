@@ -8,21 +8,21 @@ layout: theory-heavy
 prerequisites: [algorithms-06-multi-qubit-superposition]
 ---
 
-This lesson is about a single trick — but it's the trick every algorithm from here through Deutsch-Jozsa is built on, so it earns a lesson of its own rather than being buried inside a bigger circuit.
+This lesson is about a single trick, but it's the trick every algorithm from here through Deutsch-Jozsa is built on, so it earns a lesson of its own rather than being buried inside a bigger circuit.
 
 ## Setting Up an Ancilla in |−⟩
 
-Recall $|-\rangle = \frac{1}{\sqrt{2}}(|0\rangle - |1\rangle)$ — you can reach it from $|0\rangle$ with `X` then `H`: the `X` flips to $|1\rangle$, then `H` turns that into $|-\rangle$ instead of $|+\rangle$.
+Recall $|-\rangle = \frac{1}{\sqrt{2}}(|0\rangle - |1\rangle)$: you can reach it from $|0\rangle$ with `X` then `H`, since the `X` flips to $|1\rangle$, then `H` turns that into $|-\rangle$ instead of $|+\rangle$.
 
-$|-\rangle$ has a property $|+\rangle$ doesn't: it's an **eigenstate of X with eigenvalue $-1$**. Applying `X` to $|-\rangle$ doesn't just permute it — it comes back multiplied by $-1$:
+$|-\rangle$ has a property $|+\rangle$ doesn't: it's an **eigenstate of X with eigenvalue $-1$**. Applying `X` to $|-\rangle$ doesn't just permute it; it comes back multiplied by $-1$:
 
 $$X|-\rangle = -|-\rangle$$
 
-Check it yourself: $X$ swaps the $|0\rangle$ and $|1\rangle$ amplitudes, and $|-\rangle$'s amplitudes are $\left(\frac{1}{\sqrt2}, -\frac{1}{\sqrt2}\right)$ — swapping them gives $\left(-\frac{1}{\sqrt2}, \frac{1}{\sqrt2}\right)$, which is $-1$ times the original. This one fact is the entire trick.
+Check it yourself: $X$ swaps the $|0\rangle$ and $|1\rangle$ amplitudes, and $|-\rangle$'s amplitudes are $\left(\frac{1}{\sqrt2}, -\frac{1}{\sqrt2}\right)$; swapping them gives $\left(-\frac{1}{\sqrt2}, \frac{1}{\sqrt2}\right)$, which is $-1$ times the original. This one fact is the entire trick.
 
 ## Kicking the Phase Back
 
-Now put a second qubit — the **control** — into superposition with `H`, and use it as the control of a `CX` targeting the ancilla (already sitting in $|-\rangle$). A `CX` applies `X` to its target *only on the branch where the control is* $|1\rangle$. So on that branch, the target picks up the $-1$ we just found — and since that branch is entangled with the control being $|1\rangle$, the $-1$ ends up multiplying the control's $|1\rangle$ amplitude instead of changing the ancilla at all.
+Now put a second qubit (the **control**) into superposition with `H`, and use it as the control of a `CX` targeting the ancilla (already sitting in $|-\rangle$). A `CX` applies `X` to its target *only on the branch where the control is* $|1\rangle$. So on that branch, the target picks up the $-1$ we just found, and since that branch is entangled with the control being $|1\rangle$, the $-1$ ends up multiplying the control's $|1\rangle$ amplitude instead of changing the ancilla at all.
 
 ```python
 from qiskit import QuantumCircuit
@@ -36,7 +36,7 @@ qc.cx(0, 1)
 
 <Visualization
   title="Phase Kickback"
-  description="Step through gate by gate. Watch qubit 1 (the ancilla) in the Exact State table — its own reduced behavior never changes after the H that prepares |−⟩. What changes is the sign of the joint amplitude wherever qubit 0 is |1⟩."
+  description="Step through gate by gate. Watch qubit 1 (the ancilla) in the Exact State table: its own reduced behavior never changes after the H that prepares |−⟩. What changes is the sign of the joint amplitude wherever qubit 0 is |1⟩."
   circuit={{
     numQubits: 2,
     qubitLabels: ["control", "ancilla"],
@@ -50,7 +50,7 @@ qc.cx(0, 1)
   views={["circuit", "table", "bloch"]}
 />
 
-Before the `CX`, the control sits at $|+\rangle$ on its Bloch sphere. After it, the control has moved to $|-\rangle$ — even though the `CX` gate is *defined* as something that acts on the target, not the control. The ancilla, meanwhile, is exactly where it started: $|-\rangle$, untouched. The effect of the gate has been "kicked back" from the target onto the control's phase. This is **phase kickback**.
+Before the `CX`, the control sits at $|+\rangle$ on its Bloch sphere. After it, the control has moved to $|-\rangle$, even though the `CX` gate is *defined* as something that acts on the target, not the control. The ancilla, meanwhile, is exactly where it started: $|-\rangle$, untouched. The effect of the gate has been "kicked back" from the target onto the control's phase. This is **phase kickback**.
 
 <CodeExercise
   id="code-phase-kickback"
@@ -68,22 +68,22 @@ Before the `CX`, the control sits at $|+\rangle$ on its Bloch sphere. After it, 
   hints={[
     "Ancilla first: qc.x(1) then qc.h(1) to reach |−⟩ on qubit 1.",
     "Then qc.h(0) to put the control in superposition.",
-    "Finally qc.cx(0, 1) — control=0, target=1.",
+    "Finally qc.cx(0, 1): control=0, target=1.",
   ]}
 />
 
 ## Why This Matters
 
-Every oracle-based algorithm coming up — Deutsch-Jozsa and Bernstein-Vazirani — queries a "black box" function via exactly this pattern: an ancilla parked in $|-\rangle$, and controls (the qubits you actually care about) that pick up a phase of $-1$ whenever the function says "flip." Because the ancilla itself never has to be measured or even change, a single query can imprint information about the function onto the *phase* of every qubit in your input register simultaneously — information a later round of Hadamards can then turn back into readable probabilities.
+Every oracle-based algorithm coming up (Deutsch-Jozsa and Bernstein-Vazirani) queries a "black box" function via exactly this pattern: an ancilla parked in $|-\rangle$, and controls (the qubits you actually care about) that pick up a phase of $-1$ whenever the function says "flip." Because the ancilla itself never has to be measured or even change, a single query can imprint information about the function onto the *phase* of every qubit in your input register simultaneously, information a later round of Hadamards can then turn back into readable probabilities.
 
 <Quiz
   id="quiz-phase-kickback-target"
   question="After the CX in the circuit above, what happened to qubit 1 (the ancilla)?"
   choices={[
     { id: "a", text: "It flipped to |+⟩.", correct: false },
-    { id: "b", text: "It's still |−⟩ — completely unchanged, since X|−⟩ = −|−⟩ just reproduces the same state times a global-looking factor that lands on the control instead.", correct: true },
+    { id: "b", text: "It's still |−⟩: completely unchanged, since X|−⟩ = −|−⟩ just reproduces the same state times a global-looking factor that lands on the control instead.", correct: true },
     { id: "c", text: "It became entangled and has no well-defined single-qubit state.", correct: false },
     { id: "d", text: "It collapsed to |1⟩.", correct: false },
   ]}
-  explanation="X|−⟩ = −|−⟩ means applying X to |−⟩ reproduces |−⟩ exactly, times −1. Because that −1 only appears on the control=|1⟩ branch, it attaches to the control's amplitude, not the ancilla's state — the ancilla is left exactly as it was."
+  explanation="X|−⟩ = −|−⟩ means applying X to |−⟩ reproduces |−⟩ exactly, times −1. Because that −1 only appears on the control=|1⟩ branch, it attaches to the control's amplitude, not the ancilla's state: the ancilla is left exactly as it was."
 />

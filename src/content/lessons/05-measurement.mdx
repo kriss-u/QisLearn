@@ -8,17 +8,17 @@ layout: lab
 prerequisites: [basics-04-circuit-arguments]
 ---
 
-Every visualization so far has shown you the *exact* state of a circuit — the precise amplitudes, computed directly. A real quantum computer will never hand you that. All it gives you is measurement outcomes, one bit per qubit, and you have to run the circuit over and over to see the underlying pattern. This lesson is about that gap.
+Every visualization so far has shown you the *exact* state of a circuit: the precise amplitudes, computed directly. A real quantum computer will never hand you that. All it gives you is measurement outcomes, one bit per qubit, and you have to run the circuit over and over to see the underlying pattern. This lesson is about that gap.
 
 ## Why Measurement Is Special
 
-Measuring a qubit forces it out of superposition into a single classical outcome — $0$ or $1$ — with probability given by the amplitudes you already know: $|\alpha|^2$ for $|0\rangle$, $|\beta|^2$ for $|1\rangle$. This is called **collapse**, and it's a one-way door: once measured, the superposition is gone. Measure the same qubit again immediately after and you'll get the same result every time, with certainty.
+Measuring a qubit forces it out of superposition into a single classical outcome ($0$ or $1$) with probability given by the amplitudes you already know: $|\alpha|^2$ for $|0\rangle$, $|\beta|^2$ for $|1\rangle$. This is called **collapse**, and it's a one-way door: once measured, the superposition is gone. Measure the same qubit again immediately after and you'll get the same result every time, with certainty.
 
-This is fundamentally different from reading a classical bit. Checking a classical bit's value doesn't change it. Checking a qubit's value *is* what produces a definite value in the first place — before that, "0 or 1" wasn't a fact about the qubit waiting to be read, it was genuinely undetermined.
+This is fundamentally different from reading a classical bit. Checking a classical bit's value doesn't change it. Checking a qubit's value *is* what produces a definite value in the first place: before that, "0 or 1" wasn't a fact about the qubit waiting to be read, it was genuinely undetermined.
 
 ## Classical Registers and `.measure()`
 
-You've already met `ClassicalRegister` — this is what it's for. `.measure(qubit, clbit)` measures a qubit and writes the classical outcome ($0$ or $1$) into a classical bit:
+You've already met `ClassicalRegister`: this is what it's for. `.measure(qubit, clbit)` measures a qubit and writes the classical outcome ($0$ or $1$) into a classical bit:
 
 ```python
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
@@ -43,13 +43,13 @@ qc.measure(0, 0)
   }}
   hints={[
     "qc.h(0) first, to actually have something interesting to measure.",
-    "Then qc.measure(0, 0) — qubit 0 into classical bit 0.",
+    "Then qc.measure(0, 0): qubit 0 into classical bit 0.",
   ]}
 />
 
 ## Measuring Many Qubits at Once
 
-`.measure()` doesn't only take a single qubit and a single classical bit — it accepts the same shapes any Qiskit list-like argument does, as long as the qubit list and classical-bit list are the same length:
+`.measure()` doesn't only take a single qubit and a single classical bit; it accepts the same shapes any Qiskit list-like argument does, as long as the qubit list and classical-bit list are the same length:
 
 ```python
 qc.measure([0, 1], [0, 1])       # a list of qubits, a list of clbits
@@ -57,7 +57,7 @@ qc.measure(range(3), range(3))   # range(...) works too
 qc.measure(qr, cr)               # or a whole register: every qubit in qr, in order, into every bit in cr
 ```
 
-Mismatched lengths — say, three qubits but two classical bits — is exactly the kind of thing real Qiskit refuses to run, and this course's checker refuses it too, for the same reason: it genuinely doesn't know which classical bit the third qubit's result should go to.
+Mismatched lengths (say, three qubits but two classical bits) is exactly the kind of thing real Qiskit refuses to run, and this course's checker refuses it too, for the same reason: it genuinely doesn't know which classical bit the third qubit's result should go to.
 
 ## Shortcuts: `measure_all()` and `measure_active()`
 
@@ -68,19 +68,19 @@ qc.measure_all()      # measures every qubit, into a brand-new classical registe
 qc.measure_active()   # measures only qubits some gate has actually touched, into a new register sized to that count
 ```
 
-`measure_active()` is handy for circuits where you've allocated more qubits than you ended up using — it skips the untouched ones rather than measuring qubits that never did anything.
+`measure_active()` is handy for circuits where you've allocated more qubits than you ended up using; it skips the untouched ones rather than measuring qubits that never did anything.
 
-These are worth recognizing when you read other people's code, but this course's exercises stick to the explicit `.measure(qubit, clbit)` form you just practiced above — it says exactly which qubit goes to which classical bit, with nothing implicit, which makes it the clearest way to *learn* measurement even once `measure_all()` becomes the one you reach for day to day.
+These are worth recognizing when you read other people's code, but this course's exercises stick to the explicit `.measure(qubit, clbit)` form you just practiced above: it says exactly which qubit goes to which classical bit, with nothing implicit, which makes it the clearest way to *learn* measurement even once `measure_all()` becomes the one you reach for day to day.
 
 ## One Shot Isn't Enough
 
-Here's the problem: a single run of the circuit above gives you exactly one bit — a $0$ or a $1$. That single outcome tells you almost nothing about whether the qubit was 50/50, or 90/10, or anything else. It's like trying to judge whether a coin is fair from a single flip.
+Here's the problem: a single run of the circuit above gives you exactly one bit: a $0$ or a $1$. That single outcome tells you almost nothing about whether the qubit was 50/50, or 90/10, or anything else. It's like trying to judge whether a coin is fair from a single flip.
 
-The fix is the same as with a coin: flip it a lot of times and look at the fraction of heads. In quantum computing, one full run of a circuit — prepare, evolve, measure — is called a **shot**. Run the circuit for many shots, tally up how often each outcome occurred, and that tally approximates the true probabilities. More shots means less noise, exactly like more coin flips means a more reliable estimate of its bias.
+The fix is the same as with a coin: flip it a lot of times and look at the fraction of heads. In quantum computing, one full run of a circuit (prepare, evolve, measure) is called a **shot**. Run the circuit for many shots, tally up how often each outcome occurred, and that tally approximates the true probabilities. More shots means less noise, exactly like more coin flips means a more reliable estimate of its bias.
 
 ## Running on a Simulator: Qiskit Aer
 
-**Qiskit Aer** (`qiskit_aer`) is Qiskit's high-performance local simulator — the thing you run circuits on when you don't have (or don't need) real quantum hardware. The pattern is: build a circuit with measurements, hand it to a backend, ask for a number of shots, and read back the counts.
+**Qiskit Aer** (`qiskit_aer`) is Qiskit's high-performance local simulator: the thing you run circuits on when you don't have (or don't need) real quantum hardware. The pattern is: build a circuit with measurements, hand it to a backend, ask for a number of shots, and read back the counts.
 
 ```python
 from qiskit import QuantumCircuit
@@ -97,9 +97,9 @@ counts = job.result().get_counts()
 print(counts)   # e.g. {'00': 512, '11': 488}
 ```
 
-`counts` is a dictionary: each key is an observed bitstring, each value is how many of the `shots` runs produced it. Divide by `shots` and you get an estimate of the probability — the same probabilities the exact panels earlier in this course have been showing you directly.
+`counts` is a dictionary: each key is an observed bitstring, each value is how many of the `shots` runs produced it. Divide by `shots` and you get an estimate of the probability: the same probabilities the exact panels earlier in this course have been showing you directly.
 
-We can't run real Aer in your browser — there's no Python here, just a static checker for your circuits. But the sampling underneath the widget below works the same way: it draws random outcomes from this lesson's exact probabilities, exactly as if `AerSimulator` had run them.
+We can't run real Aer in your browser: there's no Python here, just a static checker for your circuits. But the sampling underneath the widget below works the same way: it draws random outcomes from this lesson's exact probabilities, exactly as if `AerSimulator` had run them.
 
 <Measurement
   title="Bell Pair: Counts vs. Exact Probability"
@@ -118,14 +118,14 @@ We can't run real Aer in your browser — there's no Python here, just a static 
   id="quiz-shots"
   question="You run a circuit with AerSimulator at shots=10 and get counts {'00': 7, '11': 3}. Is this circuit's true probability necessarily 70% / 30%?"
   choices={[
-    { id: "a", text: "Yes — the counts are the probabilities.", correct: false },
+    { id: "a", text: "Yes: the counts are the probabilities.", correct: false },
     {
       id: "b",
-      text: "Not necessarily — with only 10 shots the counts are a noisy estimate; more shots would narrow it down.",
+      text: "Not necessarily: with only 10 shots the counts are a noisy estimate; more shots would narrow it down.",
       correct: true,
     },
-    { id: "c", text: "No — you'd need to run it exactly 100 times to know.", correct: false },
+    { id: "c", text: "No: you'd need to run it exactly 100 times to know.", correct: false },
     { id: "d", text: "Counts are meaningless without Aer's noise model.", correct: false },
   ]}
-  explanation="10 shots is a small sample — the true probability could easily be 50/50 (or many other splits) and still produce 7/3 by chance. This is exactly the coin-flip problem: more shots narrow the estimate, they don't retroactively fix a small sample."
+  explanation="10 shots is a small sample: the true probability could easily be 50/50 (or many other splits) and still produce 7/3 by chance. This is exactly the coin-flip problem: more shots narrow the estimate, they don't retroactively fix a small sample."
 />

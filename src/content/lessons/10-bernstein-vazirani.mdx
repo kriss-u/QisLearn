@@ -12,13 +12,13 @@ Bernstein-Vazirani uses the *exact same circuit shape* as Deutsch-Jozsa. What ch
 
 ## The Problem
 
-You're given an oracle that computes $f(x) = s \cdot x \pmod 2$ (the bitwise dot product, mod 2) for some hidden bitstring $s$ you don't know. Classically, recovering all $n$ bits of $s$ takes $n$ separate queries — query $x = 100\ldots0$ and you learn $s_0$, query $x=010\ldots0$ and you learn $s_1$, and so on, one bit per query. Bernstein-Vazirani recovers the *entire* string $s$ in a **single query**.
+You're given an oracle that computes $f(x) = s \cdot x \pmod 2$ (the bitwise dot product, mod 2) for some hidden bitstring $s$ you don't know. Classically, recovering all $n$ bits of $s$ takes $n$ separate queries: query $x = 100\ldots0$ and you learn $s_0$, query $x=010\ldots0$ and you learn $s_1$, and so on, one bit per query. Bernstein-Vazirani recovers the *entire* string $s$ in a **single query**.
 
 ## The Oracle for a Linear f
 
-This is precisely the linear-oracle recipe from Lesson 8: `CX` from input qubit $i$ into the ancilla, for every $i$ where $s_i = 1$. Skip the `CX` entirely for any $i$ where $s_i = 0$ — that input never gets XORed in, exactly matching what $s \cdot x$ means.
+This is precisely the linear-oracle recipe from Lesson 8: `CX` from input qubit $i$ into the ancilla, for every $i$ where $s_i = 1$. Skip the `CX` entirely for any $i$ where $s_i = 0$: that input never gets XORed in, exactly matching what $s \cdot x$ means.
 
-Take the hidden string $s = (s_0, s_1) = (1, 1)$ over 2 input qubits, ancilla on qubit 2 — every input bit matters, so both `CX`s are present:
+Take the hidden string $s = (s_0, s_1) = (1, 1)$ over 2 input qubits, ancilla on qubit 2: every input bit matters, so both `CX`s are present:
 
 ```python
 from qiskit import QuantumCircuit
@@ -33,7 +33,7 @@ qc.h([0, 1])
 
 <Visualization
   title="Bernstein-Vazirani: s = (1, 1)"
-  description="Open the Exact State table below — exactly one row has nonzero probability for the input qubits, and its input bits match s directly, qubit by qubit."
+  description="Open the Exact State table below: exactly one row has nonzero probability for the input qubits, and its input bits match s directly, qubit by qubit."
   circuit={{
     numQubits: 3,
     qubitLabels: ["x0", "x1", "ancilla"],
@@ -51,7 +51,7 @@ qc.h([0, 1])
   views={["circuit", "table", "probabilities"]}
 />
 
-Unlike Deutsch-Jozsa's "is it all-zero or not," here every input qubit lands on a definite, predictable value: qubit $i$ measures $s_i$, with certainty, for every $i$ — one query and the whole string falls out. (Reading the basis-state label itself: this course writes kets as $|q_{n-1}\ldots q_1 q_0\rangle$, rightmost character is qubit 0 — the convention from way back in Lesson 1's Bloch-sphere work. It's simplest to just read the per-qubit values straight off the circuit rather than the label string.)
+Unlike Deutsch-Jozsa's "is it all-zero or not," here every input qubit lands on a definite, predictable value: qubit $i$ measures $s_i$, with certainty, for every $i$; one query and the whole string falls out. (Reading the basis-state label itself: this course writes kets as $|q_{n-1}\ldots q_1 q_0\rangle$, rightmost character is qubit 0, the convention from way back in Lesson 1's Bloch-sphere work. It's simplest to just read the per-qubit values straight off the circuit rather than the label string.)
 
 <CodeExercise
   id="code-bernstein-vazirani"
@@ -70,7 +70,7 @@ Unlike Deutsch-Jozsa's "is it all-zero or not," here every input qubit lands on 
     ],
   }}
   hints={[
-    "s0 = 0 means no CX from qubit 0 at all — only qubit 1 has s_i = 1.",
+    "s0 = 0 means no CX from qubit 0 at all: only qubit 1 has s_i = 1.",
     "So the oracle is just qc.cx(1, 2).",
     "Everything else is identical to Lesson 9's skeleton: X + broadcast H to set up, oracle in the middle, broadcast H on the input register to finish.",
   ]}
@@ -89,5 +89,5 @@ Unlike Deutsch-Jozsa's "is it all-zero or not," here every input qubit lands on 
     { id: "c", text: "Bernstein-Vazirani needs the ancilla and Deutsch-Jozsa doesn't.", correct: false },
     { id: "d", text: "Deutsch-Jozsa works for any n, but Bernstein-Vazirani only works for n = 1.", correct: false },
   ]}
-  explanation="The circuit shape (superposition, phase-kickback oracle query, interference, measure) is identical — what differs is the promise on f. Deutsch-Jozsa's f could be any constant-or-balanced function, so a single query only distinguishes those two cases (1 bit). Bernstein-Vazirani restricts to linear f = s·x specifically, which is structured enough that the same one query pins down all n bits of s at once."
+  explanation="The circuit shape (superposition, phase-kickback oracle query, interference, measure) is identical; what differs is the promise on f. Deutsch-Jozsa's f could be any constant-or-balanced function, so a single query only distinguishes those two cases (1 bit). Bernstein-Vazirani restricts to linear f = s·x specifically, which is structured enough that the same one query pins down all n bits of s at once."
 />

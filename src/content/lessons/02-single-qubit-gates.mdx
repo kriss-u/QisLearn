@@ -10,9 +10,9 @@ prerequisites: [basics-01-what-is-a-qubit]
 
 ## Building a Circuit
 
-So far you've built circuits the short way — `QuantumCircuit(1)` and go. Qiskit gives you a couple of other ways to do the same thing, and they're worth knowing before things get busier in later lessons.
+So far you've built circuits the short way: `QuantumCircuit(1)` and go. Qiskit gives you a couple of other ways to do the same thing, and they're worth knowing before things get busier in later lessons.
 
-**Give it a name.** Circuits (and the registers they're built from) can carry a `name`. It doesn't change what the circuit does — it just shows up wherever the circuit is drawn or inspected, which is handy once you're juggling more than one.
+**Give it a name.** Circuits (and the registers they're built from) can carry a `name`. It doesn't change what the circuit does; it just shows up wherever the circuit is drawn or inspected, which is handy once you're juggling more than one.
 
 ```python
 from qiskit import QuantumCircuit
@@ -20,7 +20,7 @@ from qiskit import QuantumCircuit
 qc = QuantumCircuit(1, name="my_first_circuit")
 ```
 
-**Build it from a register.** Instead of just handing `QuantumCircuit` a number of qubits, you can first create a named `QuantumRegister` and pass that in instead. A register is just a named, sized group of qubits — right now that group has one qubit in it, but this is the pattern you'll use once circuits need more.
+**Build it from a register.** Instead of just handing `QuantumCircuit` a number of qubits, you can first create a named `QuantumRegister` and pass that in instead. A register is just a named, sized group of qubits: right now that group has one qubit in it, but this is the pattern you'll use once circuits need more.
 
 ```python
 from qiskit import QuantumCircuit, QuantumRegister
@@ -29,7 +29,7 @@ qr = QuantumRegister(1, "q")
 qc = QuantumCircuit(qr, name="my_first_circuit")
 ```
 
-Both snippets above produce an equivalent one-qubit circuit — try either style in the exercises below and the checker will accept it. The live circuit preview under each exercise will pick up the name and register label if you use them, so you can see the effect immediately.
+Both snippets above produce an equivalent one-qubit circuit; try either style in the exercises below and the checker will accept it. The live circuit preview under each exercise will pick up the name and register label if you use them, so you can see the effect immediately.
 
 ## The Pauli-X Gate
 
@@ -42,7 +42,7 @@ qc = QuantumCircuit(1)
 qc.x(0)
 ```
 
-There's a second way to write that last line. `qc.x(0)` is really just a shortcut for **appending a gate object** to the circuit — and that's a pattern that works for every gate Qiskit has:
+There's a second way to write that last line. `qc.x(0)` is really just a shortcut for **appending a gate object** to the circuit, and that's a pattern that works for every gate Qiskit has:
 
 ```python
 from qiskit import QuantumCircuit
@@ -52,7 +52,7 @@ qc = QuantumCircuit(1)
 qc.append(XGate(), [0])
 ```
 
-`.append(gate, qubits)` is the general mechanism; `.x()`, `.h()`, `.cx()` and friends are just convenience methods built on top of it. You'll see both styles used in the wild — use whichever reads better to you.
+`.append(gate, qubits)` is the general mechanism; `.x()`, `.h()`, `.cx()` and friends are just convenience methods built on top of it. You'll see both styles used in the wild; use whichever reads better to you.
 
 <CodeExercise
   id="code-x-gate"
@@ -61,7 +61,7 @@ qc.append(XGate(), [0])
   expectedCircuit={{ numQubits: 1, gates: [{ gate: "x", qubits: [0] }] }}
   hints={[
     "Use qc.x(0) to apply a Pauli-X gate to qubit 0.",
-    "Or import XGate from qiskit.circuit.library and call qc.append(XGate(), [0]) — same result.",
+    "Or import XGate from qiskit.circuit.library and call qc.append(XGate(), [0]): same result.",
   ]}
 />
 
@@ -78,7 +78,7 @@ On the Bloch sphere, H rotates the state from the pole to the equator.
   prompt="Apply a Hadamard gate to qubit 0 to put it into an equal superposition."
   starterCode={`from qiskit import QuantumCircuit\n\nqc = QuantumCircuit(1)\n# your code here\n`}
   expectedCircuit={{ numQubits: 1, gates: [{ gate: "h", qubits: [0] }] }}
-  hints={["Use qc.h(0) — or qc.append(HGate(), [0]) if you imported HGate."]}
+  hints={["Use qc.h(0), or qc.append(HGate(), [0]) if you imported HGate."]}
 />
 
 ## Putting It Together: H Then Z
