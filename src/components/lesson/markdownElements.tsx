@@ -1,4 +1,4 @@
-import { Code, Heading, Link, List, Text } from "@chakra-ui/react";
+import { Code, Heading, Link, List, Table, Text } from "@chakra-ui/react";
 import type { Components } from "react-markdown";
 import { MarkdownCodeBlock } from "./MarkdownCodeBlock";
 
@@ -17,6 +17,16 @@ export const markdownElements: Components = {
   ol: (props) => <List.Root as="ol" mb="3" pl="5" {...props} />,
   li: (props) => <List.Item {...props} />,
   a: (props) => <Link colorPalette="quantum" color="colorPalette.fg" {...props} />,
+  table: (props) => (
+    <Table.ScrollArea mb="3" borderWidth="1px" rounded="md">
+      <Table.Root size="sm" variant="outline" {...props} />
+    </Table.ScrollArea>
+  ),
+  thead: (props) => <Table.Header {...props} />,
+  tbody: (props) => <Table.Body {...props} />,
+  tr: (props) => <Table.Row {...props} />,
+  th: (props) => <Table.ColumnHeader {...props} />,
+  td: (props) => <Table.Cell {...props} />,
   code: ({ children, className }) => {
     if (!className) return <Code fontSize="0.9em">{children}</Code>;
     const language = /language-(\w+)/.exec(className)?.[1];
