@@ -28,7 +28,7 @@
     "d3": "^7.9.0",
     "dexie": "^4.4.5",
     "framer-motion": "^13.1.0",
-    "katex": "^0.16.9",
+    "katex": "^0.18.4",
     "next-themes": "^0.4.6",
     "plotly.js": "^3.7.0",
     "py-ast": "^1.15.1",
@@ -46,6 +46,9 @@
     "yaml": "^2.9.0",
     "zod": "^4.4.3",
     "zustand": "^5.0.15"
+  },
+  "overrides": {
+    "katex": "^0.18.4"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
