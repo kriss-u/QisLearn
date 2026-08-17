@@ -16,13 +16,31 @@ is put together and the conventions to follow when changing it.
 
 ## Stack
 
-- **Build**: Vite 8 + `@vitejs/plugin-react`
+- **Build**: Vite 8 via React Router's framework-mode plugin (`@react-router/dev/vite`),
+  in SPA mode (`ssr: false` in `react-router.config.ts`, `appDirectory: "src/app"`) — no
+  server, still a purely static site. `npm run build` runs `react-router build` (which
+  writes `build/client` + a throwaway `build/server` used only to prerender the shell),
+  then flattens `build/client` into `dist/` and deletes `build/`, since Cloudflare Pages'
+  configured output directory is `dist`. Don't add `@vitejs/plugin-react` back alongside
+  `reactRouter()` — both inject a Fast Refresh runtime and collide in dev
+  (`Identifier 'RefreshRuntime' has already been declared`).
 - **Language**: TypeScript 7, React 19
 - **UI**: Chakra UI v3 (Ark UI + Panda CSS under the hood: compound component API,
   e.g. `Slider.Root` / `Slider.Track` / `Slider.Thumb`, not the old v2 monolithic
   components). Color mode via `next-themes`, see `src/components/ui/color-mode.tsx`
   (this is Chakra's official snippet, keep it as-is rather than refactoring).
-- **Routing**: `react-router` v8 (single package now, no `react-router-dom`)
+- **Routing**: `react-router` v8, framework mode (single package, no `react-router-dom`).
+  Routes are declared in `src/app/routes.ts`; `src/app/root.tsx` is the root layout
+  (HTML document `Layout` export + the default-exported `App` component that wraps
+  `<Outlet/>` in `AppShell`/`Provider` and runs the store-hydration effects). Route
+  modules (`src/app/pages/HomePage.tsx`, `LessonPage.tsx`) use a default export, per
+  framework-mode convention — framework mode code-splits each route automatically, so
+  there's no manual top-level `lazy()`/`Suspense` for routes. `LessonPage`'s *own*
+  per-lesson MDX content (`loadLessonContent`) is a separate, still-manual lazy-load
+  keyed on `lesson.id`, since switching `:lessonId` doesn't change which route matched.
+  `npm run dev` / `preview` now go through the `react-router` CLI / `serve -s dist`
+  rather than raw `vite dev` / `vite preview` (the latter doesn't resolve this project's
+  flattened `dist` output correctly once the framework-mode plugin is in the mix).
 - **State**:
   - `zustand` for in-memory UI/app state (`src/store`)
   - `Dexie` for persisted state in IndexedDB (`src/db`): lesson progress and saved

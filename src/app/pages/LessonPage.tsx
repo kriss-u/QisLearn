@@ -74,7 +74,7 @@ function LessonNextAction({ lessonId, next }: { lessonId: string; next: LessonFr
   );
 }
 
-export function LessonPage() {
+export default function LessonPage() {
   const { lessonId = "" } = useParams();
   const lesson = getLesson(lessonId);
 

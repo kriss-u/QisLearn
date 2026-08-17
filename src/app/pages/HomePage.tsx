@@ -5,7 +5,7 @@ import { useProgressStore } from "../../store/progressStore";
 import { STATUS_COLOR_PALETTE } from "../../store/statusColor";
 import { Logo } from "../../components/ui/Logo";
 
-export function HomePage() {
+export default function HomePage() {
   const statusByLesson = useProgressStore((s) => s.statusByLesson);
 
   return (

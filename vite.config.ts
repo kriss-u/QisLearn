@@ -1,5 +1,5 @@
+import { reactRouter } from "@react-router/dev/vite";
 import mdx from "@mdx-js/rollup";
-import react from "@vitejs/plugin-react";
 import rehypeKatex from "rehype-katex";
 import remarkFrontmatter from "remark-frontmatter";
 import remarkGfm from "remark-gfm";
@@ -26,7 +26,7 @@ function mdxPlugin() {
 }
 
 export default defineConfig({
-  plugins: [mdxPlugin(), react({ include: /\.(jsx|js|tsx|ts|mdx)$/ })],
+  plugins: [mdxPlugin(), reactRouter()],
   // plotly.js references the Node-style `global` object at module scope; needed for the
   // standalone `import("plotly.js")` in pngExport.ts (react-plotly.js's own bundling already
   // works around this, but a bare dynamic import of the package does not).
