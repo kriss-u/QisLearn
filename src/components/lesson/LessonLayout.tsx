@@ -1,16 +1,19 @@
+import type { ConditionalValue } from "@chakra-ui/react";
 import { Badge, Box, Container, HStack, Heading, IconButton, Separator, Text } from "@chakra-ui/react";
 import type { PropsWithChildren } from "react";
 import { LuPrinter } from "react-icons/lu";
 import type { LessonFrontmatter, LessonLayout as LessonLayoutKind } from "../../content/schema";
 
-const LAYOUT_CONFIG: Record<LessonLayoutKind, { maxW: string; note: string }> = {
-  standard: { maxW: "4xl", note: "" },
-  "theory-heavy": { maxW: "3xl", note: "Reading-focused" },
-  "circuit-focus": { maxW: "6xl", note: "Circuit workspace" },
-  lab: { maxW: "7xl", note: "Lab" },
+type MaxW = ConditionalValue<string>;
+
+const LAYOUT_CONFIG: Record<LessonLayoutKind, { maxW: MaxW; note: string }> = {
+  standard: { maxW: { base: "4xl", "2xl": "5xl" }, note: "" },
+  "theory-heavy": { maxW: { base: "3xl", "2xl": "4xl" }, note: "Reading-focused" },
+  "circuit-focus": { maxW: { base: "6xl", "2xl": "7xl" }, note: "Circuit workspace" },
+  lab: { maxW: { base: "7xl", "2xl": "8xl" }, note: "Lab" },
 };
 
-export function getLessonMaxWidth(layout: LessonLayoutKind): string {
+export function getLessonMaxWidth(layout: LessonLayoutKind): MaxW {
   return LAYOUT_CONFIG[layout].maxW;
 }
 

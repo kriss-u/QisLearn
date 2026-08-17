@@ -87,7 +87,18 @@ function BlochScene({
 
 export function BlochSphere({ vector, onCanvasReady }: BlochSphereProps) {
   return (
-    <Box borderWidth="1px" borderColor="border" rounded="l3" bg="bg.panel" h="320px" position="relative" overflow="hidden">
+    <Box
+      borderWidth="1px"
+      borderColor="border"
+      rounded="l3"
+      bg="bg.panel"
+      aspectRatio={1}
+      minH="220px"
+      maxH="380px"
+      w="full"
+      position="relative"
+      overflow="hidden"
+    >
       <Canvas camera={{ position: [2.4, 1.8, 2.4], fov: 45 }} gl={{ preserveDrawingBuffer: true }} dpr={[1, 3]}>
         <BlochScene vector={vector} onCanvasReady={onCanvasReady} />
       </Canvas>

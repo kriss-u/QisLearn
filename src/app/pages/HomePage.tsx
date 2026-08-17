@@ -9,7 +9,7 @@ export function HomePage() {
   const statusByLesson = useProgressStore((s) => s.statusByLesson);
 
   return (
-    <Container maxW="6xl" px="0" py={{ base: "6", md: "10" }}>
+    <Container maxW={{ base: "6xl", "2xl": "8xl" }} px="0" py={{ base: "6", md: "10" }}>
       <Box mb="14" maxW="2xl">
         <HStack gap="3" mb="5">
           <Logo boxSize="10" />
@@ -34,7 +34,7 @@ export function HomePage() {
           <Heading size="lg" mb="5" textTransform="capitalize">
             {track}
           </Heading>
-          <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} gap="5">
+          <SimpleGrid columns={{ base: 1, sm: 2, lg: 3, "2xl": 4 }} gap="5">
             {lessons.map((lesson) => {
               const status = statusByLesson[lesson.id] ?? "not-started";
               return (

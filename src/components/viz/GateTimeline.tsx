@@ -19,11 +19,12 @@ export function GateTimeline({ index, labels, onChange }: GateTimelineProps) {
   const marks = labels.map((step, i) => ({ value: i, step }));
 
   return (
-    <HStack gap="3" align="center">
+    <HStack gap={{ base: "1.5", sm: "3" }} align="center">
       <IconButton
         aria-label="First step"
         variant="ghost"
         size="sm"
+        display={{ base: "none", sm: "inline-flex" }}
         disabled={index === 0}
         onClick={() => onChange(0)}
       >
@@ -84,13 +85,21 @@ export function GateTimeline({ index, labels, onChange }: GateTimelineProps) {
         aria-label="Last step"
         variant="ghost"
         size="sm"
+        display={{ base: "none", sm: "inline-flex" }}
         disabled={index === max}
         onClick={() => onChange(max)}
       >
         <LuChevronsRight />
       </IconButton>
 
-      <Text fontSize="xs" color="fg.muted" fontFamily="mono" flexShrink={0} minW="16" textAlign="right">
+      <Text
+        fontSize="xs"
+        color="fg.muted"
+        fontFamily="mono"
+        flexShrink={0}
+        minW={{ base: "12", sm: "16" }}
+        textAlign="right"
+      >
         {index + 1} / {labels.length}
       </Text>
     </HStack>

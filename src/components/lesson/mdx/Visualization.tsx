@@ -247,14 +247,14 @@ export function Visualization({ title, description, circuit, views = DEFAULT_VIE
           <VizLatexToggle>
             {(latexAction) => (
               <VizSection title="Bloch Sphere" action={latexAction}>
-                <SimpleGrid columns={{ base: 1, sm: circuit.numQubits }} gap="6">
+                <SimpleGrid columns={{ base: 1, md: circuit.numQubits }} gap="6">
                   {Array.from({ length: circuit.numQubits }, (_, q) => (
                     <VStack key={q} gap="3">
                       <HStack justify="space-between" w="full">
                         <BlochQubitLabel index={q} numQubits={circuit.numQubits} label={circuit.qubitLabels?.[q]} />
                         <VizActions onCopy={() => handleBlochCopy(q)} onDownload={() => handleBlochDownload(q)} />
                       </HStack>
-                      <Suspense fallback={<Skeleton h="320px" rounded="l3" w="full" />}>
+                      <Suspense fallback={<Skeleton aspectRatio={1} rounded="l3" w="full" />}>
                         <BlochSphere
                           vector={blochVector(snapshot.amplitudes, q)}
                           onCanvasReady={(canvas) => {
