@@ -7,6 +7,8 @@ export const GateSchema = z.object({
   gate: z.string(),
   qubits: z.array(z.number().int().nonnegative()),
   params: z.array(z.number()).optional(),
+  /** For `measure` gates: the classical bit(s) written to, e.g. from `.measure(qubit, clbit)`. */
+  clbits: z.array(z.number().int().nonnegative()).optional(),
 });
 export type Gate = z.infer<typeof GateSchema>;
 
@@ -16,6 +18,12 @@ export const CircuitSchema = z.object({
   name: z.string().optional(),
   /** Per-qubit wire labels, e.g. `["q_0", "q_1"]` from a named `QuantumRegister`. */
   qubitLabels: z.array(z.string()).optional(),
+  /**
+   * Classical registers, in the order they were passed to `QuantumCircuit(...)`.
+   * A `Gate.clbits` index is a flat index across all of these concatenated,
+   * matching Qiskit's own global clbit numbering.
+   */
+  classicalRegisters: z.array(z.object({ name: z.string(), size: z.number().int().positive() })).optional(),
   gates: z.array(GateSchema),
 });
 export type Circuit = z.infer<typeof CircuitSchema>;

@@ -1,7 +1,8 @@
 import type { Circuit, Gate } from "../../content/schema";
 
 function gateKey(gate: Gate): string {
-  return `${gate.gate.toLowerCase()}(${gate.qubits.join(",")})${gate.params ? `[${gate.params.join(",")}]` : ""}`;
+  const clbits = gate.clbits ? `->${gate.clbits.join(",")}` : "";
+  return `${gate.gate.toLowerCase()}(${gate.qubits.join(",")})${clbits}${gate.params ? `[${gate.params.join(",")}]` : ""}`;
 }
 
 export interface CircuitComparison {

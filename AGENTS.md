@@ -63,14 +63,18 @@ is put together and the conventions to follow when changing it.
   just a bare int: a `List`/`Tuple`, `range(...)`, or a whole register passed
   directly (every index in it, in order) — see `resolveIndexSet` in
   `extractCircuit.ts`. `.measure_all()` and `.measure_active()` are understood
-  too (expanded into per-qubit `measure` gates, bumping the tracked classical-bit
-  count), so the checker doesn't choke if a learner tries them — but **no lesson
-  exercise's `expectedCircuit` should ever require them**. Per-lesson content
-  intentionally standardizes on the explicit `.measure(qubit, clbit)` form as the
-  one graded pattern (see `05-measurement.mdx`); `measure_all`/`measure_active`
-  are covered as reading-only material, not exercised, since what classical bits
-  they implicitly create is exactly the kind of thing that's clear to *read* but
-  awkward to grade unambiguously.
+  too — matching real Qiskit, each expands into per-qubit `measure` gates
+  targeting a **new** classical register it creates itself (named `"meas"`,
+  appended to `Circuit.classicalRegisters`, sized to `numQubits` for
+  `measure_all` or to however many qubits a prior gate actually touched for
+  `measure_active`) — so the checker doesn't choke if a learner tries them, and
+  `CircuitDiagram` draws that register as its own classical wire. Still, **no
+  lesson exercise's `expectedCircuit` should ever require them**. Per-lesson
+  content intentionally standardizes on the explicit `.measure(qubit, clbit)`
+  form as the one graded pattern (see `05-measurement.mdx`);
+  `measure_all`/`measure_active` are covered as reading-only material, not
+  exercised, since which classical register they implicitly create is exactly
+  the kind of thing that's clear to *read* but awkward to grade unambiguously.
 
   All of this is a **single linear pass with no real scope/control-flow
   analysis** — it tracks "what's been imported/assigned so far" as the walk
@@ -303,12 +307,17 @@ npm run preview    # preview the production build
   conditionals, functions, or custom gate classes it doesn't recognize by name.
   If real execution becomes a requirement, that's a Pyodide/WASM integration — a
   materially different feature, not an extension of `extractCircuit`.
-- **No classical-register modeling beyond bounds-checking.** `.measure(qubit,
-  clbit)` index bounds are checked (see above), and a bare `measure` marker
-  renders in the diagram at the qubit's position, but there's no
-  `ClassicalRegister` bit tracking, no mid-circuit measurement semantics, and no
-  classical wires drawn in `CircuitDiagram` — `Circuit` still only models the
-  qubit-gate sequence.
+- **Classical bits are tracked per-gate, not as a full register model.**
+  `GateSchema.clbits` records which classical bit(s) a `measure` gate writes to
+  (from `.measure(qubit, clbit)`'s explicit second argument, or the sequential
+  assignment `measure_all()`/`measure_active()` give their new register).
+  `CircuitDiagram` draws a single classical double-line wire (labeled `c`,
+  not enumerated per-bit) whenever any `measure` gate is present, with a
+  straight 90° connector from the gate down to it and the target clbit number
+  written at the landing point. There's still no `ClassicalRegister` object
+  model (multiple registers collapse into that one wire) and no mid-circuit
+  measurement semantics — `Circuit` doesn't track register boundaries, only
+  per-gate clbit targets.
 - **`plotly.js` is a large dependency** (~4.6MB pre-gzip in its own chunk). It's
   lazy-loaded so it doesn't block initial page load, but if bundle size becomes a
   concern, swapping to a lighter charting approach (custom SVG bars, or

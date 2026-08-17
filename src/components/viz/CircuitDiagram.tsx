@@ -13,6 +13,17 @@ const ROW_HEIGHT = 64;
 const LEFT_MARGIN = 40;
 const TOP_MARGIN = 28;
 const GATE_SIZE = 40;
+const CLASSICAL_GAP = 56;
+const CLASSICAL_ROW_HEIGHT = 34;
+const CLASSICAL_LINE_OFFSET = 1.5;
+
+interface ClassicalWire {
+  name: string;
+  size: number;
+  /** This register's first bit, as a flat index across all registers concatenated (Qiskit's global clbit numbering). */
+  offset: number;
+  y: number;
+}
 
 const TWO_QUBIT_GATES = new Set(["cx", "cnot", "cz", "swap"]);
 const MONO_FONT = "'Fira Code', ui-monospace, monospace";
@@ -80,14 +91,76 @@ function MeasureGlyph({ x, y, color }: { x: number; y: number; color: string }) 
   );
 }
 
+/** Diagonal tick crossing a classical wire's double line, with the register's bit-width number beside it. */
+function ClassicalRegisterCut({ x, y, size, color }: { x: number; y: number; size: number; color: string }) {
+  return (
+    <g>
+      <line x1={x - 4} y1={y + 7} x2={x + 4} y2={y - 7} stroke={color} strokeWidth={1.5} />
+      <text x={x + 6} y={y - 6} fontSize={10} fill={color} fontFamily={MONO_FONT} fontWeight={600}>
+        {size}
+      </text>
+    </g>
+  );
+}
+
+/** Straight double line from a measure gate down to the classical wire, arrowhead at the landing point. */
+function MeasureConnector({ x, fromY, toY, color }: { x: number; fromY: number; toY: number; color: string }) {
+  return (
+    <g stroke={color} strokeWidth={1.5} fill="none">
+      <line x1={x - 2} y1={fromY} x2={x - 2} y2={toY - CLASSICAL_LINE_OFFSET - 8} />
+      <line x1={x + 2} y1={fromY} x2={x + 2} y2={toY - CLASSICAL_LINE_OFFSET - 8} />
+      <path
+        d={`M ${x - 5} ${toY - 9} L ${x} ${toY - 1} L ${x + 5} ${toY - 9}`}
+        fill={color}
+        stroke="none"
+      />
+    </g>
+  );
+}
+
 export function CircuitDiagram({ circuit, activeGateIndex, showLegend = true }: CircuitDiagramProps) {
   const [wireColor, activeRing, textColor] = useToken("colors", ["border", "quantum.400", "fg"]);
 
   const { columns, columnOf } = layoutColumns(circuit);
   const width = LEFT_MARGIN + (columns + 1) * COLUMN_WIDTH;
-  const height = TOP_MARGIN * 2 + (circuit.numQubits - 1) * ROW_HEIGHT + GATE_SIZE;
+  const measureGates = circuit.gates.filter((g) => g.gate.toLowerCase() === "measure");
 
   const qubitY = (q: number) => TOP_MARGIN + q * ROW_HEIGHT + GATE_SIZE / 2;
+
+  /**
+   * One wire per classical register. If the circuit declares explicit
+   * `classicalRegisters` (from named `ClassicalRegister`s passed into
+   * `QuantumCircuit(...)`), draw one per register in that order, each keeping
+   * its own name and bit-width. Otherwise — e.g. plain `QuantumCircuit(n, m)`
+   * — fall back to a single unnamed "c" wire sized to whatever the highest
+   * measured clbit requires.
+   */
+  const registers: ClassicalWire[] = (() => {
+    if (circuit.classicalRegisters && circuit.classicalRegisters.length > 0) {
+      let offset = 0;
+      return circuit.classicalRegisters.map((reg) => {
+        const wire: ClassicalWire = { name: reg.name, size: reg.size, offset, y: 0 };
+        offset += reg.size;
+        return wire;
+      });
+    }
+    if (measureGates.length === 0) return [];
+    const maxClbit = Math.max(-1, ...measureGates.map((g) => Math.max(...(g.clbits ?? g.qubits))));
+    return [{ name: "c", size: maxClbit + 1, offset: 0, y: 0 }];
+  })();
+  registers.forEach((r, i) => {
+    r.y = qubitY(circuit.numQubits - 1) + CLASSICAL_GAP + i * CLASSICAL_ROW_HEIGHT;
+  });
+
+  function registerFor(clbit: number): ClassicalWire | undefined {
+    return registers.find((r) => clbit >= r.offset && clbit < r.offset + r.size) ?? registers[0];
+  }
+
+  const height =
+    TOP_MARGIN * 2 +
+    (circuit.numQubits - 1) * ROW_HEIGHT +
+    GATE_SIZE +
+    (registers.length > 0 ? CLASSICAL_GAP + (registers.length - 1) * CLASSICAL_ROW_HEIGHT + 20 : 0);
 
   const usedGates = Array.from(
     new Set(circuit.gates.map((g) => g.gate.toLowerCase()).filter((name) => name !== "barrier")),
@@ -117,6 +190,31 @@ export function CircuitDiagram({ circuit, activeGateIndex, showLegend = true }: 
               />
               <text x={0} y={qubitY(q) + 5} fontSize={13} fill={textColor} fontFamily={MONO_FONT} fontWeight={600}>
                 {circuit.qubitLabels?.[q] ?? `q${q}`}
+              </text>
+            </g>
+          ))}
+
+          {registers.map((reg, i) => (
+            <g key={`creg-${i}`}>
+              <line
+                x1={LEFT_MARGIN}
+                y1={reg.y - CLASSICAL_LINE_OFFSET}
+                x2={width - COLUMN_WIDTH / 2}
+                y2={reg.y - CLASSICAL_LINE_OFFSET}
+                stroke={wireColor}
+                strokeWidth={1.5}
+              />
+              <line
+                x1={LEFT_MARGIN}
+                y1={reg.y + CLASSICAL_LINE_OFFSET}
+                x2={width - COLUMN_WIDTH / 2}
+                y2={reg.y + CLASSICAL_LINE_OFFSET}
+                stroke={wireColor}
+                strokeWidth={1.5}
+              />
+              <ClassicalRegisterCut x={LEFT_MARGIN + 14} y={reg.y} size={reg.size} color={textColor} />
+              <text x={0} y={reg.y + 5} fontSize={13} fill={textColor} fontFamily={MONO_FONT} fontWeight={600}>
+                {reg.name}
               </text>
             </g>
           ))}
@@ -218,7 +316,33 @@ export function CircuitDiagram({ circuit, activeGateIndex, showLegend = true }: 
                   fill={style.fill}
                 />
                 {name === "measure" ? (
-                  <MeasureGlyph x={x} y={y} color={style.textColor} />
+                  (() => {
+                    const clbit = gate.clbits?.[0] ?? q;
+                    const reg = registerFor(clbit);
+                    const localBit = reg ? clbit - reg.offset : clbit;
+                    return (
+                      <>
+                        <MeasureGlyph x={x} y={y} color={style.textColor} />
+                        <MeasureConnector
+                          x={x}
+                          fromY={y + GATE_SIZE / 2}
+                          toY={reg?.y ?? y + GATE_SIZE / 2}
+                          color={textColor}
+                        />
+                        <text
+                          x={x}
+                          y={(reg?.y ?? y) + 16}
+                          fontSize={10}
+                          textAnchor="middle"
+                          fill={textColor}
+                          fontFamily={MONO_FONT}
+                          fontWeight={600}
+                        >
+                          {localBit}
+                        </text>
+                      </>
+                    );
+                  })()
                 ) : (
                   <text
                     x={x}

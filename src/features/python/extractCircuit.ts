@@ -188,9 +188,10 @@ export function extractCircuit(source: string): ExtractResult {
   let numClbits = 0;
   let circuitName: string | undefined;
   let qubitLabels: string[] | undefined;
+  let classicalRegistersResult: { name: string; size: number }[] | undefined;
   const gates: Gate[] = [];
   const quantumRegisters = new Map<string, { size: number; name: string }>();
-  const classicalRegisters = new Map<string, { size: number }>();
+  const classicalRegisters = new Map<string, { size: number; name: string }>();
   const importedNames = new Set<string>();
   const boundNames = new Set<string>();
 
@@ -314,8 +315,10 @@ export function extractCircuit(source: string): ExtractResult {
       if (call.func.nodeType === "Name" && call.func.id === "ClassicalRegister") {
         requireImport("ClassicalRegister", "from qiskit import ClassicalRegister");
         const size = call.args[0] ? numericLiteral(call.args[0]) : null;
+        const nameArg = call.args[1] ?? keywordArg(call, "name");
+        const regName = nameArg ? stringLiteral(nameArg) : null;
         if (target?.nodeType === "Name" && size !== null) {
-          classicalRegisters.set(target.id, { size });
+          classicalRegisters.set(target.id, { size, name: regName ?? target.id });
         }
         continue;
       }
@@ -324,18 +327,43 @@ export function extractCircuit(source: string): ExtractResult {
         requireImport("QuantumCircuit", "from qiskit import QuantumCircuit");
         if (target?.nodeType === "Name") {
           circuitVar = target.id;
-          const [firstArg, secondArg] = call.args;
 
-          const literalSize = firstArg ? numericLiteral(firstArg) : null;
-          const register = firstArg?.nodeType === "Name" ? quantumRegisters.get(firstArg.id) : undefined;
-          numQubits = literalSize ?? register?.size ?? 0;
-          qubitLabels = register
-            ? Array.from({ length: register.size }, (_, i) => `${register.name}_${i}`)
-            : undefined;
+          numQubits = 0;
+          numClbits = 0;
+          const qLabelsAcc: string[] = [];
+          const cRegsAcc: { name: string; size: number }[] = [];
+          let sawQuantumArg = false;
+          let sawClassicalArg = false;
 
-          const literalClbits = secondArg ? numericLiteral(secondArg) : null;
-          const clbitRegister = secondArg?.nodeType === "Name" ? classicalRegisters.get(secondArg.id) : undefined;
-          numClbits = literalClbits ?? clbitRegister?.size ?? 0;
+          for (const arg of call.args) {
+            if (arg.nodeType === "Name" && quantumRegisters.has(arg.id)) {
+              const reg = quantumRegisters.get(arg.id)!;
+              numQubits += reg.size;
+              for (let i = 0; i < reg.size; i++) qLabelsAcc.push(`${reg.name}_${i}`);
+              sawQuantumArg = true;
+              continue;
+            }
+            if (arg.nodeType === "Name" && classicalRegisters.has(arg.id)) {
+              const reg = classicalRegisters.get(arg.id)!;
+              numClbits += reg.size;
+              cRegsAcc.push({ name: reg.name, size: reg.size });
+              sawClassicalArg = true;
+              continue;
+            }
+            const lit = numericLiteral(arg);
+            if (lit === null) continue;
+            if (!sawQuantumArg) {
+              numQubits = lit;
+              sawQuantumArg = true;
+            } else if (!sawClassicalArg) {
+              numClbits = lit;
+              cRegsAcc.push({ name: "c", size: lit });
+              sawClassicalArg = true;
+            }
+          }
+
+          qubitLabels = qLabelsAcc.length ? qLabelsAcc : undefined;
+          classicalRegistersResult = cRegsAcc.length ? cRegsAcc : undefined;
 
           const nameKeyword = keywordArg(call, "name");
           circuitName = nameKeyword ? (stringLiteral(nameKeyword) ?? undefined) : undefined;
@@ -369,19 +397,33 @@ export function extractCircuit(source: string): ExtractResult {
               "these lists must be the same length. Real Qiskit would raise a CircuitError here.",
           );
         }
-        if (qubits) for (const q of qubits) pushGate({ gate: "measure", qubits: [q] });
+        if (qubits && clbits) {
+          for (let i = 0; i < qubits.length; i++) {
+            pushGate({ gate: "measure", qubits: [qubits[i]], clbits: [clbits[i]] });
+          }
+        } else if (qubits) {
+          for (const q of qubits) pushGate({ gate: "measure", qubits: [q] });
+        }
         continue;
       }
 
       if (attr === "measure_all") {
-        for (let q = 0; q < numQubits; q++) pushGate({ gate: "measure", qubits: [q] });
+        const regOffset = numClbits;
+        for (let q = 0; q < numQubits; q++) pushGate({ gate: "measure", qubits: [q], clbits: [regOffset + q] });
+        if (numQubits > 0) {
+          classicalRegistersResult = [...(classicalRegistersResult ?? []), { name: "meas", size: numQubits }];
+        }
         numClbits += numQubits;
         continue;
       }
 
       if (attr === "measure_active") {
         const active = Array.from(activeQubits).sort((a, b) => a - b);
-        for (const q of active) pushGate({ gate: "measure", qubits: [q] });
+        const regOffset = numClbits;
+        active.forEach((q, i) => pushGate({ gate: "measure", qubits: [q], clbits: [regOffset + i] }));
+        if (active.length > 0) {
+          classicalRegistersResult = [...(classicalRegistersResult ?? []), { name: "meas", size: active.length }];
+        }
         numClbits += active.length;
         continue;
       }
@@ -494,5 +536,8 @@ export function extractCircuit(source: string): ExtractResult {
     return { circuit: null, issues };
   }
 
-  return { circuit: { numQubits, name: circuitName, qubitLabels, gates }, issues };
+  return {
+    circuit: { numQubits, name: circuitName, qubitLabels, classicalRegisters: classicalRegistersResult, gates },
+    issues,
+  };
 }
