@@ -92,7 +92,7 @@ export function LessonPage() {
         <LessonProgressProvider lessonId={lesson.id}>
           <LessonLayout lesson={lesson}>
             <PrerequisitesList prerequisiteIds={lesson.prerequisites} />
-            <Suspense fallback={<Skeleton h="50vh" rounded="l3" />}>
+            <Suspense key={lesson.id} fallback={<Skeleton h="50vh" rounded="l3" />}>
               <LessonContent components={mdxComponents} />
             </Suspense>
           </LessonLayout>
