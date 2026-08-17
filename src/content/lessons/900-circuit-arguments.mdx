@@ -50,7 +50,7 @@ That's exactly equivalent to writing `qc.h(0)`, `qc.h(1)`, `qc.h(2)` on three se
     ],
   }}
   hints={[
-    "qc.h([0, 1, 2]) applies H to all three qubits in one call.",
+    "qc.h([0, 1, 2]) applies $H$ to all three qubits in one call.",
     "Three separate qc.h(0) / qc.h(1) / qc.h(2) calls produce the same circuit and also pass.",
   ]}
 />
@@ -76,7 +76,7 @@ Why bother, if it means the same thing? Once circuits use *multiple* registers, 
 
 <CodeExercise
   id="code-register-indexing"
-  prompt="Using the register qr already in the starter code, apply X to qr[0] and H to qr[1]."
+  prompt="Using the register qr already in the starter code, apply $X$ to qr[0] and $H$ to qr[1]."
   starterCode={`from qiskit import QuantumCircuit, QuantumRegister\n\nqr = QuantumRegister(2, "q")\nqc = QuantumCircuit(qr)\n# your code here\n`}
   expectedCircuit={{
     numQubits: 2,

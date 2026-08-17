@@ -33,10 +33,9 @@ export function AppShell({ children }: PropsWithChildren) {
         borderColor="border.glass"
         bg="bg.glass"
         backdropFilter="blur(16px)"
-        overflowY="auto"
         display={{ base: "none", md: "flex" }}
       >
-        <Box px="6" pt="7" pb="5">
+        <Box px="6" pt="7" pb="5" flexShrink={0}>
           <Link to="/">
             <HStack gap="2.5" mb="1.5">
               <Logo boxSize="8" flexShrink={0} />
@@ -52,7 +51,7 @@ export function AppShell({ children }: PropsWithChildren) {
 
         <Separator borderColor="border.muted" />
 
-        <Box flex="1" px="4" py="5">
+        <Box flex="1" minH="0" overflowY="auto" px="4" py="5">
           {Object.entries(lessonsByTrack).map(([track, lessons]) => (
             <Box key={track} mb="7">
               <Text
@@ -109,12 +108,12 @@ export function AppShell({ children }: PropsWithChildren) {
           ))}
         </Box>
 
-        <Separator borderColor="border.muted" />
-        <Box px="4" py="4">
+        <Separator borderColor="border.muted" flexShrink={0} />
+        <Box px="4" py="4" flexShrink={0}>
           <ResetDataButton />
         </Box>
 
-        <Box as="footer" px="6" py="4" borderTopWidth="1px" borderColor="border.muted">
+        <Box as="footer" px="6" py="4" borderTopWidth="1px" borderColor="border.muted" flexShrink={0}>
           <Text fontSize="xs" color="fg.subtle">
             Made by Krishna Upadhyay
           </Text>

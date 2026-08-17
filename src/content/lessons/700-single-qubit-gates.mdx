@@ -31,9 +31,9 @@ qc = QuantumCircuit(qr, name="my_first_circuit")
 
 Both snippets above produce an equivalent one-qubit circuit; try either style in the exercises below and the checker will accept it. The live circuit preview under each exercise will pick up the name and register label if you use them, so you can see the effect immediately.
 
-## The Pauli-X Gate
+## The Pauli-$X$ Gate
 
-The **$X$ gate** is the quantum analogue of a classical NOT gate: it flips $|0\rangle \leftrightarrow |1\rangle$. On the Bloch sphere it is a 180-degree rotation about the X axis.
+The **$X$ gate** is the quantum analogue of a classical NOT gate: it flips $|0\rangle \leftrightarrow |1\rangle$. On the Bloch sphere it is a 180-degree rotation about the $X$ axis.
 
 ```python
 from qiskit import QuantumCircuit
@@ -56,7 +56,7 @@ qc.append(XGate(), [0])
 
 <CodeExercise
   id="code-x-gate"
-  prompt="Write a circuit with one qubit and apply an X gate so the qubit ends in the $|1\rangle$ state. Either `qc.x(0)` or `qc.append(XGate(), [0])` works."
+  prompt="Write a circuit with one qubit and apply an $X$ gate so the qubit ends in the $|1\rangle$ state. Either `qc.x(0)` or `qc.append(XGate(), [0])` works."
   starterCode={`from qiskit import QuantumCircuit\n\nqc = QuantumCircuit(1)\n# your code here\n`}
   expectedCircuit={{ numQubits: 1, gates: [{ gate: "x", qubits: [0] }] }}
   hints={[
@@ -71,7 +71,7 @@ The **Hadamard gate ($H$)** creates an equal superposition:
 
 $$H|0\rangle = \frac{1}{\sqrt{2}}(|0\rangle + |1\rangle) = |+\rangle$$
 
-On the Bloch sphere, H rotates the state from the pole to the equator.
+On the Bloch sphere, $H$ rotates the state from the pole to the equator.
 
 <CodeExercise
   id="code-hadamard"

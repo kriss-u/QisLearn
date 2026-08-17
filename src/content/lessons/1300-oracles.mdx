@@ -21,17 +21,17 @@ $$U_f: |x\rangle|y\rangle \longrightarrow |x\rangle|y \oplus f(x)\rangle$$
 $x$ (the input register) passes through unchanged. $y$ (the ancilla) comes out XORed with $f(x)$. This is always reversible (applying $U_f$ twice XORs $f(x)$ back out), no matter what $f$ itself does, which is exactly why it works as a gate even when $f$ isn't invertible.
 
 <OracleFigure
-  title="Uf as a Black Box"
-  description="This is the shape every oracle in this course has: query register in on the left, unchanged on the right; ancilla in on the left, XORed with f(x) on the right."
-  inputLabels={["x0", "x1"]}
+  title="$U_f$ as a Black Box"
+  description="This is the shape every oracle in this course has: query register in on the left, unchanged on the right; ancilla in on the left, XORed with $f(x)$ on the right."
+  inputLabels={["x_0", "x_1"]}
   ancillaInLabel="y"
   ancillaOutLabel="y ⊕ f(x)"
-  boxLabel="Uf"
+  boxLabel="U_f"
 />
 
-## Building One From X and CX
+## Building One From $X$ and $CX$
 
-For any $f$ that's a linear function of its inputs, $f(x_0, x_1, \ldots) = x_0 \oplus x_1 \oplus \ldots$ (XOR together whichever inputs the function actually depends on), the oracle is just a `CX` from each relevant input qubit into the ancilla. Each `CX` flips the ancilla exactly when that one input is 1, and XOR is exactly "flip an odd number of times."
+For any $f$ that's a linear function of its inputs, $f(x_0, x_1, \ldots) = x_0 \oplus x_1 \oplus \ldots$ (XOR together whichever inputs the function actually depends on), the oracle is just a $CX$ from each relevant input qubit into the ancilla. Each $CX$ flips the ancilla exactly when that one input is 1, and XOR is exactly "flip an odd number of times."
 
 Take $f(x_0, x_1) = x_0 \oplus x_1$ over 2 input qubits, with qubit 2 as the ancilla:
 
@@ -44,17 +44,17 @@ qc.cx(1, 2)
 ```
 
 <Visualization
-  title="Uf for f(x0, x1) = x0 ⊕ x1"
-  description="Set the input qubits (0, 1) and watch qubit 2 in the Exact State table: it lands on |0⟩ when the two inputs agree and |1⟩ when they differ, exactly XOR."
+  title="$U_f$ for $f(x_0, x_1) = x_0 \oplus x_1$"
+  description="Set the input qubits (0, 1) and watch qubit 2 in the Exact State table: it lands on $|0\rangle$ when the two inputs agree and $|1\rangle$ when they differ, exactly XOR."
   circuit={{ numQubits: 3, gates: [{ gate: "cx", qubits: [0, 2] }, { gate: "cx", qubits: [1, 2] }] }}
   views={["circuit", "table"]}
 />
 
-This kind of $f$ (depends on some but not all inputs in a perfectly balanced way) is called a **balanced** function: exactly half of all possible inputs give $f(x)=0$ and half give $f(x)=1$. The other extreme is a **constant** function, $f(x) = 0$ for every $x$ (an oracle that does nothing at all) or $f(x)=1$ for every $x$ (an oracle that's just `X` on the ancilla, ignoring the input register completely). Constant vs. balanced is exactly the distinction Deutsch-Jozsa is built to tell apart.
+This kind of $f$ (depends on some but not all inputs in a perfectly balanced way) is called a **balanced** function: exactly half of all possible inputs give $f(x)=0$ and half give $f(x)=1$. The other extreme is a **constant** function, $f(x) = 0$ for every $x$ (an oracle that does nothing at all) or $f(x)=1$ for every $x$ (an oracle that's just $X$ on the ancilla, ignoring the input register completely). Constant vs. balanced is exactly the distinction Deutsch-Jozsa is built to tell apart.
 
 <CodeExercise
   id="code-xor-oracle"
-  prompt="Build the oracle for f(x0, x1) = x0 XOR x1 on a 3-qubit circuit, with qubit 2 as the ancilla: CX from qubit 0 into qubit 2, then CX from qubit 1 into qubit 2."
+  prompt="Build the oracle for $f(x_0, x_1) = x_0 \oplus x_1$ on a 3-qubit circuit, with qubit 2 as the ancilla: $CX$ from qubit 0 into qubit 2, then $CX$ from qubit 1 into qubit 2."
   starterCode={`from qiskit import QuantumCircuit\n\nqc = QuantumCircuit(3)\n# your code here\n`}
   expectedCircuit={{
     numQubits: 3,
@@ -66,22 +66,22 @@ This kind of $f$ (depends on some but not all inputs in a perfectly balanced way
   hints={[
     "qc.cx(0, 2) first: qubit 0 controls, qubit 2 (the ancilla) is the target.",
     "Then qc.cx(1, 2): qubit 1 controls, same target.",
-    "Order matters here since both target the same ancilla, but for this particular f, either CX-first order actually computes the same XOR either way.",
+    "Order matters here since both target the same ancilla, but for this particular $f$, either $CX$-first order actually computes the same XOR either way.",
   ]}
 />
 
 <Quiz
   id="quiz-oracle-reversibility"
-  question="Why does the oracle convention XOR the answer into a separate ancilla instead of just computing f(x) directly into some output qubit that starts at |0⟩?"
+  question="Why does the oracle convention XOR the answer into a separate ancilla instead of just computing $f(x)$ directly into some output qubit that starts at $|0\rangle$?"
   choices={[
     { id: "a", text: "It's purely a stylistic convention with no real reason.", correct: false },
     {
       id: "b",
-      text: "Quantum gates must be reversible (unitary), and XOR-into-an-ancilla is always reversible no matter what f is, even when f itself loses information (many x map to the same output).",
+      text: "Quantum gates must be reversible (unitary), and XOR-into-an-ancilla is always reversible no matter what $f$ is, even when $f$ itself loses information (many $x$ map to the same output).",
       correct: true,
     },
     { id: "c", text: "It makes the circuit shorter.", correct: false },
-    { id: "d", text: "It's only needed when f is balanced, not when it's constant.", correct: false },
+    { id: "d", text: "It's only needed when $f$ is balanced, not when it's constant.", correct: false },
   ]}
-  explanation="A generic f isn't one-to-one, so 'compute f(x) and write it down' can't be undone in general. XOR-ing into an ancilla is its own inverse (apply the same oracle twice and the ancilla is back to where it started) regardless of what f computes, which is what makes it representable as a unitary gate."
+  explanation="A generic $f$ isn't one-to-one, so 'compute $f(x)$ and write it down' can't be undone in general. XOR-ing into an ancilla is its own inverse (apply the same oracle twice and the ancilla is back to where it started) regardless of what $f$ computes, which is what makes it representable as a unitary gate."
 />

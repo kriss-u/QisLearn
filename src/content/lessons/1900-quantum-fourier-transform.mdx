@@ -8,7 +8,7 @@ layout: circuit-focus
 prerequisites: [algorithms-grovers-algorithm]
 ---
 
-Grover's algorithm was the last lesson built from tools you already had, `H`, `X`, `CZ`. The next two algorithms, Quantum Phase Estimation and Shor's algorithm, are both built around a new primitive: the **Quantum Fourier Transform** (QFT). This lesson is the transform itself; the next two put it to work.
+Grover's algorithm was the last lesson built from tools you already had, $H$, $X$, $CZ$. The next two algorithms, Quantum Phase Estimation and Shor's algorithm, are both built around a new primitive: the **Quantum Fourier Transform** (QFT). This lesson is the transform itself; the next two put it to work.
 
 ## The Transform
 
@@ -16,11 +16,11 @@ The classical discrete Fourier transform turns a list of $N$ numbers into a list
 
 $$\text{QFT}|j\rangle = \frac{1}{\sqrt N}\sum_{k=0}^{N-1} e^{2\pi i jk/N}|k\rangle$$
 
-Compare this to `H` on a single qubit ($N=2$): $H|0\rangle = \tfrac{1}{\sqrt2}(|0\rangle+|1\rangle)$, $H|1\rangle = \tfrac{1}{\sqrt2}(|0\rangle - |1\rangle) = \tfrac1{\sqrt2}\sum_k e^{2\pi i \cdot 1 \cdot k/2}|k\rangle$. `H` *is* the 1-qubit QFT; the general QFT is what you get generalizing that same "spread into a phase-encoded superposition" idea to $n$ qubits, $N=2^n$.
+Compare this to $H$ on a single qubit ($N=2$): $H|0\rangle = \tfrac{1}{\sqrt2}(|0\rangle+|1\rangle)$, $H|1\rangle = \tfrac{1}{\sqrt2}(|0\rangle - |1\rangle) = \tfrac1{\sqrt2}\sum_k e^{2\pi i \cdot 1 \cdot k/2}|k\rangle$. $H$ *is* the 1-qubit QFT; the general QFT is what you get generalizing that same "spread into a phase-encoded superposition" idea to $n$ qubits, $N=2^n$.
 
 ## Requires a New Gate: Controlled-Phase
 
-Building the $n$-qubit case needs a gate this course hasn't used yet: **controlled-phase**, `CP(θ)`, `qc.cp(theta, control, target)`. It applies a phase rotation $P(\theta) = \text{diag}(1, e^{i\theta})$ to the target, but *only* on the branch where the control qubit is $|1\rangle$, otherwise it does nothing. `CP` is physically symmetric in its two qubits (swapping which one you call "control" gives the identical gate), which is why circuit diagrams draw it as a plain dot on both wires rather than `CX`'s dot-and-ring.
+Building the $n$-qubit case needs a gate this course hasn't used yet: **controlled-phase**, $CP(\theta)$, `qc.cp(theta, control, target)`. It applies a phase rotation $P(\theta) = \text{diag}(1, e^{i\theta})$ to the target, but *only* on the branch where the control qubit is $|1\rangle$, otherwise it does nothing. $CP$ is physically symmetric in its two qubits (swapping which one you call "control" gives the identical gate), which is why circuit diagrams draw it as a plain dot on both wires rather than $CX$'s dot-and-ring.
 
 ## The 2-Qubit Circuit
 
@@ -37,11 +37,11 @@ qc.h(0)
 qc.swap(0, 1)
 ```
 
-`H` on qubit 1 starts spreading it into superposition; the controlled-phase gate lets qubit 0 imprint a phase onto that superposition depending on its own value; `H` on qubit 0 spreads it too; the final `swap` puts the two qubits back in the order the definition above expects. Try it on $|01\rangle$ ($j=1$): the amplitudes come out as $\tfrac12, \tfrac{i}2, -\tfrac12, -\tfrac{i}2$ on $|00\rangle,|01\rangle,|10\rangle,|11\rangle$ respectively, exactly $\tfrac1{\sqrt4}e^{2\pi i\cdot1\cdot k/4}$ for $k=0,1,2,3$.
+$H$ on qubit 1 starts spreading it into superposition; the controlled-phase gate lets qubit 0 imprint a phase onto that superposition depending on its own value; $H$ on qubit 0 spreads it too; the final $SWAP$ puts the two qubits back in the order the definition above expects. Try it on $|01\rangle$ ($j=1$): the amplitudes come out as $\tfrac12, \tfrac{i}2, -\tfrac12, -\tfrac{i}2$ on $|00\rangle,|01\rangle,|10\rangle,|11\rangle$ respectively, exactly $\tfrac1{\sqrt4}e^{2\pi i\cdot1\cdot k/4}$ for $k=0,1,2,3$.
 
 <Visualization
-  title="QFT on |01⟩"
-  description="Step through gate by gate and compare the final amplitudes in the Exact State table against the formula above: each should have magnitude 0.5, with phases 0, 90°, 180°, 270° across |00⟩, |01⟩, |10⟩, |11⟩ in order."
+  title="QFT on $|01\rangle$"
+  description="Step through gate by gate and compare the final amplitudes in the Exact State table against the formula above: each should have magnitude 0.5, with phases 0, 90°, 180°, 270° across $|00\rangle$, $|01\rangle$, $|10\rangle$, $|11\rangle$ in order."
   circuit={{
     numQubits: 2,
     gates: [
@@ -57,7 +57,7 @@ qc.swap(0, 1)
 
 <CodeExercise
   id="code-qft-2qubit"
-  prompt="Build the 2-qubit QFT circuit: H on qubit 1, CP(π/2) with qubit 0 as control and qubit 1 as target, H on qubit 0, then SWAP the two qubits."
+  prompt="Build the 2-qubit QFT circuit: $H$ on qubit 1, $CP(\pi/2)$ with qubit 0 as control and qubit 1 as target, $H$ on qubit 0, then $SWAP$ the two qubits."
   starterCode={`from qiskit import QuantumCircuit\nimport math\n\nqc = QuantumCircuit(2)\n# your code here\n`}
   expectedCircuit={{
     numQubits: 2,
@@ -75,30 +75,30 @@ qc.swap(0, 1)
   ]}
 />
 
-## The General Pattern (n Qubits)
+## The General Pattern ($n$ Qubits)
 
-The $n$-qubit QFT repeats the same idea per qubit: `H`, then a cascade of `CP` gates from every later qubit, each with a smaller angle ($\pi/2$, then $\pi/4$, then $\pi/8$, ...), then move to the next qubit, finishing with a layer of `SWAP`s to reverse the qubit order. The circuit above is exactly this pattern's smallest nontrivial case, one `H`, one `CP`, one more `H`, one `SWAP`. Every extra qubit adds one more `H` and one more `CP` cascade, growing the gate count as $O(n^2)$, exponentially *fewer* gates than the $O(N\log N)$ the fastest classical FFT needs for the same size input, though the two aren't directly comparable: the QFT acts on amplitudes you can't read out directly, and turning that into a genuine speedup for a real problem is exactly what Quantum Phase Estimation (next lesson) does.
+The $n$-qubit QFT repeats the same idea per qubit: $H$, then a cascade of $CP$ gates from every later qubit, each with a smaller angle ($\pi/2$, then $\pi/4$, then $\pi/8$, ...), then move to the next qubit, finishing with a layer of $SWAP$s to reverse the qubit order. The circuit above is exactly this pattern's smallest nontrivial case, one $H$, one $CP$, one more $H$, one $SWAP$. Every extra qubit adds one more $H$ and one more $CP$ cascade, growing the gate count as $O(n^2)$, exponentially *fewer* gates than the $O(N\log N)$ the fastest classical FFT needs for the same size input, though the two aren't directly comparable: the QFT acts on amplitudes you can't read out directly, and turning that into a genuine speedup for a real problem is exactly what Quantum Phase Estimation (next lesson) does.
 
 <Quiz
   id="quiz-qft-of-zero"
-  question="What is QFT|00⟩ (j = 0)?"
+  question="What is $\\text{QFT}|00\\rangle$ ($j = 0$)?"
   choices={[
-    { id: "a", text: "|00⟩, unchanged.", correct: false },
-    { id: "b", text: "The uniform superposition ½(|00⟩+|01⟩+|10⟩+|11⟩), with every phase equal to 0.", correct: true },
-    { id: "c", text: "|11⟩", correct: false },
-    { id: "d", text: "It's undefined for j = 0.", correct: false },
+    { id: "a", text: "$|00\\rangle$, unchanged.", correct: false },
+    { id: "b", text: "The uniform superposition $\\frac{1}{2}(|00\\rangle+|01\\rangle+|10\\rangle+|11\\rangle)$, with every phase equal to 0.", correct: true },
+    { id: "c", text: "$|11\\rangle$", correct: false },
+    { id: "d", text: "It's undefined for $j = 0$.", correct: false },
   ]}
-  explanation="Plugging j=0 into the definition, every term e^{2πi·0·k/N} = e^0 = 1, so QFT|0⟩ = (1/√N)Σ_k|k⟩: a perfectly uniform superposition with no relative phase at all, the same state H^⊗n|0⟩^⊗n already produces directly."
+  explanation="Plugging $j=0$ into the definition, every term $e^{2\\pi i\\cdot0\\cdot k/N} = e^0 = 1$, so $\\text{QFT}|0\\rangle = (1/\\sqrt N)\\sum_k|k\\rangle$: a perfectly uniform superposition with no relative phase at all, the same state $H^{\\otimes n}|0\\rangle^{\\otimes n}$ already produces directly."
 />
 
 <Quiz
   id="quiz-cp-symmetry"
-  question="Why does CircuitDiagram draw CP the same way it draws CZ (a dot on each wire), rather than CX's dot-and-target-ring?"
+  question="Why does CircuitDiagram draw $CP$ the same way it draws $CZ$ (a dot on each wire), rather than $CX$'s dot-and-target-ring?"
   choices={[
     { id: "a", text: "It's a simplification with no physical basis.", correct: false },
-    { id: "b", text: "CP (like CZ) is physically symmetric between its two qubits — swapping which one is 'control' gives an identical gate — unlike CX, which genuinely treats its two qubits differently.", correct: true },
-    { id: "c", text: "CP doesn't actually need two qubits.", correct: false },
+    { id: "b", text: "$CP$ (like $CZ$) is physically symmetric between its two qubits (swapping which one is 'control' gives an identical gate), unlike $CX$, which genuinely treats its two qubits differently.", correct: true },
+    { id: "c", text: "$CP$ doesn't actually need two qubits.", correct: false },
     { id: "d", text: "The diagram can't distinguish parameterized gates from unparameterized ones.", correct: false },
   ]}
-  explanation="CX flips its target only when the control is |1⟩, a genuinely asymmetric role between the two qubits. CP and CZ both apply a phase only when *both* qubits are |1⟩, a condition unchanged by swapping which qubit is labeled 'control', so the symmetric dot-dot drawing is the physically accurate one, not just a convenient shortcut."
+  explanation="$CX$ flips its target only when the control is $|1\\rangle$, a genuinely asymmetric role between the two qubits. $CP$ and $CZ$ both apply a phase only when *both* qubits are $|1\\rangle$, a condition unchanged by swapping which qubit is labeled 'control', so the symmetric dot-dot drawing is the physically accurate one, not just a convenient shortcut."
 />

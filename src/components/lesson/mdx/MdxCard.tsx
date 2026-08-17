@@ -1,5 +1,6 @@
 import { Badge, Box, HStack, VStack } from "@chakra-ui/react";
 import type { PropsWithChildren, ReactNode } from "react";
+import { InlineMath } from "../InlineMath";
 
 export function MdxCard({
   eyebrow,
@@ -12,7 +13,7 @@ export function MdxCard({
         <Badge colorPalette="quantum" variant="subtle" alignSelf="flex-start" size="sm">
           <HStack gap="1.5">
             {icon}
-            <span>{eyebrow}</span>
+            <InlineMath>{eyebrow}</InlineMath>
           </HStack>
         </Badge>
         {children}

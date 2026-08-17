@@ -177,6 +177,32 @@ below the frontmatter is free-form MDX: normal Markdown prose (LaTeX via `$...$`
   learner can see measured counts converge as shots increase; this is the
   "shots" teaching tool; it does not run real Aer (there is no Python here).
 
+**Content authoring: LaTeX and gate names.** These apply to every prose string
+authored for a lesson: MDX body text, and the `question`/`choices[].text`/
+`explanation` props on `<Quiz>`, and the `prompt`/`hints` props on
+`<CodeExercise>`, since all of them render through `remark-math`/`rehype-katex`
+(directly for the MDX body, via the `Markdown` component for the prop strings).
+It does **not** apply inside code: `starterCode`, any ` ```python ` fenced block,
+or other CodeMirror/editor content stays plain Python source, since KaTeX isn't
+rendered there and Python doesn't use LaTeX syntax anyway.
+
+- **Gate names use LaTeX subscript notation, not a bare trailing letter.** Write
+  an oracle gate as `$U_a$` / `$U_f$` (renders as $U_a$/$U_f$), not `Ua`/`Uf`.
+  This matches how the same gate is written in the textbooks/papers a learner
+  would cross-reference, and reads unambiguously next to other subscripted math
+  (`$q_0$`, `$|\psi\rangle$`) instead of looking like a typo'd variable name.
+- **Wrap gate names in LaTeX (`$...$`) wherever they appear in prose**, quiz
+  questions/choices/explanations, and exercise prompts/hints, for consistency
+  with the math surrounding them: `$H$`, `$X$`, `$CNOT$`, `$U_f$`, not bare
+  `H`, `X`, `CNOT`, `Uf`. The one exception is inside code (see above): write
+  `qc.h(0)` in a code block or `starterCode` as plain Python, never
+  `qc.$H$(0)`.
+- **`<Quiz>` question/choice/explanation text should use LaTeX wherever it
+  states a gate, state, amplitude, or other math expression**, the same as MDX
+  body prose does, e.g. a choice reading "applies $X$ to $q_1$" rather than
+  "applies X to q1". Plain English framing around the math (the actual
+  question being asked) doesn't need LaTeX, only the notation itself.
+
 `Circuit` (`content/schema.ts`) also carries optional `name` and `qubitLabels`,
 which `CircuitDiagram` renders as a caption and per-wire labels respectively;
 this is what makes `QuantumCircuit(..., name="...")` and a named `QuantumRegister`
@@ -273,10 +299,18 @@ Qiskit behavior for that gate/feature, not generic textbook convention.
   line does or annotate what changed.
 - **No backwards-compatibility shims.** This is a from-scratch scaffold; if
   something's unused, delete it rather than deprecating it.
-- **No em dashes, en dashes, or spaced hyphens ( - ) as prose punctuation** in
-  this file or in lesson/exercise content: they read as minus signs next to
-  quantum math (negative amplitudes, `|−⟩` states, etc.). Use a comma, colon,
-  semicolon, parentheses, or a new sentence instead.
+- **No em dashes (`—`), en dashes (`–`), or spaced hyphens ( - ) as prose
+  punctuation** in this file or in *any* authored lesson content: MDX body
+  text, `<Quiz>` `question`/`choices[].text`/`explanation`, and
+  `<CodeExercise>` `prompt`/`hints`. They read as minus signs next to quantum
+  math (negative amplitudes, `|−⟩` states, etc.). Use a comma, colon,
+  semicolon, parentheses, or a new sentence instead. This is not just a style
+  preference for freshly-written prose: before marking any new or edited
+  lesson done, grep the touched `.mdx` file for `—`, `–`, and ` - ` (a
+  hyphen with spaces on both sides, not a hyphenated word or a `-` inside
+  code) and rewrite any hit. A plain, unhyphenated `-` still reads fine
+  inside identifiers or Python code, this rule is about prose punctuation
+  only.
 - **Dexie schema changes go in a new `.version(n)` block** (`src/db/db.ts`), not by
   editing the existing version's `.stores()` in place. Dexie only re-runs the
   upgrade/schema step when the version number increases; editing an existing

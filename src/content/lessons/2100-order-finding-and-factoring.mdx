@@ -41,13 +41,13 @@ Finding $r$ classically (trying powers of $a$ one at a time) takes exponentially
 $$U_a|x\rangle = |ax \bmod N\rangle$$
 
 <OracleFigure
-  title="Ua as a Black Box"
-  description="Modular multiplication by a, as a reversible gate: feed in |x⟩, get out |ax mod N⟩. It's unitary because x ↦ ax mod N is a bijection on {0,...,N-1} whenever gcd(a,N)=1 — a permutation matrix, which is automatically unitary regardless of how complicated the permutation looks."
+  title="$U_a$ as a Black Box"
+  description="Modular multiplication by $a$, as a reversible gate: feed in $|x\rangle$, get out $|ax \bmod N\rangle$. It's unitary because $x \mapsto ax \bmod N$ is a bijection on $\{0,\ldots,N-1\}$ whenever $\gcd(a,N)=1$: a permutation matrix, which is automatically unitary regardless of how complicated the permutation looks."
   inputLabels={["x"]}
-  boxLabel="Ua"
+  boxLabel="U_a"
 />
 
-$U_a$ is unitary for the same reason `X` is: it's a *permutation* of basis states (no two different $x$ map to the same $ax \bmod N$, since $a$ is invertible mod $N$), and every permutation matrix is automatically unitary, its inverse is just running the permutation backwards, $U_a^{-1} = U_{a^{-1}\bmod N}$.
+$U_a$ is unitary for the same reason $X$ is: it's a *permutation* of basis states (no two different $x$ map to the same $ax \bmod N$, since $a$ is invertible mod $N$), and every permutation matrix is automatically unitary, its inverse is just running the permutation backwards, $U_a^{-1} = U_{a^{-1}\bmod N}$.
 
 ## Why Its Eigenvalues Encode r
 
@@ -59,24 +59,24 @@ with eigenvalue $e^{2\pi i s/r}$ (check: applying $U_a$ shifts every $a^k\bmod N
 
 <Quiz
   id="quiz-order-finding-different-a"
-  question="For N = 15, a = 2: powers of 2 mod 15 are 2, 4, 8, 1 (repeating). What is the order r, and does it satisfy the even + not-(-1) conditions needed to extract factors?"
+  question="For $N = 15$, $a = 2$: powers of 2 mod 15 are 2, 4, 8, 1 (repeating). What is the order $r$, and does it satisfy the even + not-(-1) conditions needed to extract factors?"
   choices={[
-    { id: "a", text: "r = 3, and it's odd, so this a doesn't work; a different a would be needed.", correct: false },
-    { id: "b", text: "r = 4 (2⁴ = 16 ≡ 1 mod 15), even, and 2² = 4 ≢ 14 ≡ −1 mod 15, so both conditions hold.", correct: true },
-    { id: "c", text: "r = 4, but since 2² = 4 happens to equal a²/2 the conditions fail.", correct: false },
-    { id: "d", text: "There is no valid r for a = 2 and N = 15.", correct: false },
+    { id: "a", text: "$r = 3$, and it's odd, so this $a$ doesn't work; a different $a$ would be needed.", correct: false },
+    { id: "b", text: "$r = 4$ ($2^4 = 16 \\equiv 1 \\bmod 15$), even, and $2^2 = 4 \\not\\equiv 14 \\equiv -1 \\bmod 15$, so both conditions hold.", correct: true },
+    { id: "c", text: "$r = 4$, but since $2^2 = 4$ happens to equal $a^2/2$ the conditions fail.", correct: false },
+    { id: "d", text: "There is no valid $r$ for $a = 2$ and $N = 15$.", correct: false },
   ]}
-  explanation="2¹=2, 2²=4, 2³=8, 2⁴=16≡1 mod 15: four steps back to 1, so r=4, even. a^(r/2) = 2² = 4, and 4 is not ≡ −1 (≡14) mod 15, so the conditions hold: gcd(4−1,15)=3 and gcd(4+1,15)=5, the same factors as the a=7 example — unsurprising, since 15 only has one factorization to find, different valid a's just arrive at it from different angles."
+  explanation="$2^1=2$, $2^2=4$, $2^3=8$, $2^4=16\\equiv1 \\bmod 15$: four steps back to 1, so $r=4$, even. $a^{r/2} = 2^2 = 4$, and 4 is not $\\equiv -1$ ($\\equiv14$) mod 15, so the conditions hold: $\\gcd(4-1,15)=3$ and $\\gcd(4+1,15)=5$, the same factors as the $a=7$ example, unsurprising since 15 only has one factorization to find, different valid $a$'s just arrive at it from different angles."
 />
 
 <Quiz
   id="quiz-ua-unitary-reason"
-  question="Why is Ua|x⟩ = |ax mod N⟩ guaranteed to be unitary, for any a coprime to N?"
+  question="Why is $U_a|x\rangle = |ax \bmod N\rangle$ guaranteed to be unitary, for any $a$ coprime to $N$?"
   choices={[
     { id: "a", text: "It isn't guaranteed; it depends on the specific value of a.", correct: false },
-    { id: "b", text: "Because gcd(a,N)=1 makes x ↦ ax mod N a bijection on {0,...,N−1}, so Ua is a permutation matrix, and every permutation matrix is automatically unitary.", correct: true },
+    { id: "b", text: "Because $\\gcd(a,N)=1$ makes $x \\mapsto ax \\bmod N$ a bijection on $\\{0,\\ldots,N-1\\}$, so $U_a$ is a permutation matrix, and every permutation matrix is automatically unitary.", correct: true },
     { id: "c", text: "Because modular arithmetic is always reversible, regardless of gcd.", correct: false },
     { id: "d", text: "It isn't actually unitary; QPE tolerates a small amount of non-unitarity.", correct: false },
   ]}
-  explanation="gcd(a,N)=1 means a has a multiplicative inverse mod N, which is exactly what makes x ↦ ax mod N invertible (and therefore a bijection, since it's a function from a finite set to itself). A bijection's matrix representation is a permutation matrix — one 1 per row and column, zeros elsewhere — and permutation matrices satisfy U†U=I automatically, no matter how complicated the underlying permutation is."
+  explanation="$\\gcd(a,N)=1$ means $a$ has a multiplicative inverse mod $N$, which is exactly what makes $x \\mapsto ax \\bmod N$ invertible (and therefore a bijection, since it's a function from a finite set to itself). A bijection's matrix representation is a permutation matrix (one 1 per row and column, zeros elsewhere), and permutation matrices satisfy $U^\\dagger U=I$ automatically, no matter how complicated the underlying permutation is."
 />

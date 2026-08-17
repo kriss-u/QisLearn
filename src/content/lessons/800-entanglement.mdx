@@ -24,7 +24,7 @@ Nothing about *how gates get applied* changes: you still call `qc.h(0)`, `qc.cx(
 
 ## The $CNOT$ Gate
 
-**$CNOT$** (controlled-X) flips its target qubit only when the control qubit is $|1\rangle$. Combined with Hadamard, it produces **entanglement**: correlations that have no classical explanation.
+**$CNOT$** (controlled-$X$) flips its target qubit only when the control qubit is $|1\rangle$. Combined with Hadamard, it produces **entanglement**: correlations that have no classical explanation.
 
 ```python
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
@@ -38,7 +38,7 @@ qc.cx(0, 1)
 
 <CodeExercise
   id="code-bell-state"
-  prompt="Create a 2-qubit circuit named `bell_pair` (using a `QuantumRegister`, as above, or just `QuantumCircuit(2, name='bell_pair')`, either is fine) that produces the Bell state $\frac{1}{\sqrt{2}}(|00\rangle + |11\rangle)$: apply H to qubit 0, then CNOT with qubit 0 as control and qubit 1 as target."
+  prompt="Create a 2-qubit circuit named `bell_pair` (using a `QuantumRegister`, as above, or just `QuantumCircuit(2, name='bell_pair')`, either is fine) that produces the Bell state $\frac{1}{\sqrt{2}}(|00\rangle + |11\rangle)$: apply $H$ to qubit 0, then $CNOT$ with qubit 0 as control and qubit 1 as target."
   starterCode={`from qiskit import QuantumCircuit, QuantumRegister\n\nqr = QuantumRegister(2, "q")\nqc = QuantumCircuit(qr, name="bell_pair")\n# your code here\n`}
   expectedCircuit={{
     numQubits: 2,

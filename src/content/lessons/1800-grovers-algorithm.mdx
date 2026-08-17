@@ -12,13 +12,13 @@ Last lesson covered the geometry: the oracle and the diffusion operator each ref
 
 ## The Oracle, as a Gate
 
-For a single marked item $|\omega\rangle$, the oracle just needs to flip the sign of that one basis state's amplitude and leave every other basis state alone. When $\omega = 11$ (both qubits marked), that's precisely what `CZ` already does: flip sign exactly when both qubits read 1.
+For a single marked item $|\omega\rangle$, the oracle just needs to flip the sign of that one basis state's amplitude and leave every other basis state alone. When $\omega = 11$ (both qubits marked), that's precisely what $CZ$ already does: flip sign exactly when both qubits read 1.
 
 $$O|x\rangle = \begin{cases} -|x\rangle & x = \omega \\ \phantom{-}|x\rangle & x \neq \omega \end{cases}$$
 
 ## The Diffusion Operator, as Gates
 
-$D = 2|s\rangle\langle s| - I$ reflects about the uniform superposition $|s\rangle$. The standard construction sandwiches a "flip sign of everything except $|00\rangle$" step between two layers of `H`: turn $|s\rangle$ back into $|00\rangle$ with $H^{\otimes n}$, flip every state's sign *except* $|00\rangle$ (equivalently, up to an unobservable global phase, flip the sign of *only* $|00\rangle$), then undo the $H$s. Flipping the sign of $|00\rangle$ specifically is `X` on every qubit (remaps $|00\rangle\leftrightarrow|11\rangle$), then the same `CZ` used above (now catching the remapped $|11\rangle$), then `X` again to undo the remap:
+$D = 2|s\rangle\langle s| - I$ reflects about the uniform superposition $|s\rangle$. The standard construction sandwiches a "flip sign of everything except $|00\rangle$" step between two layers of $H$: turn $|s\rangle$ back into $|00\rangle$ with $H^{\otimes n}$, flip every state's sign *except* $|00\rangle$ (equivalently, up to an unobservable global phase, flip the sign of *only* $|00\rangle$), then undo the $H$s. Flipping the sign of $|00\rangle$ specifically is $X$ on every qubit (remaps $|00\rangle\leftrightarrow|11\rangle$), then the same $CZ$ used above (now catching the remapped $|11\rangle$), then $X$ again to undo the remap:
 
 $$D = H^{\otimes n}\,X^{\otimes n}\,(\text{CZ})\,X^{\otimes n}\,H^{\otimes n}$$
 
@@ -40,8 +40,8 @@ qc.h([0, 1])
 ```
 
 <Visualization
-  title="Grover's Algorithm: Searching 4 Items for |11⟩"
-  description="Step through gate by gate. After the oracle's CZ, watch the Exact State table: |11⟩'s amplitude flips sign while the other three stay positive, exactly the reflection about |s'⟩ from last lesson. After the diffusion operator's H-X-CZ-X-H, check Measurement Probabilities: all probability has piled onto |11⟩."
+  title="Grover's Algorithm: Searching 4 Items for $|11\rangle$"
+  description="Step through gate by gate. After the oracle's $CZ$, watch the Exact State table: $|11\rangle$'s amplitude flips sign while the other three stay positive, exactly the reflection about $|s'\rangle$ from last lesson. After the diffusion operator's $H$-$X$-$CZ$-$X$-$H$, check Measurement Probabilities: all probability has piled onto $|11\rangle$."
   circuit={{
     numQubits: 2,
     gates: [
@@ -64,7 +64,7 @@ qc.h([0, 1])
 
 <CodeExercise
   id="code-grovers-2qubit"
-  prompt="Build the full 2-qubit Grover's algorithm circuit above, searching for |11⟩: H on both qubits, then the oracle (CZ), then the diffusion operator (H on both, X on both, CZ, X on both, H on both)."
+  prompt="Build the full 2-qubit Grover's algorithm circuit above, searching for $|11\rangle$: $H$ on both qubits, then the oracle ($CZ$), then the diffusion operator ($H$ on both, $X$ on both, $CZ$, $X$ on both, $H$ on both)."
   starterCode={`from qiskit import QuantumCircuit\n\nqc = QuantumCircuit(2)\n# your code here\n`}
   expectedCircuit={{
     numQubits: 2,
@@ -84,24 +84,24 @@ qc.h([0, 1])
     ],
   }}
   hints={[
-    "Start with qc.h([0, 1]) for uniform superposition, then qc.cz(0, 1) as the oracle marking |11⟩.",
-    "The diffusion operator is symmetric: H on both, X on both, CZ, X on both, H on both, in that order.",
-    "12 gates total, and the pattern (H, X, CZ, X, H) for the diffusion step is exactly a mirror image of itself.",
+    "Start with qc.h([0, 1]) for uniform superposition, then qc.cz(0, 1) as the oracle marking $|11\\rangle$.",
+    "The diffusion operator is symmetric: $H$ on both, $X$ on both, $CZ$, $X$ on both, $H$ on both, in that order.",
+    "12 gates total, and the pattern ($H$, $X$, $CZ$, $X$, $H$) for the diffusion step is exactly a mirror image of itself.",
   ]}
 />
 
 ## Why the Oracle Needs to Change for a Different Target
 
-This lesson's oracle only marks $|11\rangle$, because that's exactly what `CZ` flips the sign of. To mark a different target, say $|01\rangle$, sandwich the same `CZ` between `X` gates on whichever qubits should read 0 in the target (here, qubit 0): `X` on qubit 0 remaps $01\to11$, `CZ` catches it, `X` undoes the remap, exactly the same trick the diffusion operator's own construction already used above to target $|00\rangle$ instead of $|11\rangle$.
+This lesson's oracle only marks $|11\rangle$, because that's exactly what $CZ$ flips the sign of. To mark a different target, say $|01\rangle$, sandwich the same $CZ$ between $X$ gates on whichever qubits should read 0 in the target (here, qubit 0): $X$ on qubit 0 remaps $01\to11$, $CZ$ catches it, $X$ undoes the remap, exactly the same trick the diffusion operator's own construction already used above to target $|00\rangle$ instead of $|11\rangle$.
 
 <Quiz
   id="quiz-grover-iteration-count"
-  question="For N = 16 items (4 qubits) with one marked item, roughly how many Grover iterations are needed, and how does that compare to the classical worst case?"
+  question="For $N = 16$ items (4 qubits) with one marked item, roughly how many Grover iterations are needed, and how does that compare to the classical worst case?"
   choices={[
     { id: "a", text: "About 3 iterations, versus up to 16 classically.", correct: true },
     { id: "b", text: "About 8 iterations, versus up to 16 classically.", correct: false },
-    { id: "c", text: "Exactly 1 iteration, same as N=4.", correct: false },
+    { id: "c", text: "Exactly 1 iteration, same as $N=4$.", correct: false },
     { id: "d", text: "16 iterations, no better than classical.", correct: false },
   ]}
-  explanation="k_opt ≈ (π/4)√N = (π/4)·4 ≈ 3.14, so 3 iterations (rounding down). Classically, an unstructured search over 16 items can require checking up to all 16 in the worst case. The gap (√N vs N) is Grover's quadratic speedup, smaller than Deutsch-Jozsa's exponential one, but it applies to any black-box search problem, not just constant-vs-balanced promises."
+  explanation="$k_{\\text{opt}} \\approx \\frac{\\pi}{4}\\sqrt N = \\frac{\\pi}{4}\\cdot4 \\approx 3.14$, so 3 iterations (rounding down). Classically, an unstructured search over 16 items can require checking up to all 16 in the worst case. The gap ($\\sqrt N$ vs $N$) is Grover's quadratic speedup, smaller than Deutsch-Jozsa's exponential one, but it applies to any black-box search problem, not just constant-vs-balanced promises."
 />

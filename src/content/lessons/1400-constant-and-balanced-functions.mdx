@@ -42,7 +42,7 @@ qc.cx(2, 3)
 ```
 
 <Visualization
-  title="Uf for f(x0, x1, x2) = x0 ⊕ x2"
+  title="$U_f$ for $f(x_0, x_1, x_2) = x_0 \oplus x_2$"
   description="Set input qubits 0 and 2, then watch qubit 3 (the ancilla) in the Exact State table: it tracks x0 XOR x2 exactly, completely independent of whatever qubit 1 is set to."
   circuit={{ numQubits: 4, gates: [{ gate: "cx", qubits: [0, 3] }, { gate: "cx", qubits: [2, 3] }] }}
   views={["circuit", "table"]}
@@ -50,7 +50,7 @@ qc.cx(2, 3)
 
 <CodeExercise
   id="code-balanced-skip-input"
-  prompt="Build the oracle for f(x0, x1, x2) = x0 XOR x2 on a 4-qubit circuit (qubits 0-2 are inputs, qubit 3 is the ancilla): CX from qubit 0 into qubit 3, then CX from qubit 2 into qubit 3. Qubit 1 isn't used by this f, so it gets no gate at all."
+  prompt="Build the oracle for $f(x_0, x_1, x_2) = x_0 \oplus x_2$ on a 4-qubit circuit (qubits 0-2 are inputs, qubit 3 is the ancilla): $CX$ from qubit 0 into qubit 3, then $CX$ from qubit 2 into qubit 3. Qubit 1 isn't used by this $f$, so it gets no gate at all."
   starterCode={`from qiskit import QuantumCircuit\n\nqc = QuantumCircuit(4)\n# your code here\n`}
   expectedCircuit={{
     numQubits: 4,
@@ -62,30 +62,30 @@ qc.cx(2, 3)
   hints={[
     "qc.cx(0, 3) first: qubit 0 controls, qubit 3 (the ancilla) is the target.",
     "Then qc.cx(2, 3): qubit 2 controls, same target.",
-    "Qubit 1 never appears in this f, so it never appears in the circuit either — no gate touches it.",
+    "Qubit 1 never appears in this $f$, so it never appears in the circuit either: no gate touches it.",
   ]}
 />
 
 <Quiz
   id="quiz-classify-and"
-  question="f(x0, x1) = x0 AND x1 (f=1 only when both inputs are 1). Is this constant, balanced, or neither?"
+  question="$f(x_0, x_1) = x_0 \wedge x_1$ ($f=1$ only when both inputs are 1). Is this constant, balanced, or neither?"
   choices={[
     { id: "a", text: "Constant", correct: false },
     { id: "b", text: "Balanced", correct: false },
-    { id: "c", text: "Neither: only 1 of the 4 inputs (11) gives f=1, not exactly half.", correct: true },
+    { id: "c", text: "Neither: only 1 of the 4 inputs (11) gives $f=1$, not exactly half.", correct: true },
     { id: "d", text: "Both constant and balanced.", correct: false },
   ]}
-  explanation="Balanced requires exactly 2^(n-1) inputs (here, exactly 2 of the 4) to give f=1. AND gives f=1 for only 1 input (11) and f=0 for the other 3, so it's neither constant nor balanced — exactly the kind of function Deutsch-Jozsa's promise excludes by assumption."
+  explanation="Balanced requires exactly $2^{n-1}$ inputs (here, exactly 2 of the 4) to give $f=1$. AND gives $f=1$ for only 1 input (11) and $f=0$ for the other 3, so it's neither constant nor balanced: exactly the kind of function Deutsch-Jozsa's promise excludes by assumption."
 />
 
 <Quiz
   id="quiz-classical-worst-case"
-  question="For n = 4 input bits (16 possible inputs), what's the classical worst-case number of queries needed to determine constant-vs-balanced with certainty?"
+  question="For $n = 4$ input bits (16 possible inputs), what's the classical worst-case number of queries needed to determine constant-vs-balanced with certainty?"
   choices={[
     { id: "a", text: "4", correct: false },
     { id: "b", text: "8", correct: false },
     { id: "c", text: "9, one more than half of the 16 inputs.", correct: true },
     { id: "d", text: "16, every input.", correct: false },
   ]}
-  explanation="The worst case is 2^(n-1) + 1. For n=4, that's 2³ + 1 = 9: query 8 inputs and get all-0, and an adversarial f could still be either constant-0 or balanced-with-the-remaining-8-as-1; only the 9th query resolves it either way."
+  explanation="The worst case is $2^{n-1} + 1$. For $n=4$, that's $2^3 + 1 = 9$: query 8 inputs and get all-0, and an adversarial $f$ could still be either constant-0 or balanced-with-the-remaining-8-as-1; only the 9th query resolves it either way."
 />

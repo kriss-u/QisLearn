@@ -51,24 +51,24 @@ Two vectors are **orthogonal** when $\langle\psi|\phi\rangle = 0$. Check $|0\ran
 
 <Quiz
   id="quiz-modulus-squared"
-  question="A qubit's amplitude for |1⟩ is $\beta = \frac{1}{\sqrt2}i$ (purely imaginary). What is the probability of measuring |1⟩?"
+  question="A qubit's amplitude for $|1\rangle$ is $\beta = \frac{1}{\sqrt2}i$ (purely imaginary). What is the probability of measuring $|1\rangle$?"
   choices={[
     { id: "a", text: "$\\frac{1}{\\sqrt2}$, since that's the value of $\\beta$.", correct: false },
     { id: "b", text: "$0$, since imaginary numbers can't contribute to a real probability.", correct: false },
     { id: "c", text: "$0.5$, since $|\\beta|^2 = \\beta\\beta^* = \\frac{1}{\\sqrt2}i \\cdot \\left(-\\frac{1}{\\sqrt2}i\\right) = \\frac{1}{2}$.", correct: true },
     { id: "d", text: "Undefined, since $\\beta$ isn't a real number.", correct: false },
   ]}
-  explanation="Probabilities always come from |amplitude|^2 = amplitude times its own conjugate, regardless of whether the amplitude itself is real, imaginary, or a mix of both. Here (i/√2)(-i/√2) = -i²/2 = 1/2, since i² = -1."
+  explanation="Probabilities always come from $|\text{amplitude}|^2 = \text{amplitude}$ times its own conjugate, regardless of whether the amplitude itself is real, imaginary, or a mix of both. Here $(i/\sqrt2)(-i/\sqrt2) = -i^2/2 = 1/2$, since $i^2 = -1$."
 />
 
 <Quiz
   id="quiz-orthonormal-check"
   question="Are $|+\rangle = \frac{1}{\sqrt2}\begin{pmatrix}1\\1\end{pmatrix}$ and $|-\rangle = \frac{1}{\sqrt2}\begin{pmatrix}1\\-1\end{pmatrix}$ orthonormal?"
   choices={[
-    { id: "a", text: "Yes: each has norm 1, and ⟨+|−⟩ = ½(1·1 + 1·(−1)) = 0.", correct: true },
+    { id: "a", text: "Yes: each has norm 1, and $\\langle+|-\\rangle = \\frac{1}{2}(1\\cdot1 + 1\\cdot(-1)) = 0$.", correct: true },
     { id: "b", text: "No, they have norm 1 but aren't orthogonal.", correct: false },
     { id: "c", text: "No, they're orthogonal but don't have norm 1.", correct: false },
     { id: "d", text: "No to both properties.", correct: false },
   ]}
-  explanation="⟨+|+⟩ = ½(1+1) = 1 and ⟨−|−⟩ = ½(1+1) = 1, so both have norm 1. ⟨+|−⟩ = ½(1·1 + 1·(−1)) = 0, so they're orthogonal too. |+⟩ and |−⟩ form a perfectly valid alternative basis to |0⟩/|1⟩, one you'll see constantly once gates are introduced."
+  explanation="$\langle+|+\rangle = \frac{1}{2}(1+1) = 1$ and $\langle-|-\rangle = \frac{1}{2}(1+1) = 1$, so both have norm 1. $\langle+|-\rangle = \frac{1}{2}(1\cdot1 + 1\cdot(-1)) = 0$, so they're orthogonal too. $|+\rangle$ and $|-\rangle$ form a perfectly valid alternative basis to $|0\rangle$/$|1\rangle$, one you'll see constantly once gates are introduced."
 />

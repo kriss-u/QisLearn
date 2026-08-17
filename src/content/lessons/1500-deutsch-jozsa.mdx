@@ -19,25 +19,25 @@ Classically, in the worst case you have to check more than half of all $2^n$ inp
 <OracleFigure
   title="The Oracle Under Test"
   description="Exactly the black box from the oracles lesson: the algorithm never gets to look inside this, only query it once."
-  inputLabels={["x0", "x1"]}
+  inputLabels={["x_0", "x_1"]}
   ancillaInLabel="y"
   ancillaOutLabel="y ⊕ f(x)"
-  boxLabel="Uf"
+  boxLabel="U_f"
 />
 
 ## The Circuit
 
-1. Start with $n$ input qubits at $|0\rangle$ and one ancilla. Set the ancilla to $|-\rangle$ (`X` then `H`), the phase-kickback setup from the Phase Kickback lesson.
-2. `H` on every input qubit: uniform superposition over all $2^n$ inputs, queried "all at once."
+1. Start with $n$ input qubits at $|0\rangle$ and one ancilla. Set the ancilla to $|-\rangle$ ($X$ then $H$), the phase-kickback setup from the Phase Kickback lesson.
+2. $H$ on every input qubit: uniform superposition over all $2^n$ inputs, queried "all at once."
 3. One query to the oracle. Every input's $f(x)$ gets kicked back as a phase on that input's amplitude, thanks to the ancilla sitting in $|-\rangle$.
-4. `H` again on the input qubits: turns the pattern of phases into an interference pattern in the probabilities.
+4. $H$ again on the input qubits: turns the pattern of phases into an interference pattern in the probabilities.
 5. Measure the input register only (ignore the ancilla).
 
 If every input qubit reads $0$: $f$ is **constant**. If *any* input qubit reads $1$: $f$ is **balanced**. That's the whole algorithm.
 
-### Constant Case: f(x) = 0
+### Constant Case: $f(x) = 0$
 
-An oracle for the always-0 function does nothing at all (no gates). So step 3 is empty, and steps 2 and 4 become two `H`s in a row on each input qubit with nothing in between: exactly the H-then-H interference from Superposition and Interference at Scale. Every input qubit returns to $|0\rangle$ with certainty.
+An oracle for the always-0 function does nothing at all (no gates). So step 3 is empty, and steps 2 and 4 become two $H$s in a row on each input qubit with nothing in between: exactly the $H$-then-$H$ interference from Superposition and Interference at Scale. Every input qubit returns to $|0\rangle$ with certainty.
 
 ```python
 from qiskit import QuantumCircuit
@@ -50,7 +50,7 @@ qc.h([0, 1])
 ```
 
 <Visualization
-  title="Constant Oracle: f(x0, x1) = 0"
+  title="Constant Oracle: $f(x_0, x_1) = 0$"
   description="Watch the input qubits (0 and 1) in the Exact State table: whichever outcome the ancilla (qubit 2) lands on, the input bits are always 0. Check the Measurement Probabilities panel: every nonzero outcome has 00 as its input bits."
   circuit={{
     numQubits: 3,
@@ -67,9 +67,9 @@ qc.h([0, 1])
   views={["circuit", "table", "probabilities"]}
 />
 
-### Balanced Case: f(x0, x1) = x0
+### Balanced Case: $f(x_0, x_1) = x_0$
 
-A balanced function that depends only on $x_0$: the oracle is a single `CX` from qubit 0 into the ancilla (the oracle lesson's linear-oracle recipe, using just one of the two inputs).
+A balanced function that depends only on $x_0$: the oracle is a single $CX$ from qubit 0 into the ancilla (the oracle lesson's linear-oracle recipe, using just one of the two inputs).
 
 ```python
 from qiskit import QuantumCircuit
@@ -82,8 +82,8 @@ qc.h([0, 1])
 ```
 
 <Visualization
-  title="Balanced Oracle: f(x0, x1) = x0"
-  description="Qubit 0 (whose phase got kicked back by the oracle) no longer cancels back to |0⟩; it's flipped to |1⟩ instead. Qubit 1, which the oracle never touched, still cancels back to |0⟩ exactly as in the constant case."
+  title="Balanced Oracle: $f(x_0, x_1) = x_0$"
+  description="Qubit 0 (whose phase got kicked back by the oracle) no longer cancels back to $|0\rangle$; it's flipped to $|1\rangle$ instead. Qubit 1, which the oracle never touched, still cancels back to $|0\rangle$ exactly as in the constant case."
   circuit={{
     numQubits: 3,
     qubitLabels: ["x0", "x1", "ancilla"],
@@ -104,7 +104,7 @@ Every nonzero outcome now has input bits $10$, never $00$: one query, and you kn
 
 <CodeExercise
   id="code-deutsch-jozsa"
-  prompt="Build the full Deutsch-Jozsa circuit for the balanced oracle f(x0, x1) = x0 on a 3-qubit circuit (qubits 0, 1 are the input register, qubit 2 is the ancilla): prepare the ancilla in |−⟩, put the input register in superposition, apply the oracle (a single CX from qubit 0 into the ancilla), then apply H to the input register again."
+  prompt="Build the full Deutsch-Jozsa circuit for the balanced oracle $f(x_0, x_1) = x_0$ on a 3-qubit circuit (qubits 0, 1 are the input register, qubit 2 is the ancilla): prepare the ancilla in $|-\rangle$, put the input register in superposition, apply the oracle (a single $CX$ from qubit 0 into the ancilla), then apply $H$ to the input register again."
   starterCode={`from qiskit import QuantumCircuit\n\nqc = QuantumCircuit(3)\n# your code here\n`}
   expectedCircuit={{
     numQubits: 3,
@@ -120,8 +120,8 @@ Every nonzero outcome now has input bits $10$, never $00$: one query, and you kn
   }}
   hints={[
     "Ancilla setup first: qc.x(2) then include qubit 2 in the first broadcast qc.h([0, 1, 2]).",
-    "The oracle for f(x0, x1) = x0 is one gate: qc.cx(0, 2).",
-    "Finish with H on the input register only: qc.h([0, 1]), not the ancilla this time.",
+    "The oracle for $f(x_0, x_1) = x_0$ is one gate: qc.cx(0, 2).",
+    "Finish with $H$ on the input register only: qc.h([0, 1]), not the ancilla this time.",
   ]}
 />
 
@@ -134,5 +134,5 @@ Every nonzero outcome now has input bits $10$, never $00$: one query, and you kn
     { id: "c", text: "$f$ could be either; you need to run it again to be sure.", correct: false },
     { id: "d", text: "Nothing: the ancilla's outcome also has to be checked.", correct: false },
   ]}
-  explanation="All-zero on the input register only happens when the H-then-H interference on every input qubit was left completely undisturbed by the oracle, which only happens for a constant f. Any balanced f disturbs at least one input qubit's phase enough to flip its measured outcome away from 0 with certainty, so all-zero is conclusive, in a single query, given the constant-or-balanced promise."
+  explanation="All-zero on the input register only happens when the $H$-then-$H$ interference on every input qubit was left completely undisturbed by the oracle, which only happens for a constant $f$. Any balanced $f$ disturbs at least one input qubit's phase enough to flip its measured outcome away from 0 with certainty, so all-zero is conclusive, in a single query, given the constant-or-balanced promise."
 />

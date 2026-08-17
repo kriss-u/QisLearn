@@ -54,7 +54,7 @@ qc.h([0, 1, 2])
 
 Superposition alone isn't enough to make an algorithm useful: you also need a way to *steer* probability toward the right answer. That's interference: routing two different computational "paths" so their amplitudes for the same outcome add up (constructive) or cancel out (destructive).
 
-The simplest possible example is one qubit and two Hadamards in a row. You already know $H|0\rangle = |+\rangle$. What does a *second* H do?
+The simplest possible example is one qubit and two Hadamards in a row. You already know $H|0\rangle = |+\rangle$. What does a *second* $H$ do?
 
 ```python
 from qiskit import QuantumCircuit
@@ -65,8 +65,8 @@ qc.h(0)
 ```
 
 <Visualization
-  title="H, then H Again"
-  description="Step through the two gates with the scrubber below the circuit. Watch the Exact State table after the second $H$: the amplitude on |1⟩ isn't just small, it's exactly 0."
+  title="$H$, then $H$ Again"
+  description="Step through the two gates with the scrubber below the circuit. Watch the Exact State table after the second $H$: the amplitude on $|1\rangle$ isn't just small, it's exactly 0."
   circuit={{ numQubits: 1, gates: [{ gate: "h", qubits: [0] }, { gate: "h", qubits: [0] }] }}
   views={["circuit", "table"]}
 />
@@ -77,16 +77,16 @@ This (steering amplitude toward a "yes" answer and cancelling it away from every
 
 <Quiz
   id="quiz-interference-cancellation"
-  question="In the $H$-then-$H$ circuit above, why does the amplitude on $|1⟩$ end up at exactly 0.000 rather than just something small?"
+  question="In the $H$-then-$H$ circuit above, why does the amplitude on $|1\\rangle$ end up at exactly 0.000 rather than just something small?"
   choices={[
     { id: "a", text: "Rounding error in the simulator happens to hit zero.", correct: false },
     {
       id: "b",
-      text: "Two paths to $|1⟩$ contribute equal-and-opposite amplitudes, which cancel exactly: destructive interference, not approximation.",
+      text: "Two paths to $|1\\rangle$ contribute equal-and-opposite amplitudes, which cancel exactly: destructive interference, not approximation.",
       correct: true,
     },
     { id: "c", text: "The second $H$ gate doesn't actually do anything to a qubit already in superposition.", correct: false },
     { id: "d", text: "Measurement forces it to zero.", correct: false },
   ]}
-  explanation="H^2 = I is an exact mathematical identity, not an approximation: the two contributing paths have amplitudes that are exact negatives of each other, so they cancel precisely. This exactness is what algorithms like Deutsch-Jozsa depend on: 'wrong answer' amplitudes don't just get small, they vanish."
+  explanation="$H^2 = I$ is an exact mathematical identity, not an approximation: the two contributing paths have amplitudes that are exact negatives of each other, so they cancel precisely. This exactness is what algorithms like Deutsch-Jozsa depend on: 'wrong answer' amplitudes don't just get small, they vanish."
 />

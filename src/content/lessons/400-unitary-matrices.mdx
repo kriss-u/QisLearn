@@ -50,7 +50,7 @@ Measurement. Collapsing a superposition down to a single definite outcome is fun
     { id: "c", text: "Only if it's also symmetric.", correct: false },
     { id: "d", text: "Yes, because its determinant is 1.", correct: false },
   ]}
-  explanation="Computing M†M directly (M is real, so M† is just its transpose) gives a matrix that isn't the identity, so M fails the unitary test. Concretely, M applied to |1⟩ = (0,1)ᵀ gives (1,1)ᵀ, which has norm √2, not 1 — M doesn't preserve norm, so it can't be a valid quantum gate."
+  explanation="Computing $M^\\dagger M$ directly ($M$ is real, so $M^\\dagger$ is just its transpose) gives a matrix that isn't the identity, so $M$ fails the unitary test. Concretely, $M$ applied to $|1\\rangle = (0,1)^T$ gives $(1,1)^T$, which has norm $\\sqrt2$, not 1: $M$ doesn't preserve norm, so it can't be a valid quantum gate."
 />
 
 <Quiz
@@ -62,5 +62,5 @@ Measurement. Collapsing a superposition down to a single definite outcome is fun
     { id: "c", text: "Measurement only applies to single qubits, and unitary matrices need at least 2 qubits.", correct: false },
     { id: "d", text: "It can; Qiskit just chooses not to represent it that way.", correct: false },
   ]}
-  explanation="Unitarity forces invertibility (U⁻¹ = U†always exists), and invertible maps are always one-to-one. Measurement collapses a whole family of superpositions down to the same definite outcome, which is inherently not one-to-one, so it sits outside the unitary-gate model entirely; Qiskit and every other framework treat it as a fundamentally different kind of operation."
+  explanation="Unitarity forces invertibility ($U^{-1} = U^\\dagger$ always exists), and invertible maps are always one-to-one. Measurement collapses a whole family of superpositions down to the same definite outcome, which is inherently not one-to-one, so it sits outside the unitary-gate model entirely; Qiskit and every other framework treat it as a fundamentally different kind of operation."
 />
