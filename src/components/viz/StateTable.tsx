@@ -47,7 +47,7 @@ export function StateTable({ amplitudes, numQubits }: StateTableProps) {
                 </Table.Cell>
                 <Table.Cell fontFamily="mono" color={isZero ? "fg.muted" : "colorPalette.fg"}>
                   <HStack gap="3" justify="flex-end">
-                    <Progress.Root value={probs[i] * 100} flex="1" minW="16" size="xs" colorPalette="quantum">
+                    <Progress.Root value={Math.min(100, probs[i] * 100)} flex="1" minW="16" size="xs" colorPalette="quantum">
                       <Progress.Track rounded="full" bg="bg.muted">
                         <Progress.Range />
                       </Progress.Track>

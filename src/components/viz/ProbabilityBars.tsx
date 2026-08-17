@@ -21,7 +21,7 @@ export function ProbabilityBars({ amplitudes, numQubits }: ProbabilityBarsProps)
             <Text fontFamily="mono" fontSize="sm" fontWeight="semibold" w="16">
               {latex ? <KatexSpan tex={ketLatex(label)} /> : `|${label}⟩`}
             </Text>
-            <Progress.Root value={probs[i] * 100} flex="1" size="md" colorPalette="quantum">
+            <Progress.Root value={Math.min(100, probs[i] * 100)} flex="1" size="md" colorPalette="quantum">
               <Progress.Track rounded="full" bg="bg.muted">
                 <Progress.Range />
               </Progress.Track>

@@ -5,6 +5,8 @@ import type { Circuit, VisualizationView } from "../../../content/schema";
 import { copyPngToClipboard, copyTextToClipboard, downloadBlob } from "../../../features/export/clipboard";
 import { canvasToPngBlob, plotlyToPngBlob, svgElementToPngBlob } from "../../../features/export/pngExport";
 import { drawProbabilityBarsPng } from "../../../features/export/probabilityBarsCanvas";
+import { resolveCssVar } from "../../../features/export/resolveCssVar";
+import { drawStateTablePng } from "../../../features/export/stateTableCanvas";
 import { stateTableToCsv } from "../../../features/export/stateTableExport";
 import { basisLabels, blochVector, probabilities, simulateCircuit } from "../../../features/quantum/simulate";
 import { CircuitDiagram } from "../../viz/CircuitDiagram";
@@ -14,7 +16,7 @@ import { KatexSpan, useVizLatex, VizLatexToggle } from "../../viz/latexLabels";
 import { ProbabilityBars } from "../../viz/ProbabilityBars";
 import { defaultQubitLabel } from "../../viz/qubitLabel";
 import { StateTable } from "../../viz/StateTable";
-import { VizActions } from "../../viz/VizActions";
+import { VizActions, VizFormatActions } from "../../viz/VizActions";
 import { VizSection } from "../../viz/VizSection";
 import { Markdown } from "../Markdown";
 import { MdxCard } from "./MdxCard";
@@ -45,12 +47,14 @@ function BlochQubitLabel({ index, numQubits, label }: { index: number; numQubits
 export function Visualization({ title, description, circuit, views = DEFAULT_VIEWS }: VisualizationProps) {
   const snapshots = useMemo(() => simulateCircuit(circuit), [circuit]);
   const [stepIndex, setStepIndex] = useState(snapshots.length - 1);
-  const [barColor, trackColor, probTextColor, panelBg] = useToken("colors", [
+  const [barColor, trackColor, probTextColor, mutedColor, panelBg, borderColor] = useToken("colors", [
     "quantum.500",
     "bg.muted",
     "fg",
+    "fg.muted",
     "bg.panel",
-  ]);
+    "border",
+  ]).map(resolveCssVar);
 
   const circuitSvgRef = useRef<SVGSVGElement>(null);
   const statevectorGraphDivRef = useRef<HTMLElement | null>(null);
@@ -95,10 +99,26 @@ export function Visualization({ title, description, circuit, views = DEFAULT_VIE
     downloadBlob(await probabilityBarsBlob(), "measurement-probabilities.png");
   }
 
-  async function handleTableCopy() {
+  function stateTableBlob() {
+    return drawStateTablePng(snapshot.amplitudes, circuit.numQubits, {
+      barColor,
+      trackColor,
+      textColor: probTextColor,
+      mutedColor,
+      bgColor: panelBg,
+      borderColor,
+    });
+  }
+  async function handleTableCopyImage() {
+    await copyPngToClipboard(stateTableBlob());
+  }
+  async function handleTableDownloadImage() {
+    downloadBlob(await stateTableBlob(), "exact-state.png");
+  }
+  async function handleTableCopyCsv() {
     await copyTextToClipboard(stateTableToCsv(snapshot.amplitudes, circuit.numQubits));
   }
-  async function handleTableDownload() {
+  async function handleTableDownloadCsv() {
     const csv = stateTableToCsv(snapshot.amplitudes, circuit.numQubits);
     downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), "exact-state.csv");
   }
@@ -208,11 +228,11 @@ export function Visualization({ title, description, circuit, views = DEFAULT_VIE
                 action={
                   <HStack gap="1">
                     {latexAction}
-                    <VizActions
-                      onCopy={handleTableCopy}
-                      onDownload={handleTableDownload}
-                      copyLabel="Copy as CSV"
-                      downloadLabel="Download as CSV"
+                    <VizFormatActions
+                      onCopyImage={handleTableCopyImage}
+                      onCopyCsv={handleTableCopyCsv}
+                      onDownloadImage={handleTableDownloadImage}
+                      onDownloadCsv={handleTableDownloadCsv}
                     />
                   </HStack>
                 }
