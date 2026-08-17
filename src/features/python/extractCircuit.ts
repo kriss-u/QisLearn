@@ -162,6 +162,10 @@ export function extractCircuit(source: string): ExtractResult {
     report(outOfRangeMessage(kind, index, size));
   }
 
+  function reportMissingQubit(callSyntax: string) {
+    report(`\`${callSyntax}\` needs at least one qubit argument. Real Qiskit would raise a TypeError here.`);
+  }
+
   let module;
   try {
     module = parseModule(source);
@@ -226,7 +230,26 @@ export function extractCircuit(source: string): ExtractResult {
     for (const q of gate.qubits) activeQubits.add(q);
   }
 
+  /** `Attribute` nodes already handled as the callee of a `Call` — used to spot bare `qc.h` references (no parens). */
+  const handledAttributeCalls = new Set<ExprNode>();
+
   for (const node of walk(module)) {
+    if (node.nodeType === "Attribute" && !handledAttributeCalls.has(node)) {
+      const { value, attr } = node;
+      if (
+        value.nodeType === "Name" &&
+        value.id === circuitVar &&
+        CIRCUIT_METHOD_NAMES.has(attr) &&
+        attr !== "measure_all" &&
+        attr !== "measure_active"
+      ) {
+        report(
+          `\`${circuitVar}.${attr}\` was referenced without calling it — did you mean \`${circuitVar}.${attr}(...)\`? ` +
+            "A gate isn't applied until you call it with the qubit(s) it acts on.",
+        );
+      }
+    }
+
     if (node.nodeType === "Import") {
       for (const alias of node.names) {
         const bound = alias.asname ?? alias.name.split(".")[0];
@@ -300,6 +323,7 @@ export function extractCircuit(source: string): ExtractResult {
     }
 
     if (node.nodeType === "Call" && node.func.nodeType === "Attribute") {
+      handledAttributeCalls.add(node.func);
       const { value, attr } = node.func;
       if (value.nodeType !== "Name") continue;
       if (attr === "draw") continue;
@@ -350,6 +374,10 @@ export function extractCircuit(source: string): ExtractResult {
         }
 
         const qubits = (qubitArg && resolveIndexList(qubitArg, resolveQubitIndex)) ?? [];
+        if (qubits.length === 0) {
+          reportMissingQubit(`${circuitVar}.append(${className}(), [...])`);
+          continue;
+        }
         const params = gateCall.args.map(numericLiteral).filter((n): n is number => n !== null);
         pushGate({
           gate: gateKeyFromClassName(className),
@@ -359,22 +387,36 @@ export function extractCircuit(source: string): ExtractResult {
         continue;
       }
 
-      if (["rx", "ry", "rz", "p", "u1"].includes(attr) && node.args.length > 0) {
-        const angle = numericLiteral(node.args[0]);
+      if (["rx", "ry", "rz", "p", "u1"].includes(attr)) {
+        const angle = node.args[0] ? numericLiteral(node.args[0]) : null;
         const qubitArgs = node.args
           .slice(1)
           .flatMap((arg) => resolveIndexList(arg, resolveQubitIndex) ?? []);
+        if (qubitArgs.length === 0) {
+          reportMissingQubit(`${circuitVar}.${attr}(angle, qubit)`);
+          continue;
+        }
         pushGate({ gate: attr, qubits: qubitArgs, params: angle === null ? undefined : [angle] });
         continue;
       }
 
-      if (BROADCASTABLE_GATES.has(attr) && node.args.length === 1) {
-        const broadcastQubits = resolveIndexList(node.args[0], resolveQubitIndex);
-        if (broadcastQubits) {
-          for (const qubit of broadcastQubits) {
-            pushGate({ gate: attr, qubits: [qubit] });
-          }
+      if (BROADCASTABLE_GATES.has(attr)) {
+        if (node.args.length === 0) {
+          reportMissingQubit(`${circuitVar}.${attr}(qubit)`);
           continue;
+        }
+        if (node.args.length === 1) {
+          const broadcastQubits = resolveIndexList(node.args[0], resolveQubitIndex);
+          if (broadcastQubits) {
+            if (broadcastQubits.length === 0) {
+              reportMissingQubit(`${circuitVar}.${attr}(qubit)`);
+              continue;
+            }
+            for (const qubit of broadcastQubits) {
+              pushGate({ gate: attr, qubits: [qubit] });
+            }
+            continue;
+          }
         }
       }
 
@@ -388,6 +430,11 @@ export function extractCircuit(source: string): ExtractResult {
         }
         const num = numericLiteral(arg);
         if (num !== null) params.push(num);
+      }
+
+      if (qubits.length === 0) {
+        reportMissingQubit(`${circuitVar}.${attr}(...)`);
+        continue;
       }
 
       pushGate({ gate: attr, qubits, params: params.length ? params : undefined });

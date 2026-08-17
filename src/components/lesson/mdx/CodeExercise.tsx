@@ -61,6 +61,11 @@ export function CodeExercise({ id: exerciseId, prompt, starterCode, expectedCirc
 
   const extracted = extractCircuit(code);
 
+  function handleCodeChange(value: string) {
+    setCode(value);
+    if (result && !result.ok) setResult(null);
+  }
+
   function handleCheck() {
     if (extracted.issues.length > 0) {
       setResult({ ok: false, messages: extracted.issues.map((i) => i.message) });
@@ -88,14 +93,20 @@ export function CodeExercise({ id: exerciseId, prompt, starterCode, expectedCirc
       </Box>
 
       <Suspense fallback={<Skeleton h="220px" rounded="l3" />}>
-        <PyEditor value={code} onChange={setCode} />
+        <PyEditor value={code} onChange={handleCodeChange} readOnly={result?.ok === true} />
       </Suspense>
 
       <HStack gap="3">
-        <Button colorPalette="quantum" onClick={handleCheck}>
+        <Button colorPalette="quantum" onClick={handleCheck} disabled={result?.ok === true}>
           Check my circuit
         </Button>
-        <Button variant="ghost" onClick={() => setCode(starterCode)}>
+        <Button
+          variant="ghost"
+          onClick={() => {
+            setCode(starterCode);
+            setResult(null);
+          }}
+        >
           Reset
         </Button>
       </HStack>
