@@ -11,7 +11,7 @@ export function ProbabilityBars({ amplitudes, numQubits }: ProbabilityBarsProps)
   const probs = probabilities(amplitudes);
 
   return (
-    <Box borderWidth="1px" borderColor="border" rounded="l3" bg="bg.panel" p="5" h="full">
+    <Box borderWidth="1px" borderColor="border" rounded="l3" bg="bg.panel" p="5">
       <VStack align="stretch" gap="3">
         {labels.map((label, i) => (
           <HStack key={label} gap="3">
