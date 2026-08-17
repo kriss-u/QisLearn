@@ -1,7 +1,7 @@
 ---
 id: algorithms-multi-qubit-superposition
 track: algorithms
-order: 600
+order: 1100
 title: "Superposition and Interference at Scale"
 summary: Put every qubit into superposition at once with H, and see amplitudes cancel exactly via interference.
 layout: circuit-focus
@@ -12,7 +12,7 @@ Everything up to this point has used one or two qubits at a time. Quantum *algor
 
 ## Hadamard on Every Qubit
 
-You already know `qc.h([0, 1, 2])` broadcasts H across a list of qubits (Lesson 4). Do that to *every* qubit in an $n$-qubit register, starting from $|00\ldots0\rangle$, and you get a perfectly uniform superposition over all $2^n$ basis states:
+You already know `qc.h([0, 1, 2])` broadcasts H across a list of qubits (from How Circuits and Gates Take Their Arguments). Do that to *every* qubit in an $n$-qubit register, starting from $|00\ldots0\rangle$, and you get a perfectly uniform superposition over all $2^n$ basis states:
 
 $$H^{\otimes n}|0\rangle^{\otimes n} = \frac{1}{\sqrt{2^n}}\sum_{x=0}^{2^n-1}|x\rangle$$
 
@@ -34,7 +34,7 @@ qc.h([0, 1, 2])
 
 <CodeExercise
   id="code-uniform-superposition"
-  prompt="Build a 3-qubit circuit and apply H to all three qubits in a single broadcast call, so the circuit ends in a uniform superposition over all 8 basis states."
+  prompt="Build a 3-qubit circuit and apply $H$ to all three qubits in a single broadcast call, so the circuit ends in a uniform superposition over all 8 basis states."
   starterCode={`from qiskit import QuantumCircuit\n\nqc = QuantumCircuit(3)\n# your code here\n`}
   expectedCircuit={{
     numQubits: 3,
@@ -66,26 +66,26 @@ qc.h(0)
 
 <Visualization
   title="H, then H Again"
-  description="Step through the two gates with the scrubber below the circuit. Watch the Exact State table after the second H: the amplitude on |1⟩ isn't just small, it's exactly 0."
+  description="Step through the two gates with the scrubber below the circuit. Watch the Exact State table after the second $H$: the amplitude on |1⟩ isn't just small, it's exactly 0."
   circuit={{ numQubits: 1, gates: [{ gate: "h", qubits: [0] }, { gate: "h", qubits: [0] }] }}
   views={["circuit", "table"]}
 />
 
-Each basis state after the second H is reached by two different paths through the intermediate $|+\rangle$ state: one contributing a positive amplitude to $|1\rangle$, one contributing a negative amplitude of the same size. They cancel to exactly zero, and the state lands back on $|0\rangle$ with certainty. $H$ is its own inverse ($H^2 = I$), and this cancellation is *why*: it's not a coincidence of these particular numbers, it's interference doing exactly what it's supposed to do.
+Each basis state after the second $H$ is reached by two different paths through the intermediate $|+\rangle$ state: one contributing a positive amplitude to $|1\rangle$, one contributing a negative amplitude of the same size. They cancel to exactly zero, and the state lands back on $|0\rangle$ with certainty. $H$ is its own inverse ($H^2 = I$), and this cancellation is *why*: it's not a coincidence of these particular numbers, it's interference doing exactly what it's supposed to do.
 
 This (steering amplitude toward a "yes" answer and cancelling it away from every "no" answer) is the mechanism every algorithm in the rest of this track relies on.
 
 <Quiz
   id="quiz-interference-cancellation"
-  question="In the H-then-H circuit above, why does the amplitude on |1⟩ end up at exactly 0.000 rather than just something small?"
+  question="In the $H$-then-$H$ circuit above, why does the amplitude on $|1⟩$ end up at exactly 0.000 rather than just something small?"
   choices={[
     { id: "a", text: "Rounding error in the simulator happens to hit zero.", correct: false },
     {
       id: "b",
-      text: "Two paths to |1⟩ contribute equal-and-opposite amplitudes, which cancel exactly: destructive interference, not approximation.",
+      text: "Two paths to $|1⟩$ contribute equal-and-opposite amplitudes, which cancel exactly: destructive interference, not approximation.",
       correct: true,
     },
-    { id: "c", text: "The second H gate doesn't actually do anything to a qubit already in superposition.", correct: false },
+    { id: "c", text: "The second $H$ gate doesn't actually do anything to a qubit already in superposition.", correct: false },
     { id: "d", text: "Measurement forces it to zero.", correct: false },
   ]}
   explanation="H^2 = I is an exact mathematical identity, not an approximation: the two contributing paths have amplitudes that are exact negatives of each other, so they cancel precisely. This exactness is what algorithms like Deutsch-Jozsa depend on: 'wrong answer' amplitudes don't just get small, they vanish."

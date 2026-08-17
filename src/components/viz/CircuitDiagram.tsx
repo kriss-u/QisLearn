@@ -1,9 +1,9 @@
 import { Box, HStack, Text, useToken } from "@chakra-ui/react";
-import { forwardRef, useMemo, type HTMLAttributes } from "react";
+import { forwardRef } from "react";
 import type { Circuit } from "../../content/schema";
 import { getControlGateStyle, getGateStyle } from "./gateStyles";
 import { getGateLatex, qubitLatex } from "./gateLatexLabels";
-import { renderKatex, useVizLatex } from "./latexLabels";
+import { SvgKatexLabel, useVizLatex } from "./latexLabels";
 import { defaultQubitLabel } from "./qubitLabel";
 
 export interface CircuitDiagramProps {
@@ -106,47 +106,6 @@ function ClassicalRegisterCut({ x, y, size, color }: { x: number; y: number; siz
         {size}
       </text>
     </g>
-  );
-}
-
-/** Hosts a KaTeX-rendered label inside the SVG via a foreignObject, since raw SVG <text> can't render KaTeX markup. */
-function SvgKatexLabel({
-  x,
-  y,
-  width,
-  height,
-  align,
-  tex,
-  color,
-  fontSizePx,
-}: {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  align: "start" | "center";
-  tex: string;
-  color: string;
-  fontSizePx: number;
-}) {
-  const html = useMemo(() => renderKatex(tex), [tex]);
-  const xhtmlProps = { xmlns: "http://www.w3.org/1999/xhtml" } as HTMLAttributes<HTMLDivElement>;
-  return (
-    <foreignObject x={x} y={y - height / 2} width={width} height={height} style={{ overflow: "visible" }}>
-      <div
-        {...xhtmlProps}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: align === "center" ? "center" : "flex-start",
-          height: "100%",
-          color,
-          fontSize: fontSizePx,
-          lineHeight: 1,
-        }}
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
-    </foreignObject>
   );
 }
 

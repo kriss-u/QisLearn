@@ -1,14 +1,14 @@
 ---
 id: algorithms-deutsch-jozsa
 track: algorithms
-order: 900
+order: 1500
 title: "The Deutsch-Jozsa Algorithm"
 summary: One oracle query to tell constant from balanced, the first algorithm with a proven quantum speedup.
 layout: lab
-prerequisites: [algorithms-oracles]
+prerequisites: [algorithms-constant-and-balanced-functions]
 ---
 
-You now have every ingredient: uniform superposition (Lesson 6), interference that cancels exactly (Lesson 6), phase kickback (Lesson 7), and the oracle convention (Lesson 8). Deutsch-Jozsa combines all four into the first algorithm in this course with a *proven* quantum speedup over any classical approach.
+You now have every ingredient: uniform superposition and exact interference cancellation (from Superposition and Interference at Scale), phase kickback (from Phase Kickback), and the oracle convention (from Oracles and Black-Box Functions, sharpened last lesson into the formal constant/balanced distinction). Deutsch-Jozsa combines all four into the first algorithm in this course with a *proven* quantum speedup over any classical approach.
 
 ## The Promise
 
@@ -18,7 +18,7 @@ Classically, in the worst case you have to check more than half of all $2^n$ inp
 
 <OracleFigure
   title="The Oracle Under Test"
-  description="Exactly the black box from Lesson 8: the algorithm never gets to look inside this, only query it once."
+  description="Exactly the black box from the oracles lesson: the algorithm never gets to look inside this, only query it once."
   inputLabels={["x0", "x1"]}
   ancillaInLabel="y"
   ancillaOutLabel="y ⊕ f(x)"
@@ -27,7 +27,7 @@ Classically, in the worst case you have to check more than half of all $2^n$ inp
 
 ## The Circuit
 
-1. Start with $n$ input qubits at $|0\rangle$ and one ancilla. Set the ancilla to $|-\rangle$ (`X` then `H`), the phase-kickback setup from Lesson 7.
+1. Start with $n$ input qubits at $|0\rangle$ and one ancilla. Set the ancilla to $|-\rangle$ (`X` then `H`), the phase-kickback setup from the Phase Kickback lesson.
 2. `H` on every input qubit: uniform superposition over all $2^n$ inputs, queried "all at once."
 3. One query to the oracle. Every input's $f(x)$ gets kicked back as a phase on that input's amplitude, thanks to the ancilla sitting in $|-\rangle$.
 4. `H` again on the input qubits: turns the pattern of phases into an interference pattern in the probabilities.
@@ -37,7 +37,7 @@ If every input qubit reads $0$: $f$ is **constant**. If *any* input qubit reads 
 
 ### Constant Case: f(x) = 0
 
-An oracle for the always-0 function does nothing at all (no gates). So step 3 is empty, and steps 2 and 4 become two `H`s in a row on each input qubit with nothing in between: exactly the H-then-H interference from Lesson 6. Every input qubit returns to $|0\rangle$ with certainty.
+An oracle for the always-0 function does nothing at all (no gates). So step 3 is empty, and steps 2 and 4 become two `H`s in a row on each input qubit with nothing in between: exactly the H-then-H interference from Superposition and Interference at Scale. Every input qubit returns to $|0\rangle$ with certainty.
 
 ```python
 from qiskit import QuantumCircuit
@@ -69,7 +69,7 @@ qc.h([0, 1])
 
 ### Balanced Case: f(x0, x1) = x0
 
-A balanced function that depends only on $x_0$: the oracle is a single `CX` from qubit 0 into the ancilla (Lesson 8's linear-oracle recipe, using just one of the two inputs).
+A balanced function that depends only on $x_0$: the oracle is a single `CX` from qubit 0 into the ancilla (the oracle lesson's linear-oracle recipe, using just one of the two inputs).
 
 ```python
 from qiskit import QuantumCircuit
@@ -129,9 +129,9 @@ Every nonzero outcome now has input bits $10$, never $00$: one query, and you kn
   id="quiz-dj-conclusion"
   question="After running Deutsch-Jozsa once, you measure the input register and get all zeros. What can you conclude?"
   choices={[
-    { id: "a", text: "f is definitely balanced.", correct: false },
-    { id: "b", text: "f is definitely constant: a single query has fully resolved the promise.", correct: true },
-    { id: "c", text: "f could be either; you need to run it again to be sure.", correct: false },
+    { id: "a", text: "$f$ is definitely balanced.", correct: false },
+    { id: "b", text: "$f$ is definitely constant: a single query has fully resolved the promise.", correct: true },
+    { id: "c", text: "$f$ could be either; you need to run it again to be sure.", correct: false },
     { id: "d", text: "Nothing: the ancilla's outcome also has to be checked.", correct: false },
   ]}
   explanation="All-zero on the input register only happens when the H-then-H interference on every input qubit was left completely undisturbed by the oracle, which only happens for a constant f. Any balanced f disturbs at least one input qubit's phase enough to flip its measured outcome away from 0 with certainty, so all-zero is conclusive, in a single query, given the constant-or-balanced promise."

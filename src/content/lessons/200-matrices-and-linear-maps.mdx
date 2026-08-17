@@ -1,0 +1,61 @@
+---
+id: math-matrices-and-linear-maps
+track: math
+order: 200
+title: "Matrices as Linear Operators"
+summary: How a matrix transforms a vector, why gate order matters, and a first look at the Pauli-X matrix in action.
+layout: theory-heavy
+prerequisites: [math-vectors-and-complex-numbers]
+---
+
+Every quantum gate you'll ever apply in Qiskit, `h`, `x`, `cx`, all of them, is a matrix. Applying a gate to a state is nothing more than multiplying that matrix by the state's vector. This lesson is about what that multiplication means and how matrices compose.
+
+## Matrix-Vector Multiplication
+
+A $2\times2$ matrix acting on a vector in $\mathbb{C}^2$:
+
+$$\begin{pmatrix} a & b \\ c & d \end{pmatrix}\begin{pmatrix} \alpha \\ \beta \end{pmatrix} = \begin{pmatrix} a\alpha + b\beta \\ c\alpha + d\beta \end{pmatrix}$$
+
+Each output entry is a row of the matrix, dotted against the input vector. This is a **linear map**: scaling the input scales the output by the same factor, and the map distributes over sums, $M(|\psi\rangle + |\phi\rangle) = M|\psi\rangle + M|\phi\rangle$. Every quantum gate has to be linear for exactly this reason: it has to act consistently on a superposition, transforming each amplitude's contribution independently, not "pick one branch and act on that."
+
+## A Concrete Gate: Pauli-X
+
+The Pauli-X matrix is $X = \begin{pmatrix} 0 & 1 \\ 1 & 0 \end{pmatrix}$. Apply it to $|0\rangle$:
+
+$$X|0\rangle = \begin{pmatrix} 0 & 1 \\ 1 & 0 \end{pmatrix}\begin{pmatrix} 1 \\ 0 \end{pmatrix} = \begin{pmatrix} 0 \\ 1 \end{pmatrix} = |1\rangle$$
+
+That's the bit-flip you already know from Qiskit's `qc.x(0)`, now visible as ordinary matrix arithmetic: $X$ swaps the two rows of whatever vector it's given, which swaps the $|0\rangle$/$|1\rangle$ amplitudes exactly.
+
+## Composing Gates: Matrix Multiplication
+
+Applying gate $A$ and then gate $B$ to a state $|\psi\rangle$ means computing $B(A|\psi\rangle)$, which turns out to equal $(BA)|\psi\rangle$: a single matrix, $BA$, computed by multiplying the two gate matrices together (note the order: $A$ happens first but ends up on the *right*). Matrix multiplication is defined so that this always works, for any sequence of linear maps.
+
+Crucially, $AB \neq BA$ in general, matrix multiplication doesn't commute. This is the formal reason gate order matters in a circuit: `qc.x(0); qc.h(0)` and `qc.h(0); qc.x(0)` are different matrices, and (unless you happen to pick two gates that do commute) different final states.
+
+$$XH = \begin{pmatrix} 0 & 1 \\ 1 & 0 \end{pmatrix}\begin{pmatrix} \tfrac{1}{\sqrt2} & \tfrac{1}{\sqrt2} \\ \tfrac{1}{\sqrt2} & -\tfrac{1}{\sqrt2} \end{pmatrix} = \begin{pmatrix} \tfrac{1}{\sqrt2} & -\tfrac{1}{\sqrt2} \\ \tfrac{1}{\sqrt2} & \tfrac{1}{\sqrt2} \end{pmatrix}, \qquad HX = \begin{pmatrix} \tfrac{1}{\sqrt2} & \tfrac{1}{\sqrt2} \\ \tfrac{1}{\sqrt2} & -\tfrac{1}{\sqrt2} \end{pmatrix}\begin{pmatrix} 0 & 1 \\ 1 & 0 \end{pmatrix} = \begin{pmatrix} \tfrac{1}{\sqrt2} & \tfrac{1}{\sqrt2} \\ -\tfrac{1}{\sqrt2} & \tfrac{1}{\sqrt2} \end{pmatrix}$$
+
+Different matrices ($XH \neq HX$), confirming `H` then `X` isn't the same circuit as `X` then `H`.
+
+<Quiz
+  id="quiz-matrix-apply"
+  question="What is $Z|1\rangle$, where $Z = \begin{pmatrix} 1 & 0 \\ 0 & -1 \end{pmatrix}$ and $|1\rangle = \begin{pmatrix}0\\1\end{pmatrix}$?"
+  choices={[
+    { id: "a", text: "$|0\\rangle$", correct: false },
+    { id: "b", text: "$|1\\rangle$, unchanged.", correct: false },
+    { id: "c", text: "$-|1\\rangle$", correct: true },
+    { id: "d", text: "$-|0\\rangle$", correct: false },
+  ]}
+  explanation="Row 1 of Z dotted with (0,1) gives 1·0 + 0·1 = 0. Row 2 gives 0·0 + (−1)·1 = −1. So Z|1⟩ = (0, −1)ᵀ = −|1⟩: same basis state, flipped sign. Z leaves |0⟩ and |1⟩'s 'location' alone and only touches phase, which is exactly why it's called a phase gate."
+/>
+
+<Quiz
+  id="quiz-noncommuting"
+  question="Why does gate order matter in a quantum circuit?"
+  choices={[
+    { id: "a", text: "It's a Qiskit implementation detail, not a mathematical necessity.", correct: false },
+    { id: "b", text: "Matrix multiplication is generally non-commutative (AB ≠ BA), so applying gates in a different order composes to a genuinely different matrix.", correct: true },
+    { id: "c", text: "Gate order only matters for gates acting on different qubits.", correct: false },
+    { id: "d", text: "It doesn't; any two gates can be freely reordered.", correct: false },
+  ]}
+  explanation="Composing linear maps is matrix multiplication, and matrix multiplication doesn't commute in general. XH and HX above are a concrete counterexample: same two gates, different order, different resulting matrix."
+/>

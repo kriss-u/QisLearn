@@ -1,7 +1,7 @@
 ---
 id: basics-circuit-arguments
 track: foundations
-order: 400
+order: 900
 title: "How Circuits and Gates Take Their Arguments"
 summary: The different shapes qubit and parameter arguments come in, single values, lists, registers, and register indices.
 layout: circuit-focus
@@ -21,7 +21,7 @@ qc = QuantumCircuit(3)
 qc.h([0, 1, 2])
 ```
 
-That's exactly equivalent to writing `qc.h(0)`, `qc.h(1)`, `qc.h(2)` on three separate lines: Qiskit just expands the list for you. This is called **broadcasting**, and it's purely a convenience: the resulting circuit has three independent H gates in it either way.
+That's exactly equivalent to writing `qc.h(0)`, `qc.h(1)`, `qc.h(2)` on three separate lines: Qiskit just expands the list for you. This is called **broadcasting**, and it's purely a convenience: the resulting circuit has three independent $H$ gates in it either way.
 
 <Visualization
   title="qc.h([0, 1, 2])"
@@ -100,7 +100,7 @@ qc = QuantumCircuit(1)
 qc.u(math.pi / 2, 0, math.pi, 0)   # theta, phi, lambda, qubit
 ```
 
-Every single-qubit gate you've learned so far (X, H, Z, and the rest) can be written as some particular choice of `u(theta, phi, lambda)`. You won't need `u` directly in these lessons, but it's worth recognizing when you see it: it's not a "different kind" of gate, just the fully general form the specific ones are special cases of.
+Every single-qubit gate you've learned so far ($X$, $H$, $Z$, and the rest) can be written as some particular choice of `u(theta, phi, lambda)`. You won't need `u` directly in these lessons, but it's worth recognizing when you see it: it's not a "different kind" of gate, just the fully general form the specific ones are special cases of.
 
 ## Recap: The Shapes You'll See
 

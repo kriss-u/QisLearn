@@ -1,0 +1,91 @@
+---
+id: algorithms-constant-and-balanced-functions
+track: algorithms
+order: 1400
+title: "Constant and Balanced Functions"
+summary: What "constant" and "balanced" really mean, how many balanced functions exist, and why a classical algorithm needs more than half the domain in the worst case.
+layout: theory-heavy
+prerequisites: [algorithms-oracles]
+---
+
+The last lesson built oracles for specific functions. This one is about the two categories Deutsch-Jozsa's whole premise rests on, made precise, before you see the algorithm that tells them apart in a single query.
+
+## The Definitions
+
+For $f:\{0,1\}^n \to \{0,1\}$:
+
+- $f$ is **constant** if $f(x)$ is the same value for every input $x$: either $f(x)=0$ always, or $f(x)=1$ always.
+- $f$ is **balanced** if $f(x)=0$ for exactly half of all $2^n$ inputs and $f(x)=1$ for the other half.
+
+Notice these two categories don't cover every possible $f$. Take $f(x_0,x_1) = x_0 \wedge x_1$ (AND): it outputs 1 only for input $11$, one out of four inputs, 25%, neither all-same nor half-and-half. AND is **neither** constant nor balanced. Deutsch-Jozsa's algorithm only works because it's handed a *promise* that rules functions like this out ahead of time: "trust me, this $f$ is one or the other." Without that promise, a single query couldn't distinguish the cases; the promise is doing real work, not just narrating flavor text.
+
+## How Many of Each Are There?
+
+Out of all $2^{2^n}$ possible boolean functions on $n$ bits (each of the $2^n$ inputs independently maps to 0 or 1), only **2** are constant (all-0 or all-1), no matter how large $n$ gets. Balanced functions are far more common: there are $\binom{2^n}{2^{n-1}}$ of them, choosing which half of the $2^n$ inputs get mapped to 1. For $n=2$ that's $\binom{4}{2}=6$; for $n=3$ it's already $\binom{8}{4}=70$. Almost every function on more than a handful of bits is neither, but within the constant-or-balanced promise, balanced functions vastly outnumber constant ones.
+
+## The Classical Worst Case
+
+Suppose you're checking $f$ by querying inputs one at a time and comparing outputs, with no quantum tricks. Query $2^{n-1}$ inputs and every single one comes back $0$. Are you done? No: an adversary choosing $f$'s truth table to make your life hard can still make the *unqueried* half all $1$s, which is a perfectly valid balanced function consistent with everything you've seen so far, or leave them all $0$ too, giving a constant function equally consistent with what you've seen. Only the $\left(2^{n-1}+1\right)^{\text{th}}$ query breaks the tie: however it comes back, you can now rule one case out for certain. So the classical worst case is $2^{n-1}+1$ queries, **more than half** the entire domain, and there's no cleverer classical strategy that beats this bound: it's a hard information-theoretic floor, not a limitation of any one algorithm.
+
+Deutsch-Jozsa (next lesson) answers this with **one** query, period, regardless of $n$. That gap, $2^{n-1}+1$ vs. $1$, only grows as $n$ grows, which is why this is presented as a "speedup" rather than just "a faster trick."
+
+## A Second Balanced Oracle
+
+The last lesson's XOR oracle used both input qubits. Balanced functions don't have to use every input: $f(x_0,x_1,x_2) = x_0 \oplus x_2$ (ignoring $x_1$ entirely) is still balanced, exactly half of the 8 inputs give 0. The oracle just skips the CX for the input it doesn't depend on:
+
+```python
+from qiskit import QuantumCircuit
+
+qc = QuantumCircuit(4)
+qc.cx(0, 3)
+qc.cx(2, 3)
+```
+
+<Visualization
+  title="Uf for f(x0, x1, x2) = x0 ⊕ x2"
+  description="Set input qubits 0 and 2, then watch qubit 3 (the ancilla) in the Exact State table: it tracks x0 XOR x2 exactly, completely independent of whatever qubit 1 is set to."
+  circuit={{ numQubits: 4, gates: [{ gate: "cx", qubits: [0, 3] }, { gate: "cx", qubits: [2, 3] }] }}
+  views={["circuit", "table"]}
+/>
+
+<CodeExercise
+  id="code-balanced-skip-input"
+  prompt="Build the oracle for f(x0, x1, x2) = x0 XOR x2 on a 4-qubit circuit (qubits 0-2 are inputs, qubit 3 is the ancilla): CX from qubit 0 into qubit 3, then CX from qubit 2 into qubit 3. Qubit 1 isn't used by this f, so it gets no gate at all."
+  starterCode={`from qiskit import QuantumCircuit\n\nqc = QuantumCircuit(4)\n# your code here\n`}
+  expectedCircuit={{
+    numQubits: 4,
+    gates: [
+      { gate: "cx", qubits: [0, 3] },
+      { gate: "cx", qubits: [2, 3] },
+    ],
+  }}
+  hints={[
+    "qc.cx(0, 3) first: qubit 0 controls, qubit 3 (the ancilla) is the target.",
+    "Then qc.cx(2, 3): qubit 2 controls, same target.",
+    "Qubit 1 never appears in this f, so it never appears in the circuit either — no gate touches it.",
+  ]}
+/>
+
+<Quiz
+  id="quiz-classify-and"
+  question="f(x0, x1) = x0 AND x1 (f=1 only when both inputs are 1). Is this constant, balanced, or neither?"
+  choices={[
+    { id: "a", text: "Constant", correct: false },
+    { id: "b", text: "Balanced", correct: false },
+    { id: "c", text: "Neither: only 1 of the 4 inputs (11) gives f=1, not exactly half.", correct: true },
+    { id: "d", text: "Both constant and balanced.", correct: false },
+  ]}
+  explanation="Balanced requires exactly 2^(n-1) inputs (here, exactly 2 of the 4) to give f=1. AND gives f=1 for only 1 input (11) and f=0 for the other 3, so it's neither constant nor balanced — exactly the kind of function Deutsch-Jozsa's promise excludes by assumption."
+/>
+
+<Quiz
+  id="quiz-classical-worst-case"
+  question="For n = 4 input bits (16 possible inputs), what's the classical worst-case number of queries needed to determine constant-vs-balanced with certainty?"
+  choices={[
+    { id: "a", text: "4", correct: false },
+    { id: "b", text: "8", correct: false },
+    { id: "c", text: "9, one more than half of the 16 inputs.", correct: true },
+    { id: "d", text: "16, every input.", correct: false },
+  ]}
+  explanation="The worst case is 2^(n-1) + 1. For n=4, that's 2³ + 1 = 9: query 8 inputs and get all-0, and an adversarial f could still be either constant-0 or balanced-with-the-remaining-8-as-1; only the 9th query resolves it either way."
+/>

@@ -1,0 +1,74 @@
+---
+id: math-vectors-and-complex-numbers
+track: math
+order: 100
+title: "Complex Numbers and Vectors"
+summary: The complex-number and vector-space toolkit every later lesson leans on, i, modulus, inner products, and norms.
+layout: theory-heavy
+prerequisites: []
+---
+
+Quantum amplitudes are **complex numbers**, not just probabilities, and quantum states are **vectors** built from them. Everything in this course, gates, superposition, interference, eigenvalues, is linear algebra over the complex numbers. This lesson is the toolkit; the next four build on it one piece at a time before the course touches a single line of Qiskit.
+
+## Complex Numbers
+
+A complex number is $z = a + bi$, where $a$ (the *real part*) and $b$ (the *imaginary part*) are ordinary real numbers and $i$ satisfies $i^2 = -1$. There's no "solving for $i$"; it's simply defined into existence because $x^2 = -1$ has no real solution, and it turns out to be exactly the right extra ingredient quantum mechanics needs.
+
+Two operations matter most for this course:
+
+- **Complex conjugate**: $z^* = a - bi$, flip the sign of the imaginary part.
+- **Modulus (absolute value)**: $|z| = \sqrt{a^2 + b^2}$, and conveniently $|z|^2 = z z^*$, since $(a+bi)(a-bi) = a^2 + b^2$.
+
+That second identity is the one you'll use constantly: whenever a lesson says "the probability of measuring this outcome is $|\alpha|^2$," this is exactly what's being computed.
+
+## Polar Form and Phase
+
+Every complex number can also be written as $z = r(\cos\theta + i\sin\theta) = re^{i\theta}$ (Euler's formula), where $r = |z|$ is the modulus and $\theta$ is the **phase**, the angle $z$ makes on the complex plane. Multiplying two complex numbers in this form just adds their phases and multiplies their moduli: $r_1 e^{i\theta_1} \cdot r_2 e^{i\theta_2} = r_1 r_2 \, e^{i(\theta_1+\theta_2)}$.
+
+This is why quantum computing talks about "phase" so much: a gate that only changes an amplitude's phase (leaves $r$ alone) doesn't change any measurement probability at all, since $|re^{i\theta}|^2 = r^2$ regardless of $\theta$, but phase differences between amplitudes are exactly what produce interference once you combine them, which is the entire mechanism later lessons (starting with superposition and interference) are built on.
+
+## Vectors
+
+A qubit's state is a column vector with complex entries, living in $\mathbb{C}^2$:
+
+$$|\psi\rangle = \begin{pmatrix} \alpha \\ \beta \end{pmatrix}, \qquad \alpha, \beta \in \mathbb{C}$$
+
+$n$ qubits together live in $\mathbb{C}^{2^n}$ (the Tensor Products lesson later in this track covers exactly how that space is built up). The ket notation $|\psi\rangle$ is just a label for "this is a vector"; $|0\rangle = \begin{pmatrix}1\\0\end{pmatrix}$ and $|1\rangle = \begin{pmatrix}0\\1\end{pmatrix}$ are the two vectors you'll see the most.
+
+## Inner Product and Norm
+
+The **inner product** of two vectors $|\psi\rangle = \begin{pmatrix}\alpha_1\\\alpha_2\end{pmatrix}$ and $|\phi\rangle = \begin{pmatrix}\beta_1\\\beta_2\end{pmatrix}$ is
+
+$$\langle\psi|\phi\rangle = \alpha_1^*\beta_1 + \alpha_2^*\beta_2$$
+
+The bra $\langle\psi|$ is $|\psi\rangle$'s entries, conjugated and laid out as a row instead of a column; $\langle\psi|\phi\rangle$ is literally that row times $|\phi\rangle$'s column, ordinary matrix multiplication. Conjugating the first vector is what makes $\langle\psi|\psi\rangle$ come out real and non-negative for every vector, which is exactly what makes the next definition work:
+
+$$\||\psi\rangle\| = \sqrt{\langle\psi|\psi\rangle} = \sqrt{|\alpha|^2 + |\beta|^2}$$
+
+This is the **norm**, and it's why every valid quantum state satisfies $|\alpha|^2 + |\beta|^2 = 1$: a state vector is required to have norm 1, since $|\alpha|^2$ and $|\beta|^2$ are measurement probabilities that must sum to 1.
+
+Two vectors are **orthogonal** when $\langle\psi|\phi\rangle = 0$. Check $|0\rangle$ and $|1\rangle$: $\langle 0|1\rangle = 1^*\cdot 0 + 0^*\cdot 1 = 0$. They're orthogonal, and each has norm 1, together making them **orthonormal**, exactly what you want from the two basis states of a bit.
+
+<Quiz
+  id="quiz-modulus-squared"
+  question="A qubit's amplitude for |1⟩ is $\beta = \frac{1}{\sqrt2}i$ (purely imaginary). What is the probability of measuring |1⟩?"
+  choices={[
+    { id: "a", text: "$\\frac{1}{\\sqrt2}$, since that's the value of $\\beta$.", correct: false },
+    { id: "b", text: "$0$, since imaginary numbers can't contribute to a real probability.", correct: false },
+    { id: "c", text: "$0.5$, since $|\\beta|^2 = \\beta\\beta^* = \\frac{1}{\\sqrt2}i \\cdot \\left(-\\frac{1}{\\sqrt2}i\\right) = \\frac{1}{2}$.", correct: true },
+    { id: "d", text: "Undefined, since $\\beta$ isn't a real number.", correct: false },
+  ]}
+  explanation="Probabilities always come from |amplitude|^2 = amplitude times its own conjugate, regardless of whether the amplitude itself is real, imaginary, or a mix of both. Here (i/√2)(-i/√2) = -i²/2 = 1/2, since i² = -1."
+/>
+
+<Quiz
+  id="quiz-orthonormal-check"
+  question="Are $|+\rangle = \frac{1}{\sqrt2}\begin{pmatrix}1\\1\end{pmatrix}$ and $|-\rangle = \frac{1}{\sqrt2}\begin{pmatrix}1\\-1\end{pmatrix}$ orthonormal?"
+  choices={[
+    { id: "a", text: "Yes: each has norm 1, and ⟨+|−⟩ = ½(1·1 + 1·(−1)) = 0.", correct: true },
+    { id: "b", text: "No, they have norm 1 but aren't orthogonal.", correct: false },
+    { id: "c", text: "No, they're orthogonal but don't have norm 1.", correct: false },
+    { id: "d", text: "No to both properties.", correct: false },
+  ]}
+  explanation="⟨+|+⟩ = ½(1+1) = 1 and ⟨−|−⟩ = ½(1+1) = 1, so both have norm 1. ⟨+|−⟩ = ½(1·1 + 1·(−1)) = 0, so they're orthogonal too. |+⟩ and |−⟩ form a perfectly valid alternative basis to |0⟩/|1⟩, one you'll see constantly once gates are introduced."
+/>

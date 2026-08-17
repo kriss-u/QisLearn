@@ -1,7 +1,7 @@
 ---
 id: algorithms-bernstein-vazirani
 track: algorithms
-order: 1000
+order: 1600
 title: "The Bernstein-Vazirani Algorithm"
 summary: Same circuit as Deutsch-Jozsa, one query, but this time it reads out an entire hidden bitstring instead of one bit of information.
 layout: lab
@@ -16,7 +16,7 @@ You're given an oracle that computes $f(x) = s \cdot x \pmod 2$ (the bitwise dot
 
 ## The Oracle for a Linear f
 
-This is precisely the linear-oracle recipe from Lesson 8: `CX` from input qubit $i$ into the ancilla, for every $i$ where $s_i = 1$. Skip the `CX` entirely for any $i$ where $s_i = 0$: that input never gets XORed in, exactly matching what $s \cdot x$ means.
+This is precisely the linear-oracle recipe from the oracles lesson: `CX` from input qubit $i$ into the ancilla, for every $i$ where $s_i = 1$. Skip the `CX` entirely for any $i$ where $s_i = 0$: that input never gets XORed in, exactly matching what $s \cdot x$ means.
 
 Take the hidden string $s = (s_0, s_1) = (1, 1)$ over 2 input qubits, ancilla on qubit 2: every input bit matters, so both `CX`s are present:
 
@@ -51,7 +51,7 @@ qc.h([0, 1])
   views={["circuit", "table", "probabilities"]}
 />
 
-Unlike Deutsch-Jozsa's "is it all-zero or not," here every input qubit lands on a definite, predictable value: qubit $i$ measures $s_i$, with certainty, for every $i$; one query and the whole string falls out. (Reading the basis-state label itself: this course writes kets as $|q_{n-1}\ldots q_1 q_0\rangle$, rightmost character is qubit 0, the convention from way back in Lesson 1's Bloch-sphere work. It's simplest to just read the per-qubit values straight off the circuit rather than the label string.)
+Unlike Deutsch-Jozsa's "is it all-zero or not," here every input qubit lands on a definite, predictable value: qubit $i$ measures $s_i$, with certainty, for every $i$; one query and the whole string falls out. (Reading the basis-state label itself: this course writes kets as $|q_{n-1}\ldots q_1 q_0\rangle$, rightmost character is qubit 0, the convention from way back in the What is a Qubit? lesson's Bloch-sphere work. It's simplest to just read the per-qubit values straight off the circuit rather than the label string.)
 
 <CodeExercise
   id="code-bernstein-vazirani"
@@ -72,7 +72,7 @@ Unlike Deutsch-Jozsa's "is it all-zero or not," here every input qubit lands on 
   hints={[
     "s0 = 0 means no CX from qubit 0 at all: only qubit 1 has s_i = 1.",
     "So the oracle is just qc.cx(1, 2).",
-    "Everything else is identical to Lesson 9's skeleton: X + broadcast H to set up, oracle in the middle, broadcast H on the input register to finish.",
+    "Everything else is identical to Deutsch-Jozsa's skeleton: X + broadcast H to set up, oracle in the middle, broadcast H on the input register to finish.",
   ]}
 />
 

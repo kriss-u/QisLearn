@@ -1,0 +1,65 @@
+---
+id: math-tensor-products
+track: math
+order: 500
+title: "Tensor Products and Multi-Qubit State Space"
+summary: How single-qubit spaces combine into the 2^n-dimensional space multi-qubit states live in, and why entanglement means "not a tensor product."
+layout: theory-heavy
+prerequisites: [math-unitary-matrices]
+---
+
+Everything so far has lived in $\mathbb{C}^2$, a single qubit's state space. This lesson covers the operation that builds up the state space for *multiple* qubits: the **tensor product**, written $\otimes$.
+
+## Tensor Product of Vectors
+
+Given $|\psi\rangle = \begin{pmatrix}\alpha_0\\\alpha_1\end{pmatrix}$ and $|\phi\rangle = \begin{pmatrix}\beta_0\\\beta_1\end{pmatrix}$, their tensor product is a 4-entry vector:
+
+$$|\psi\rangle \otimes |\phi\rangle = \begin{pmatrix}\alpha_0\beta_0 \\ \alpha_0\beta_1 \\ \alpha_1\beta_0 \\ \alpha_1\beta_1\end{pmatrix}$$
+
+every pairwise product of one entry from each vector, in a fixed order. Apply this to the computational basis states and you get exactly the 2-qubit basis you already know from every circuit diagram in this course:
+
+$$|0\rangle\otimes|0\rangle = |00\rangle, \quad |0\rangle\otimes|1\rangle = |01\rangle, \quad |1\rangle\otimes|0\rangle = |10\rangle, \quad |1\rangle\otimes|1\rangle = |11\rangle$$
+
+$|00\rangle$ is shorthand for the 4-entry vector $(1,0,0,0)^\mathsf{T}$, $|01\rangle$ for $(0,1,0,0)^\mathsf{T}$, and so on, each ket labeling one axis of $\mathbb{C}^4$.
+
+## Why Dimension Doubles Per Qubit
+
+One qubit: $\mathbb{C}^2$. Two qubits: $\mathbb{C}^2\otimes\mathbb{C}^2 = \mathbb{C}^4$. $n$ qubits: tensor $n$ copies of $\mathbb{C}^2$ together and you get $\mathbb{C}^{2^n}$. This is the mathematical reason simulating $n$ qubits classically requires tracking $2^n$ complex amplitudes, and why every visualization in this course that shows exact amplitudes (the Exact State table) grows exponentially with qubit count: the state genuinely lives in a $2^n$-dimensional space, there's no shortcut representation for a generic state.
+
+## Tensor Product of Gates
+
+Applying a gate to one qubit while leaving another untouched is the tensor product of that gate with the identity. `qc.h(0)` on a 2-qubit circuit (`H` on qubit 0, nothing on qubit 1) is the $4\times4$ matrix $I \otimes H$ (Qiskit's own little-endian qubit ordering puts qubit 0's gate on the right of the tensor product, qubit 1's on the left). Two independent single-qubit gates applied together, `qc.h(0)` and `qc.x(1)` in the same moment, compose as $X\otimes H$. This is also why a broadcast like `qc.h([0, 1, 2])` amounts to a single $8\times8$ matrix $H\otimes H\otimes H$ acting on all three qubits' joint state at once, exactly the uniform-superposition construction the algorithms track uses constantly.
+
+## Entanglement Is "Not a Tensor Product"
+
+Not every valid 2-qubit state is *some* $|\psi\rangle\otimes|\phi\rangle$. Take the Bell state:
+
+$$\tfrac{1}{\sqrt2}(|00\rangle + |11\rangle) = \tfrac{1}{\sqrt2}\begin{pmatrix}1\\0\\0\\1\end{pmatrix}$$
+
+Suppose this were $|\psi\rangle\otimes|\phi\rangle$ for some $|\psi\rangle=(\alpha_0,\alpha_1)^\mathsf{T}$, $|\phi\rangle=(\beta_0,\beta_1)^\mathsf{T}$. Matching entries against the formula above: $\alpha_0\beta_0=\tfrac{1}{\sqrt2}$, $\alpha_0\beta_1=0$, $\alpha_1\beta_0=0$, $\alpha_1\beta_1=\tfrac{1}{\sqrt2}$. From $\alpha_0\beta_0\neq0$, neither $\alpha_0$ nor $\beta_0$ is zero. But then $\alpha_0\beta_1=0$ forces $\beta_1=0$, and $\alpha_1\beta_0=0$ forces $\alpha_1=0$, which makes $\alpha_1\beta_1=0$, contradicting $\alpha_1\beta_1=\tfrac{1}{\sqrt2}$. No such $|\psi\rangle,|\phi\rangle$ exist.
+
+This is the formal definition of **entanglement**: a multi-qubit state is entangled exactly when it *can't* be factored as a tensor product of individual single-qubit states, i.e. exactly when there's no way to describe "qubit 0's state" and "qubit 1's state" separately. The Bell state above is the canonical example, and it's exactly the state the entanglement lesson right after this track builds with `H` then `CX`.
+
+<Quiz
+  id="quiz-tensor-basis"
+  question="What is $|1\rangle \otimes |0\rangle$?"
+  choices={[
+    { id: "a", text: "$|01\\rangle$", correct: false },
+    { id: "b", text: "$|10\\rangle$", correct: true },
+    { id: "c", text: "$|11\\rangle$", correct: false },
+    { id: "d", text: "$|00\\rangle$", correct: false },
+  ]}
+  explanation="The left operand of ⊗ becomes the more-significant qubit and the right operand the less-significant one in this labeling convention, so |1⟩⊗|0⟩ = |10⟩ — the first ket in the tensor product supplies the first digit of the resulting basis label."
+/>
+
+<Quiz
+  id="quiz-entangled-or-product"
+  question="Is the state $\frac{1}{2}(|00\rangle + |01\rangle + |10\rangle + |11\rangle)$ entangled?"
+  choices={[
+    { id: "a", text: "Yes, since it has 4 nonzero terms.", correct: false },
+    { id: "b", text: "No: it factors as $|+\\rangle \\otimes |+\\rangle$, an equal superposition on each qubit independently, so it's a product state, not entangled.", correct: true },
+    { id: "c", text: "Impossible to tell without measuring it.", correct: false },
+    { id: "d", text: "Yes, any state with more than one nonzero amplitude is entangled.", correct: false },
+  ]}
+  explanation="|+⟩⊗|+⟩ = ½(1,1,1,1)ᵀ = ½(|00⟩+|01⟩+|10⟩+|11⟩) by the tensor-product formula, an exact match. Number of nonzero terms has nothing to do with entanglement; what matters is whether the state factors into independent per-qubit pieces at all — this one does."
+/>

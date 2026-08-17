@@ -1,7 +1,7 @@
 ---
 id: basics-measurement
 track: foundations
-order: 500
+order: 1000
 title: "Measurement, Shots, and Running on a Simulator"
 summary: Why measuring collapses a qubit, what "shots" are, and how Qiskit Aer turns a circuit into counts.
 layout: lab
@@ -32,7 +32,7 @@ qc.measure(0, 0)
 
 <CodeExercise
   id="code-measure-qubit"
-  prompt="Build a 1-qubit, 1-clbit circuit (QuantumCircuit(1, 1) is fine), put the qubit into superposition with H, then measure qubit 0 into classical bit 0."
+  prompt="Build a 1-qubit, 1-clbit circuit (QuantumCircuit(1, 1) is fine), put the qubit into superposition with $H$, then measure qubit 0 into classical bit 0."
   starterCode={`from qiskit import QuantumCircuit\n\nqc = QuantumCircuit(1, 1)\n# your code here\n`}
   expectedCircuit={{
     numQubits: 1,

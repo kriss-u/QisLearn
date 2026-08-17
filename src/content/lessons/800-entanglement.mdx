@@ -1,7 +1,7 @@
 ---
 id: basics-entanglement
 track: foundations
-order: 300
+order: 800
 title: Entanglement & Bell States
 summary: Combine Hadamard and CNOT to build the Bell state and see two-qubit correlation.
 layout: lab
@@ -22,9 +22,9 @@ qc = QuantumCircuit(qr, cr, name="bell_pair")
 
 Nothing about *how gates get applied* changes: you still call `qc.h(0)`, `qc.cx(0, 1)`, etc. with plain qubit indices, register or no register. What the register buys you is a name: the circuit diagrams throughout this lesson use exactly this pattern, and you'll see the `q_0` / `q_1` wire labels and the `bell_pair` name it produces.
 
-## The CNOT Gate
+## The $CNOT$ Gate
 
-**CNOT** (controlled-X) flips its target qubit only when the control qubit is $|1\rangle$. Combined with Hadamard, it produces **entanglement**: correlations that have no classical explanation.
+**$CNOT$** (controlled-X) flips its target qubit only when the control qubit is $|1\rangle$. Combined with Hadamard, it produces **entanglement**: correlations that have no classical explanation.
 
 ```python
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister

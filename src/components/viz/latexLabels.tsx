@@ -6,6 +6,47 @@ import { LuSigma } from "react-icons/lu";
 import { useSettingsStore } from "../../store/settingsStore";
 import { Tooltip } from "../ui/tooltip";
 
+/** Hosts a KaTeX-rendered label inside an SVG via a foreignObject, since raw SVG <text> can't render KaTeX markup. */
+export function SvgKatexLabel({
+  x,
+  y,
+  width,
+  height,
+  align,
+  tex,
+  color,
+  fontSizePx,
+}: {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  align: "start" | "center";
+  tex: string;
+  color: string;
+  fontSizePx: number;
+}) {
+  const html = useMemo(() => renderKatex(tex), [tex]);
+  const xhtmlProps = { xmlns: "http://www.w3.org/1999/xhtml" } as HTMLAttributes<HTMLDivElement>;
+  return (
+    <foreignObject x={x} y={y - height / 2} width={width} height={height} style={{ overflow: "visible" }}>
+      <div
+        {...xhtmlProps}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: align === "center" ? "center" : "flex-start",
+          height: "100%",
+          color,
+          fontSize: fontSizePx,
+          lineHeight: 1,
+        }}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    </foreignObject>
+  );
+}
+
 export function renderKatex(tex: string): string {
   return katex.renderToString(tex, { throwOnError: false, output: "html", displayMode: false });
 }

@@ -1,0 +1,66 @@
+---
+id: math-unitary-matrices
+track: math
+order: 400
+title: "Unitary Matrices"
+summary: The adjoint, the unitary condition, and why every quantum gate (but not measurement) has to satisfy it.
+layout: theory-heavy
+prerequisites: [math-eigenvalues-and-eigenvectors]
+---
+
+Not every matrix is a valid quantum gate. This lesson covers the one condition that decides which matrices are: **unitarity**. It's the formal version of something the algorithms track will lean on directly, that a quantum gate has to be reversible.
+
+## The Adjoint
+
+The **adjoint** (or conjugate transpose, or "dagger") of a matrix $A$, written $A^\dagger$, is formed by transposing $A$ and conjugating every entry:
+
+$$A = \begin{pmatrix}a & b \\ c & d\end{pmatrix} \quad\Longrightarrow\quad A^\dagger = \begin{pmatrix}a^* & c^* \\ b^* & d^*\end{pmatrix}$$
+
+For a matrix with only real entries, like $X$, $Z$, or $H$, conjugating does nothing, so $A^\dagger$ is just the ordinary transpose.
+
+## The Unitary Condition
+
+A matrix $U$ is **unitary** if $U^\dagger U = I$ (equivalently $UU^\dagger = I$ too, for square matrices), where $I$ is the identity. This single condition says two things at once:
+
+- $U^\dagger$ is $U$'s inverse. Undoing $U$ is always possible, and it's always $U^\dagger$, nothing fancier is needed.
+- $U$ preserves inner products: $\langle U\psi | U\phi\rangle = \langle\psi|\phi\rangle$ for any $\psi,\phi$ (this follows directly from $U^\dagger U = I$). In particular, taking $\psi=\phi$, $U$ preserves *norm*.
+
+That second point is exactly why quantum gates must be unitary: a state's norm being 1 is what makes its squared amplitudes valid probabilities that sum to 1. A gate that didn't preserve norm would turn a valid state into an invalid one, probabilities that don't add up to 100%. Unitary gates are precisely the linear maps that never let that happen.
+
+## Checking H
+
+$$H^\dagger H = \begin{pmatrix} \tfrac{1}{\sqrt2} & \tfrac{1}{\sqrt2} \\ \tfrac{1}{\sqrt2} & -\tfrac{1}{\sqrt2} \end{pmatrix}\begin{pmatrix} \tfrac{1}{\sqrt2} & \tfrac{1}{\sqrt2} \\ \tfrac{1}{\sqrt2} & -\tfrac{1}{\sqrt2} \end{pmatrix} = \begin{pmatrix} \tfrac12+\tfrac12 & \tfrac12-\tfrac12 \\ \tfrac12-\tfrac12 & \tfrac12+\tfrac12 \end{pmatrix} = \begin{pmatrix}1&0\\0&1\end{pmatrix} = I$$
+
+($H$ is real and symmetric, so $H^\dagger = H$ here, meaning $H$ is its own inverse, which checks out: applying `qc.h(0)` twice in a row returns a qubit to where it started.)
+
+## Unitary Eigenvalues Always Have Modulus 1
+
+Here's the fact Quantum Phase Estimation is eventually built on: every eigenvalue $\lambda$ of a unitary matrix satisfies $|\lambda| = 1$, meaning it can always be written $\lambda = e^{i\theta}$ for some real $\theta$. This follows straight from norm preservation: if $Uv = \lambda v$ for a unit vector $v$, then $\|Uv\| = \|v\| = 1$ (unitarity), but also $\|Uv\| = \|\lambda v\| = |\lambda|\,\|v\| = |\lambda|$, so $|\lambda|=1$. A unitary gate can never scale an eigenvector up or down, only rotate its *phase*, which is exactly the $\pm1$ pattern you already saw for $Z$ and $X$ in the last lesson ($e^{i\pi}=-1$, $e^{i0}=1$), just the special real-valued case of a much more general fact.
+
+## What Isn't Unitary
+
+Measurement. Collapsing a superposition down to a single definite outcome is fundamentally irreversible: it's a many-to-one process, many different pre-measurement states can collapse to the same post-measurement outcome, and a many-to-one map can never have an inverse. This is also exactly the reversibility argument the oracle lesson makes about classical functions: a generic $f$ isn't invertible either, which is why an oracle has to be built as an XOR-into-an-ancilla unitary instead of "compute $f(x)$ and overwrite the answer directly."
+
+<Quiz
+  id="quiz-unitary-check"
+  question="Is $M = \begin{pmatrix}1 & 1\\0 & 1\end{pmatrix}$ unitary?"
+  choices={[
+    { id: "a", text: "Yes, since it's a valid 2×2 matrix.", correct: false },
+    { id: "b", text: "No: $M^\\dagger M = \\begin{pmatrix}1&0\\\\1&1\\end{pmatrix}\\begin{pmatrix}1&1\\\\0&1\\end{pmatrix} = \\begin{pmatrix}1&1\\\\1&2\\end{pmatrix} \\neq I$.", correct: true },
+    { id: "c", text: "Only if it's also symmetric.", correct: false },
+    { id: "d", text: "Yes, because its determinant is 1.", correct: false },
+  ]}
+  explanation="Computing M†M directly (M is real, so M† is just its transpose) gives a matrix that isn't the identity, so M fails the unitary test. Concretely, M applied to |1⟩ = (0,1)ᵀ gives (1,1)ᵀ, which has norm √2, not 1 — M doesn't preserve norm, so it can't be a valid quantum gate."
+/>
+
+<Quiz
+  id="quiz-unitary-why-measurement-isnt"
+  question="Why can't measurement be represented as a unitary matrix?"
+  choices={[
+    { id: "a", text: "Measurement matrices haven't been discovered yet.", correct: false },
+    { id: "b", text: "Measurement is many-to-one (many different states can collapse to the same outcome), and a many-to-one map can't have an inverse, but every unitary matrix is invertible (its own adjoint).", correct: true },
+    { id: "c", text: "Measurement only applies to single qubits, and unitary matrices need at least 2 qubits.", correct: false },
+    { id: "d", text: "It can; Qiskit just chooses not to represent it that way.", correct: false },
+  ]}
+  explanation="Unitarity forces invertibility (U⁻¹ = U†always exists), and invertible maps are always one-to-one. Measurement collapses a whole family of superpositions down to the same definite outcome, which is inherently not one-to-one, so it sits outside the unitary-gate model entirely; Qiskit and every other framework treat it as a fundamentally different kind of operation."
+/>

@@ -224,7 +224,7 @@ distinct and monotonic across tracks, not just unique within one track), and use
 steps of 100 (100, 200, 300, ...) precisely so a lesson can be inserted later
 without renumbering its neighbors: pick the midpoint (150 between 100 and 200),
 and if that gap fills too, bisect again (125 or 175). The `.mdx` filename mirrors
-`order` as a prefix purely for directory browsability (`600-multi-qubit-
+`order` as a prefix purely for directory browsability (`1100-multi-qubit-
 superposition.mdx`); unlike `id`, nothing in code reads the filename, so renaming
 one when inserting a lesson is just a `git mv`, not a data-migration concern.
 

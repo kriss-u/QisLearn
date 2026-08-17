@@ -1,7 +1,7 @@
 ---
 id: basics-single-qubit-gates
 track: foundations
-order: 200
+order: 700
 title: "Single-Qubit Gates: X, H, and Z"
 summary: Apply the Pauli-X, Hadamard, and Pauli-Z gates and watch the state vector move on the Bloch sphere.
 layout: circuit-focus
@@ -33,7 +33,7 @@ Both snippets above produce an equivalent one-qubit circuit; try either style in
 
 ## The Pauli-X Gate
 
-The **X gate** is the quantum analogue of a classical NOT gate: it flips $|0\rangle \leftrightarrow |1\rangle$. On the Bloch sphere it is a 180-degree rotation about the X axis.
+The **$X$ gate** is the quantum analogue of a classical NOT gate: it flips $|0\rangle \leftrightarrow |1\rangle$. On the Bloch sphere it is a 180-degree rotation about the X axis.
 
 ```python
 from qiskit import QuantumCircuit
@@ -67,7 +67,7 @@ qc.append(XGate(), [0])
 
 ## The Hadamard Gate
 
-The **Hadamard gate (H)** creates an equal superposition:
+The **Hadamard gate ($H$)** creates an equal superposition:
 
 $$H|0\rangle = \frac{1}{\sqrt{2}}(|0\rangle + |1\rangle) = |+\rangle$$
 
@@ -81,9 +81,9 @@ On the Bloch sphere, H rotates the state from the pole to the equator.
   hints={["Use qc.h(0), or qc.append(HGate(), [0]) if you imported HGate."]}
 />
 
-## Putting It Together: H Then Z
+## Putting It Together: $H$ Then $Z$
 
-Applying Z after H rotates $|+\rangle$ to $|-\rangle$. Watch the Bloch vector swing across the equator.
+Applying $Z$ after $H$ rotates $|+\rangle$ to $|-\rangle$. Watch the Bloch vector swing across the equator.
 
 <Visualization
   title="H followed by Z"
