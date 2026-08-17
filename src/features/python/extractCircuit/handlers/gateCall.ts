@@ -155,7 +155,7 @@ export function handleAttributeCall(ctx: ExtractionContext, node: Call) {
   if (attr === "measure_active") return handleMeasureActive(ctx);
   if (attr === "barrier") return handleBarrier(ctx, node);
   if (attr === "append") return handleAppend(ctx, node);
-  if (["rx", "ry", "rz", "p", "u1"].includes(attr)) return handleParamGate(ctx, node, attr);
+  if (["rx", "ry", "rz", "p", "u1", "cp", "cu1"].includes(attr)) return handleParamGate(ctx, node, attr);
   if (BROADCASTABLE_GATES.has(attr) && handleBroadcastGate(ctx, node, attr)) return;
 
   handleGenericGate(ctx, node, attr);

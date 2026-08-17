@@ -12,6 +12,15 @@ export function identifierName(node: ExprNode): string | null {
   return null;
 }
 
+const PI_MODULES = new Set(["math", "np", "numpy"]);
+
+/**
+ * Numeric literals, plus what real Qiskit angle arguments actually look like:
+ * `math.pi`/`np.pi`/`numpy.pi`, unary minus, and `+`/`-`/`*`/`/` between
+ * resolvable sub-expressions (e.g. `math.pi / 2`). Still a constant fold, not
+ * a general evaluator — anything involving a variable or function call still
+ * resolves to `null`, same as before.
+ */
 export function numericLiteral(node: ASTNodeUnion): number | null {
   if (node.nodeType === "Constant" && typeof node.value === "number") {
     return node.value;
@@ -19,6 +28,26 @@ export function numericLiteral(node: ASTNodeUnion): number | null {
   if (node.nodeType === "UnaryOp" && node.op.nodeType === "USub") {
     const inner = numericLiteral(node.operand);
     return inner === null ? null : -inner;
+  }
+  if (node.nodeType === "Attribute" && node.attr === "pi" && node.value.nodeType === "Name" && PI_MODULES.has(node.value.id)) {
+    return Math.PI;
+  }
+  if (node.nodeType === "BinOp") {
+    const left = numericLiteral(node.left);
+    const right = numericLiteral(node.right);
+    if (left === null || right === null) return null;
+    switch (node.op.nodeType) {
+      case "Add":
+        return left + right;
+      case "Sub":
+        return left - right;
+      case "Mult":
+        return left * right;
+      case "Div":
+        return left / right;
+      default:
+        return null;
+    }
   }
   return null;
 }

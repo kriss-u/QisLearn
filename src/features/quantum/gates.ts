@@ -65,6 +65,14 @@ export function rz(theta: number): Matrix2 {
   ];
 }
 
+/** Phase gate: diag(1, e^{iθ}). Unlike `rz`, leaves |0⟩'s amplitude untouched — the phase lands entirely on |1⟩. */
+export function p(theta: number): Matrix2 {
+  return [
+    [c(1), c(0)],
+    [c(0), c(Math.cos(theta), Math.sin(theta))],
+  ];
+}
+
 export const SINGLE_QUBIT_GATES: Record<string, (params?: number[]) => Matrix2> = {
   x: () => PAULI_X,
   y: () => PAULI_Y,
@@ -76,6 +84,8 @@ export const SINGLE_QUBIT_GATES: Record<string, (params?: number[]) => Matrix2> 
   rx: (params) => rx(params?.[0] ?? 0),
   ry: (params) => ry(params?.[0] ?? 0),
   rz: (params) => rz(params?.[0] ?? 0),
+  p: (params) => p(params?.[0] ?? 0),
+  u1: (params) => p(params?.[0] ?? 0),
 };
 
-export const TWO_QUBIT_GATES = new Set(["cx", "cnot", "cz", "swap"]);
+export const TWO_QUBIT_GATES = new Set(["cx", "cnot", "cz", "swap", "cp", "cu1"]);

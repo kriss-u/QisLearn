@@ -64,6 +64,21 @@ function applyControlledZ(state: StateVector, control: number, target: number): 
   return next;
 }
 
+function applyControlledPhase(state: StateVector, control: number, target: number, theta: number): StateVector {
+  const size = state.length;
+  const next: StateVector = [...state];
+  const controlMask = 1 << control;
+  const targetMask = 1 << target;
+  const factor: Complex = { re: Math.cos(theta), im: Math.sin(theta) };
+
+  for (let i = 0; i < size; i++) {
+    if ((i & controlMask) !== 0 && (i & targetMask) !== 0) {
+      next[i] = cMul(factor, state[i]);
+    }
+  }
+  return next;
+}
+
 function applySwap(state: StateVector, a: number, b: number): StateVector {
   const size = state.length;
   const next: StateVector = [...state];
@@ -97,6 +112,9 @@ export function applyGate(state: StateVector, gate: Gate): StateVector {
   }
   if (name === "swap") {
     return applySwap(state, gate.qubits[0], gate.qubits[1]);
+  }
+  if (name === "cp" || name === "cu1") {
+    return applyControlledPhase(state, gate.qubits[0], gate.qubits[1], gate.params?.[0] ?? 0);
   }
 
   const factory = SINGLE_QUBIT_GATES[name];

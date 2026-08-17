@@ -1,0 +1,82 @@
+---
+id: algorithms-order-finding-and-factoring
+track: algorithms
+order: 2100
+title: "Order-Finding and Factoring"
+summary: The classical number-theory reduction that turns factoring into order-finding, and why a unitary built from modular multiplication encodes the order as an eigenvalue.
+layout: theory-heavy
+prerequisites: [algorithms-quantum-phase-estimation]
+---
+
+Shor's algorithm (next lesson) is famous for factoring integers, but the quantum part of it doesn't touch factoring directly. It solves a completely different-looking problem, **order-finding**, and this lesson is the classical number theory that connects the two: a reduction that was already known before Shor, his contribution was making order-finding itself efficient quantumly, using exactly the QPE circuit from last lesson.
+
+## The Order of a mod N
+
+For integers $a$ and $N$ with $\gcd(a,N)=1$, the **order** of $a$ modulo $N$, written $r$, is the smallest positive integer such that
+
+$$a^r \equiv 1 \pmod N$$
+
+Such an $r$ always exists when $\gcd(a,N)=1$ (a consequence of Euler's theorem), and the powers $a^1, a^2, \ldots, a^r=1, a^{r+1}=a, \ldots$ cycle with period exactly $r$.
+
+## From Order to Factors
+
+Suppose $N$ is composite (not prime, not a prime power) and you've found the order $r$ of some $a$ modulo $N$. If $r$ is **even** and $a^{r/2} \not\equiv -1 \pmod N$, then both
+
+$$\gcd\!\left(a^{r/2}-1,\,N\right) \qquad \text{and} \qquad \gcd\!\left(a^{r/2}+1,\,N\right)$$
+
+are **nontrivial factors of $N$** (neither 1 nor $N$ itself). Why: $a^r \equiv 1 \pmod N$ means $N$ divides $a^r - 1 = (a^{r/2}-1)(a^{r/2}+1)$, but (given the two conditions above) $N$ divides neither factor on its own, so $N$'s prime factors must be split between the two, and the gcd with each side pulls exactly that split out. For a randomly chosen $a$ coprime to $N$, this works (gives a valid $r$, even, with $a^{r/2}\not\equiv-1$) with probability at least $\tfrac12$, so a few random retries make success overwhelmingly likely.
+
+## Worked Example: N = 15, a = 7
+
+Compute powers of 7 mod 15: $7^1=7$, $7^2=49\equiv4$, $7^3=343\equiv13$, $7^4=2401\equiv1$. So $r=4$ (even ✓). Then $a^{r/2}=7^2\equiv4 \pmod{15}$, and $4 \not\equiv -1 \equiv 14 \pmod{15}$ ✓, both conditions hold:
+
+$$\gcd(4-1,\,15) = \gcd(3,15) = 3, \qquad \gcd(4+1,\,15) = \gcd(5,15) = 5$$
+
+$3 \times 5 = 15$. Factored, using nothing but the order $r=4$ and two classical gcd computations, both efficient (Euclid's algorithm).
+
+## Order-Finding as a Unitary
+
+Finding $r$ classically (trying powers of $a$ one at a time) takes exponentially many steps in the number of digits of $N$; this is the actual hard part real-world factoring relies on. Quantum Phase Estimation can find $r$ efficiently, given the right unitary. Define $U_a$ on a register large enough to hold values $0,\ldots,N-1$:
+
+$$U_a|x\rangle = |ax \bmod N\rangle$$
+
+<OracleFigure
+  title="Ua as a Black Box"
+  description="Modular multiplication by a, as a reversible gate: feed in |x⟩, get out |ax mod N⟩. It's unitary because x ↦ ax mod N is a bijection on {0,...,N-1} whenever gcd(a,N)=1 — a permutation matrix, which is automatically unitary regardless of how complicated the permutation looks."
+  inputLabels={["x"]}
+  boxLabel="Ua"
+/>
+
+$U_a$ is unitary for the same reason `X` is: it's a *permutation* of basis states (no two different $x$ map to the same $ax \bmod N$, since $a$ is invertible mod $N$), and every permutation matrix is automatically unitary, its inverse is just running the permutation backwards, $U_a^{-1} = U_{a^{-1}\bmod N}$.
+
+## Why Its Eigenvalues Encode r
+
+$U_a$'s eigenvectors turn out to be
+
+$$|u_s\rangle = \frac{1}{\sqrt r}\sum_{k=0}^{r-1} e^{-2\pi i sk/r}\,\big|a^k \bmod N\big\rangle, \qquad s = 0, 1, \ldots, r-1$$
+
+with eigenvalue $e^{2\pi i s/r}$ (check: applying $U_a$ shifts every $a^k\bmod N$ to $a^{k+1}\bmod N$, i.e. relabels the sum's index, which pulls out exactly a factor of $e^{2\pi is/r}$ thanks to the phases already built into $|u_s\rangle$'s definition). Feed $U_a$ and any single $|u_s\rangle$ (for $s\neq0$) into QPE from last lesson, and it returns $\theta = s/r$: a fraction with $r$ sitting in the denominator, recoverable from $\theta$ by a classical algorithm called **continued fractions**, without ever needing to know $r$ up front. Next lesson covers the one remaining wrinkle, preparing $|u_s\rangle$ without already knowing $r$, and puts every piece from this and the last three lessons together into the complete algorithm.
+
+<Quiz
+  id="quiz-order-finding-different-a"
+  question="For N = 15, a = 2: powers of 2 mod 15 are 2, 4, 8, 1 (repeating). What is the order r, and does it satisfy the even + not-(-1) conditions needed to extract factors?"
+  choices={[
+    { id: "a", text: "r = 3, and it's odd, so this a doesn't work; a different a would be needed.", correct: false },
+    { id: "b", text: "r = 4 (2⁴ = 16 ≡ 1 mod 15), even, and 2² = 4 ≢ 14 ≡ −1 mod 15, so both conditions hold.", correct: true },
+    { id: "c", text: "r = 4, but since 2² = 4 happens to equal a²/2 the conditions fail.", correct: false },
+    { id: "d", text: "There is no valid r for a = 2 and N = 15.", correct: false },
+  ]}
+  explanation="2¹=2, 2²=4, 2³=8, 2⁴=16≡1 mod 15: four steps back to 1, so r=4, even. a^(r/2) = 2² = 4, and 4 is not ≡ −1 (≡14) mod 15, so the conditions hold: gcd(4−1,15)=3 and gcd(4+1,15)=5, the same factors as the a=7 example — unsurprising, since 15 only has one factorization to find, different valid a's just arrive at it from different angles."
+/>
+
+<Quiz
+  id="quiz-ua-unitary-reason"
+  question="Why is Ua|x⟩ = |ax mod N⟩ guaranteed to be unitary, for any a coprime to N?"
+  choices={[
+    { id: "a", text: "It isn't guaranteed; it depends on the specific value of a.", correct: false },
+    { id: "b", text: "Because gcd(a,N)=1 makes x ↦ ax mod N a bijection on {0,...,N−1}, so Ua is a permutation matrix, and every permutation matrix is automatically unitary.", correct: true },
+    { id: "c", text: "Because modular arithmetic is always reversible, regardless of gcd.", correct: false },
+    { id: "d", text: "It isn't actually unitary; QPE tolerates a small amount of non-unitarity.", correct: false },
+  ]}
+  explanation="gcd(a,N)=1 means a has a multiplicative inverse mod N, which is exactly what makes x ↦ ax mod N invertible (and therefore a bijection, since it's a function from a finite set to itself). A bijection's matrix representation is a permutation matrix — one 1 per row and column, zeros elsewhere — and permutation matrices satisfy U†U=I automatically, no matter how complicated the underlying permutation is."
+/>

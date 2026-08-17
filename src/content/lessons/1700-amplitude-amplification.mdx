@@ -1,0 +1,69 @@
+---
+id: algorithms-amplitude-amplification
+track: algorithms
+order: 1700
+title: "Amplitude Amplification"
+summary: The geometric picture behind Grover's algorithm, two reflections make a rotation, and why unstructured search takes only O(√N) queries instead of O(N).
+layout: theory-heavy
+prerequisites: [algorithms-bernstein-vazirani]
+---
+
+Deutsch-Jozsa and Bernstein-Vazirani both answer a yes/no or read-out-a-string question in one query. This lesson starts a different kind of problem, **unstructured search**, where one query can't possibly be enough, but a clever sequence of them still beats any classical approach by a quadratic factor. The technique is **amplitude amplification**, and Grover's algorithm (next lesson) is what you get from applying it.
+
+## The Search Problem
+
+You're given an oracle for $f:\{0,1\}^n \to \{0,1\}$ again, but this time the promise is different: exactly **one** input $\omega$ (out of $N = 2^n$ total) has $f(\omega) = 1$; every other input has $f(x) = 0$. Find $\omega$. Classically, with no structure to exploit, you have to check inputs one at a time; the expected number of queries before finding $\omega$ is $O(N)$.
+
+## Two Special States
+
+Write $|\omega\rangle$ for the marked basis state you're looking for, and $|s'\rangle$ for the uniform superposition over every *other* basis state (all $N-1$ unmarked ones, equally weighted, normalized). These two are orthogonal, $\langle\omega|s'\rangle = 0$, and together they span a 2D plane inside the full $N$-dimensional space, the only plane this entire algorithm ever needs.
+
+The starting state, uniform superposition over *everything* ($H^{\otimes n}|0\rangle^{\otimes n}$, from Superposition and Interference at Scale), decomposes inside that plane as
+
+$$|s\rangle = \sin\theta\,|\omega\rangle + \cos\theta\,|s'\rangle, \qquad \sin\theta = \frac{1}{\sqrt N}$$
+
+Every basis state has equal amplitude $1/\sqrt N$ to start, so $|\omega\rangle$'s own slice of that is exactly $\sin\theta = 1/\sqrt N$, small for large $N$: this is the whole problem in one picture. Measuring right now succeeds with probability $\sin^2\theta = 1/N$, exactly as bad as guessing randomly. The algorithm's job is to rotate $|s\rangle$ toward $|\omega\rangle$ before measuring.
+
+## Two Reflections Make a Rotation
+
+**The oracle** $O$ flips the sign of $|\omega\rangle$'s amplitude and leaves everything orthogonal to it alone: a **reflection about $|s'\rangle$** (the axis it doesn't touch).
+
+**The diffusion operator** $D = 2|s\rangle\langle s| - I$ is a **reflection about $|s\rangle$** itself, the *original* uniform superposition axis, regardless of what the oracle just did to the state.
+
+A basic fact from plane geometry: reflecting about one line, then reflecting about a second line at angle $\theta$ to the first, is the same as a single **rotation by $2\theta$**. That's exactly $D \cdot O$: reflect about $|s'\rangle$, then about $|s\rangle$ (which sits at angle $\theta$ from $|s'\rangle$), composes into a rotation by $2\theta$, rotating the state vector *toward* $|\omega\rangle$. One application of $D\cdot O$ is called one **Grover iteration**.
+
+## Iterating
+
+After $k$ Grover iterations, the state sits at angle $(2k+1)\theta$ from the $|s'\rangle$ axis (the original $\theta$, plus $k$ rotations of $2\theta$ each), so the probability of measuring $|\omega\rangle$ is
+
+$$P(\omega) = \sin^2\big((2k+1)\theta\big)$$
+
+This grows with $k$ up to a peak near $(2k+1)\theta \approx \tfrac{\pi}{2}$, then *decreases* again if you keep iterating past it, overshooting is real, unlike classical search where more checking can never hurt. Solving for the peak gives the optimal iteration count:
+
+$$k_{\text{opt}} \approx \frac{\pi}{4}\sqrt N$$
+
+$O(\sqrt N)$ iterations, each one query to the oracle, versus $O(N)$ classically: a **quadratic speedup**. It's smaller than Deutsch-Jozsa's exponential gap, but it applies to a much more general problem: searching *anything* representable as "find the input a black-box function accepts," with no structure to exploit at all.
+
+<Quiz
+  id="quiz-reflection-rotation"
+  question="Why does composing the oracle reflection and the diffusion reflection produce a rotation, specifically, toward the marked state?"
+  choices={[
+    { id: "a", text: "Reflecting twice about the same line always rotates by 90°.", correct: false },
+    { id: "b", text: "Composing two reflections about two lines that meet at angle θ is a rotation by 2θ, and here the diffusion axis |s⟩ sits at angle θ from the oracle's axis |s'⟩, rotating the state toward |ω⟩ by construction.", correct: true },
+    { id: "c", text: "The oracle and diffusion operators happen to be inverses of each other.", correct: false },
+    { id: "d", text: "It's a numerical coincidence specific to N=4.", correct: false },
+  ]}
+  explanation="This is a general fact about reflections in a plane, not specific to any particular N: reflect about line A, then about line B at angle θ to A, and the net effect on any vector is a rotation by 2θ. The oracle reflects about |s'⟩ and the diffusion operator reflects about |s⟩, which sits at exactly angle θ away, so one Grover iteration is always a rotation by 2θ toward |ω⟩, for any N."
+/>
+
+<Quiz
+  id="quiz-overshoot"
+  question="If you keep applying Grover iterations well past the optimal count k_opt, what happens to the success probability?"
+  choices={[
+    { id: "a", text: "It keeps increasing, approaching 1 asymptotically.", correct: false },
+    { id: "b", text: "It stays flat at its peak value forever.", correct: false },
+    { id: "c", text: "It decreases again, since the rotation keeps going past |ω⟩ and starts rotating back away from it.", correct: true },
+    { id: "d", text: "It immediately drops to 0.", correct: false },
+  ]}
+  explanation="P(ω) = sin²((2k+1)θ) is periodic in k, not monotonically increasing: once (2k+1)θ passes π/2, further iterations keep rotating the state vector past |ω⟩ and back toward |s'⟩, decreasing the success probability. Unlike classical search, doing extra work in Grover's algorithm can actively make your answer worse, which is why picking k close to k_opt actually matters."
+/>

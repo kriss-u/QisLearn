@@ -40,6 +40,8 @@ export const CONTROL_GATE_STYLES: Record<string, GateStyle> = {
   cx: GATE_STYLES.x,
   cnot: GATE_STYLES.x,
   cz: GATE_STYLES.z,
+  cp: { fill: "#1e40af", textColor: "white", label: "P" },
+  cu1: { fill: "#1e40af", textColor: "white", label: "P" },
   swap: { fill: "#64748b", textColor: "white", label: "SWAP" },
 };
 

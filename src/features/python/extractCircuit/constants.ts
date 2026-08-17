@@ -24,6 +24,8 @@ export const CIRCUIT_METHOD_NAMES = new Set([
   "cx",
   "cnot",
   "cz",
+  "cp",
+  "cu1",
   "swap",
   "append",
   "measure",

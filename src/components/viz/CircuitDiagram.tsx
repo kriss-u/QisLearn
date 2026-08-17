@@ -31,7 +31,7 @@ interface ClassicalWire {
   y: number;
 }
 
-const TWO_QUBIT_GATES = new Set(["cx", "cnot", "cz", "swap"]);
+const TWO_QUBIT_GATES = new Set(["cx", "cnot", "cz", "cp", "cu1", "swap"]);
 const MONO_FONT = "'Fira Code', ui-monospace, monospace";
 
 /**
@@ -278,7 +278,7 @@ export const CircuitDiagram = forwardRef<SVGSVGElement, CircuitDiagramProps>(fun
               const [q0, q1] = gate.qubits;
               const y0 = qubitY(q0);
               const y1 = qubitY(q1);
-              const isControlGate = name === "cx" || name === "cnot" || name === "cz";
+              const isControlGate = name === "cx" || name === "cnot" || name === "cz" || name === "cp" || name === "cu1";
               const style = getControlGateStyle(name);
 
               return (

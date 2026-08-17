@@ -1,0 +1,70 @@
+---
+id: algorithms-shors-algorithm
+track: algorithms
+order: 2200
+title: "Shor's Algorithm"
+summary: Every piece from the last three lessons, QPE, the order-finding reduction, and the modular-exponentiation oracle, combined into the complete factoring algorithm.
+layout: lab
+prerequisites: [algorithms-order-finding-and-factoring]
+---
+
+Every ingredient is on the table: Quantum Phase Estimation reads out a unitary's eigenvalue; $U_a|x\rangle=|ax\bmod N\rangle$'s eigenvalues encode the order $r$ of $a$ mod $N$; and $r$ (once you have it) classically reduces to a factorization of $N$. One piece is still missing, and it's the one that makes the whole thing actually runnable: QPE's circuit needs *an* eigenstate of $U_a$ to start from, but which eigenstate depends on $r$, the very thing you don't know yet.
+
+## The Missing Piece: Start From |1⟩ Instead
+
+Recall $U_a$'s eigenstates from last lesson: $|u_s\rangle = \tfrac{1}{\sqrt r}\sum_{k=0}^{r-1} e^{-2\pi isk/r}|a^k\bmod N\rangle$ for $s=0,\ldots,r-1$. These form a complete orthonormal basis for the $r$-dimensional subspace $U_a$ acts on, which means *any* state in that subspace, including $|1\rangle = |a^0 \bmod N\rangle$, is some combination of them. Summing the definition above over every $s$ collapses every term except $k=0$ (a standard geometric-series cancellation) and gives, after normalizing:
+
+$$|1\rangle = \frac{1}{\sqrt r}\sum_{s=0}^{r-1}|u_s\rangle$$
+
+$|1\rangle$ is an **equal-weighted superposition of every eigenstate**, and it needs zero special preparation, it's just the computational basis state you get by doing nothing. Run QPE with the eigenstate register starting at $|1\rangle$ instead of a genuine single $|u_s\rangle$, and each run effectively estimates the phase of a **uniformly random** $s \in \{0,\ldots,r-1\}$, returning $\theta \approx s/r$. That randomness is fine, even useful: any $s$ coprime to $r$ (a majority of them, for typical $r$) reveals $r$ exactly once you feed $\theta$ through **continued fractions**, the classical algorithm that recovers the smallest-denominator fraction close to a given decimal. If a particular run's $s$ happens to share a factor with $r$, continued fractions returns a divisor of $r$ instead of $r$ itself; the fix is simply to run the whole algorithm again with a fresh random $a$.
+
+## The Complete Algorithm
+
+Given composite $N$ (not prime, not a prime power, both checkable classically first):
+
+1. Pick a random $a$ with $1 < a < N$. Compute $\gcd(a,N)$ classically (Euclid's algorithm). If it's not 1, you got lucky, it's already a nontrivial factor, done.
+2. Otherwise, run the quantum subroutine: QPE with $U_a$, eigenstate register starting at $|1\rangle$, enough counting qubits for the precision you need. Measure the counting register to get $\theta$.
+3. Classically, run continued fractions on $\theta$ to get a candidate order $r$.
+4. If $r$ is odd, or $a^{r/2}\equiv-1\pmod N$, this attempt failed, go back to step 1 with a new $a$.
+5. Otherwise, $\gcd(a^{r/2}-1,N)$ and $\gcd(a^{r/2}+1,N)$ are nontrivial factors of $N$.
+
+Steps 1, 3, 4, 5 are all classical and efficient (polynomial-time). Step 2 is the only quantum piece, and it's exactly the QPE circuit from two lessons ago, with $U_a$'s controlled powers standing in for the toy $U=P(\pi/2)$ used there to demonstrate the mechanism.
+
+## Worked Example, Start to Finish: N = 15
+
+1. $N=15$: odd, not a prime power, valid target.
+2. Pick $a=7$. $\gcd(7,15)=1$, no free lunch, proceed.
+3. Quantum subroutine: QPE with $U_7$, eigenstate register at $|1\rangle$. Suppose this run's measurement returns the counting register reading out $\theta = 1/4$ (echoing the exact worked example from the QPE lesson, same numeric shape, this time interpreted as one particular random $s/r$ sample from $U_7$, not the toy single-qubit $U$ used there to demonstrate the circuit).
+4. Continued fractions on $\theta=1/4$: already in lowest terms, candidate $r=4$.
+5. Check: $r=4$ is even ✓. $a^{r/2} = 7^2 = 49 \equiv 4 \pmod{15}$, and $4 \not\equiv -1 \equiv 14 \pmod{15}$ ✓. Both conditions pass.
+6. $\gcd(7^2-1,\,15) = \gcd(48,15) = 3$ (via Euclid: $48 = 3\times15+3$, then $\gcd(15,3)=3$). $\gcd(7^2+1,\,15)=\gcd(50,15)=5$ (via Euclid: $50=3\times15+5$, then $\gcd(15,5)=5$).
+
+$15 = 3 \times 5$. Every step above, order 4, the even/not-$-1$ check, both gcds, exactly matches the order-finding lesson's worked classical example; the only new piece this lesson adds is *how the quantum subroutine produced $r=4$ in the first place*, without ever needing to already know it.
+
+## Why This Matters
+
+Factoring a large $N$ is believed to be classically hard, no known classical algorithm factors an $n$-digit number in time polynomial in $n$; the best known classical methods scale worse than exponentially in the digit count. Shor's algorithm factors it in polynomial time, using nothing exotic beyond gates this course has already built: `H`, `X`, controlled-phase (for QFT/QPE), and a modular-multiplication oracle $U_a$ (whose internal gate-by-gate construction, for realistic $N$, is its own substantial reversible-arithmetic circuit, out of scope here, the same way `basics-oracles` deliberately scoped its own oracle construction down to just the linear case rather than every possible $f$). This is the algorithm that put post-quantum cryptography on the map: RSA's security rests entirely on factoring being classically hard, and this course has now built, gate by gate, every non-black-box piece of the algorithm that breaks that assumption.
+
+<Quiz
+  id="quiz-why-start-at-one"
+  question="Why does the algorithm start the eigenstate register at |1⟩ instead of trying to prepare a specific |u_s⟩?"
+  choices={[
+    { id: "a", text: "|1⟩ happens to be the eigenstate with the largest eigenvalue.", correct: false },
+    { id: "b", text: "Preparing a specific |u_s⟩ would require already knowing r, which is circular; |1⟩ needs no special preparation and is exactly the equal-weighted superposition of every |u_s⟩, so QPE run on it samples a uniformly random s/r instead.", correct: true },
+    { id: "c", text: "|1⟩ is not actually used; it's a simplification for teaching purposes only.", correct: false },
+    { id: "d", text: "Because r is always 1 when a=1.", correct: false },
+  ]}
+  explanation="|u_s⟩'s own definition depends on r (it's a sum over r terms with phases involving r), so you can't build the circuit that prepares it without already knowing the answer you're trying to find. |1⟩ sidesteps this entirely: it's the trivial computational basis state |a⁰ mod N⟩, and it equals (1/√r)Σ|u_s⟩ exactly, so using it as the starting eigenstate register is both free to prepare and mathematically exact, not an approximation."
+/>
+
+<Quiz
+  id="quiz-shor-retry"
+  question="In step 3 of the algorithm, continued fractions on a particular run's θ returns a candidate r that turns out to be odd. What should happen next?"
+  choices={[
+    { id: "a", text: "The algorithm has failed permanently for this N; try a different N.", correct: false },
+    { id: "b", text: "Round r up to the nearest even number and continue.", correct: false },
+    { id: "c", text: "Go back to step 1, pick a new random a, and try the whole subroutine again — an odd r (or a^(r/2) ≡ −1) just means this particular a didn't produce usable factors, not that no a will.", correct: true },
+    { id: "d", text: "Use r directly as a factor of N.", correct: false },
+  ]}
+  explanation="The even + not-(-1) conditions on r are needed for the gcd step to produce a genuine nontrivial factor; when a particular random a's order fails those conditions (or continued fractions returns a proper divisor of the true r instead of r itself, from an unlucky s), the fix is simply to retry with a fresh random a. Since a majority of choices of a succeed, the expected number of retries before success is a small constant, keeping the whole algorithm efficient."
+/>
