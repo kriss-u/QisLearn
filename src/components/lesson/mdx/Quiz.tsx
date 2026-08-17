@@ -72,7 +72,7 @@ export function Quiz({ id: quizId, question, choices, explanation }: QuizProps) 
           if (details.value) handleSelect(details.value);
         }}
       >
-        <VStack align="stretch" gap="2.5">
+        <VStack className="quiz-choices" align="stretch" gap="2.5">
           {choices.map((option) => (
             <RadioCard.Item key={option.id} value={option.id}>
               <RadioCard.ItemHiddenInput />
@@ -99,7 +99,7 @@ export function Quiz({ id: quizId, question, choices, explanation }: QuizProps) 
       </HStack>
 
       {checked && choice && (
-        <Alert.Root status={choice.correct ? "success" : "error"} rounded="l2">
+        <Alert.Root className="no-print" status={choice.correct ? "success" : "error"} rounded="l2">
           <Alert.Indicator />
           <Alert.Content>
             <Alert.Title>{choice.correct ? "Correct!" : "Not quite."}</Alert.Title>

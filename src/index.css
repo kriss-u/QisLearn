@@ -34,4 +34,86 @@ body {
   body {
     margin: 0;
   }
+
+  /*
+   * Printing always uses the light palette, regardless of the active on-screen
+   * theme: force every dark-mode-only semantic color variable back to its
+   * light-mode value, unconditionally. Values copied from the resolved
+   * `_light` variants in src/theme/system.ts / Chakra's default theme.
+   */
+  html {
+    --chakra-colors-bg: white !important;
+    --chakra-colors-bg-subtle: #fafafa !important;
+    --chakra-colors-bg-muted: #f4f4f5 !important;
+    --chakra-colors-bg-panel: white !important;
+    --chakra-colors-bg-emphasized: #e4e4e7 !important;
+    --chakra-colors-bg-glass: color-mix(in srgb, #ffffff 70%, transparent) !important;
+    --chakra-colors-fg: #09090b !important;
+    --chakra-colors-fg-muted: #52525b !important;
+    --chakra-colors-fg-subtle: #a1a1aa !important;
+    --chakra-colors-border: #e4e4e7 !important;
+    --chakra-colors-border-muted: #f4f4f5 !important;
+    --chakra-colors-border-subtle: #fafafa !important;
+    --chakra-colors-border-emphasized: #d4d4d8 !important;
+    --chakra-colors-border-glass: color-mix(in srgb, #ffffff 60%, transparent) !important;
+    --chakra-colors-quantum-solid: #4f46e5 !important;
+    --chakra-colors-quantum-fg: #4338ca !important;
+    --chakra-colors-quantum-muted: #e0e7ff !important;
+    --chakra-colors-quantum-subtle: #eef2ff !important;
+    --chakra-colors-quantum-emphasized: #a5b4fc !important;
+    --chakra-colors-ember-fg: #b45309 !important;
+    --chakra-colors-ember-muted: #fef3c7 !important;
+    --chakra-colors-ember-subtle: #fffbeb !important;
+    --chakra-colors-ember-emphasized: #fcd34d !important;
+    background-image: none !important;
+  }
+
+  /* CodeMirror's own oneDark theme isn't driven by the tokens above, so flatten it directly. */
+  .cm-editor,
+  .cm-editor * {
+    background: transparent !important;
+    color: #000 !important;
+  }
+  .cm-editor {
+    background: white !important;
+  }
+
+  .quiz-choices {
+    gap: 0.4em !important;
+  }
+
+  .chakra-radio-card__item {
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  .chakra-radio-card__item > div {
+    display: flex !important;
+    align-items: flex-start !important;
+    padding: 0 !important;
+    gap: 0.5em !important;
+  }
+
+  .chakra-radio-card__item > div > span[aria-hidden="true"] {
+    order: -1;
+    margin-top: 0.2em;
+  }
+
+  tr {
+    break-inside: avoid;
+  }
+
+  /* The scroll container around lesson tables clips overflow on-screen so
+     wide columns scroll horizontally; there's no scrolling on paper, so let
+     it grow to the page width and wrap cell text instead of clipping it. */
+  div:has(> table) {
+    overflow: visible !important;
+  }
+
+  th,
+  td {
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
+  }
 }

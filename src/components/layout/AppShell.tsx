@@ -1,5 +1,5 @@
 import { Badge, Box, Flex, HStack, Heading, Separator, Text, VStack } from "@chakra-ui/react";
-import { useEffect, type PropsWithChildren } from "react";
+import type { PropsWithChildren } from "react";
 import { Link, useParams } from "react-router";
 import { lessonsByTrack } from "../../content";
 import { useProgressStore } from "../../store/progressStore";
@@ -18,33 +18,6 @@ const STATUS_LABEL: Record<string, string> = {
 export function AppShell({ children }: PropsWithChildren) {
   const { lessonId } = useParams();
   const statusByLesson = useProgressStore((s) => s.statusByLesson);
-
-  useEffect(() => {
-    const root = document.documentElement;
-
-    function forceLightForPrint() {
-      if (root.classList.contains("dark")) {
-        root.dataset.printRestoreDark = "true";
-        root.classList.remove("dark");
-        root.classList.add("light");
-      }
-    }
-
-    function restoreThemeAfterPrint() {
-      if (root.dataset.printRestoreDark) {
-        delete root.dataset.printRestoreDark;
-        root.classList.remove("light");
-        root.classList.add("dark");
-      }
-    }
-
-    window.addEventListener("beforeprint", forceLightForPrint);
-    window.addEventListener("afterprint", restoreThemeAfterPrint);
-    return () => {
-      window.removeEventListener("beforeprint", forceLightForPrint);
-      window.removeEventListener("afterprint", restoreThemeAfterPrint);
-    };
-  }, []);
 
   return (
     <Flex className="app-shell-root" h="100dvh" bg="bg">
