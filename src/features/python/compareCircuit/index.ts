@@ -1,9 +1,5 @@
-import type { Circuit, Gate } from "../../content/schema";
-
-function gateKey(gate: Gate): string {
-  const clbits = gate.clbits ? `->${gate.clbits.join(",")}` : "";
-  return `${gate.gate.toLowerCase()}(${gate.qubits.join(",")})${clbits}${gate.params ? `[${gate.params.join(",")}]` : ""}`;
-}
+import type { Circuit } from "../../../content/schema";
+import { gateKey } from "./gateKey";
 
 export interface CircuitComparison {
   matches: boolean;
