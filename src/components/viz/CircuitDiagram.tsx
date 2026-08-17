@@ -17,6 +17,52 @@ const GATE_SIZE = 40;
 const TWO_QUBIT_GATES = new Set(["cx", "cnot", "cz", "swap"]);
 const MONO_FONT = "'Fira Code', ui-monospace, monospace";
 
+/**
+ * Assigns each gate a column: the earliest position available on every qubit
+ * line it touches, matching how Qiskit's own `.draw()` packs gates — e.g.
+ * `qc.h([0, 1, 2])` (three independent single-qubit `Gate`s) lands all three
+ * in the same column since none of them has been blocked by a prior gate on
+ * its line. A `barrier` occupies a column on every qubit line it spans (all
+ * lines, for the empty-`qubits` "barrier everything" form) and advances all
+ * of those lines past it, so later gates on a barred qubit are pushed after it.
+ */
+function layoutColumns(circuit: Circuit): { columns: number; columnOf: number[] } {
+  const nextAvailable = new Array<number>(circuit.numQubits).fill(0);
+  const columnOf: number[] = [];
+  let maxColumn = -1;
+
+  for (const gate of circuit.gates) {
+    const isBarrier = gate.gate.toLowerCase() === "barrier";
+    const qubits =
+      isBarrier && gate.qubits.length === 0
+        ? Array.from({ length: circuit.numQubits }, (_, i) => i)
+        : gate.qubits;
+
+    const column = qubits.length === 0 ? 0 : Math.max(...qubits.map((q) => nextAvailable[q] ?? 0));
+    for (const q of qubits) nextAvailable[q] = column + 1;
+
+    columnOf.push(column);
+    maxColumn = Math.max(maxColumn, column);
+  }
+
+  return { columns: maxColumn + 1, columnOf };
+}
+
+/** Small vertical dashed tick marking a barrier on one qubit's wire. */
+function BarrierTick({ x, y, color }: { x: number; y: number; color: string }) {
+  return (
+    <line
+      x1={x}
+      y1={y - ROW_HEIGHT / 2 + 4}
+      x2={x}
+      y2={y + ROW_HEIGHT / 2 - 4}
+      stroke={color}
+      strokeWidth={2}
+      strokeDasharray="4 3"
+    />
+  );
+}
+
 /** The standard meter-with-needle glyph used for measurement in circuit diagrams. */
 function MeasureGlyph({ x, y, color }: { x: number; y: number; color: string }) {
   return (
@@ -37,12 +83,15 @@ function MeasureGlyph({ x, y, color }: { x: number; y: number; color: string }) 
 export function CircuitDiagram({ circuit, activeGateIndex, showLegend = true }: CircuitDiagramProps) {
   const [wireColor, activeRing, textColor] = useToken("colors", ["border", "quantum.400", "fg"]);
 
-  const width = LEFT_MARGIN + (circuit.gates.length + 1) * COLUMN_WIDTH;
+  const { columns, columnOf } = layoutColumns(circuit);
+  const width = LEFT_MARGIN + (columns + 1) * COLUMN_WIDTH;
   const height = TOP_MARGIN * 2 + (circuit.numQubits - 1) * ROW_HEIGHT + GATE_SIZE;
 
   const qubitY = (q: number) => TOP_MARGIN + q * ROW_HEIGHT + GATE_SIZE / 2;
 
-  const usedGates = Array.from(new Set(circuit.gates.map((g) => g.gate.toLowerCase())));
+  const usedGates = Array.from(
+    new Set(circuit.gates.map((g) => g.gate.toLowerCase()).filter((name) => name !== "barrier")),
+  );
 
   return (
     <Box borderWidth="1px" borderColor="border" rounded="l3" p="5" bg="bg.panel">
@@ -86,9 +135,22 @@ export function CircuitDiagram({ circuit, activeGateIndex, showLegend = true }: 
           )}
 
           {circuit.gates.map((gate, index) => {
-            const x = LEFT_MARGIN + (index + 0.75) * COLUMN_WIDTH;
+            const x = LEFT_MARGIN + (columnOf[index] + 0.75) * COLUMN_WIDTH;
             const isActive = activeGateIndex === index;
             const name = gate.gate.toLowerCase();
+
+            if (name === "barrier") {
+              const qubits = gate.qubits.length === 0
+                ? Array.from({ length: circuit.numQubits }, (_, i) => i)
+                : gate.qubits;
+              return (
+                <g key={`gate-${index}`}>
+                  {qubits.map((q) => (
+                    <BarrierTick key={`barrier-${index}-${q}`} x={x} y={qubitY(q)} color={textColor} />
+                  ))}
+                </g>
+              );
+            }
 
             if (TWO_QUBIT_GATES.has(name) && gate.qubits.length >= 2) {
               const [q0, q1] = gate.qubits;

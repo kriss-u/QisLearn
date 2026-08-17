@@ -43,6 +43,7 @@ const CIRCUIT_METHOD_NAMES = new Set([
   "measure",
   "measure_all",
   "measure_active",
+  "barrier",
 ]);
 
 /** Single-qubit gate methods that accept a list of qubits to broadcast over, e.g. `qc.h([0, 1, 2])`. */
@@ -137,6 +138,12 @@ function outOfRangeMessage(kind: "qubit" | "classical bit", index: number, size:
  * to three separate `Gate` entries (matching what Qiskit's own circuit actually
  * records).
  *
+ * `.barrier()` is recognized with the same argument shapes real Qiskit accepts:
+ * no args (all qubits), one or more plain ints, a list/range, or a register —
+ * recorded as a `Gate` with `gate: "barrier"` and an empty `qubits` array
+ * standing for "all qubits" (resolved against `Circuit.numQubits` wherever it's
+ * consumed, since the gate itself doesn't carry the circuit's qubit count).
+ *
  * Three classes of mistake are caught and reported as issues rather than
  * silently producing a nonsense `Circuit`, mirroring what real Qiskit/Python
  * would refuse to run:
@@ -222,6 +229,22 @@ export function extractCircuit(source: string): ExtractResult {
   }
   const resolveQubitSet = (node: ExprNode) => resolveIndexSet(node, quantumRegisters);
   const resolveClbitSet = (node: ExprNode) => resolveIndexSet(node, classicalRegisters);
+
+  /** Each positional arg of `.barrier(...)` accepts a single index, or (like `.measure()`) a register/list/range. */
+  function resolveQubitArgs(args: ExprNode[]): number[] | null {
+    const result: number[] = [];
+    for (const arg of args) {
+      const single = resolveQubitIndex(arg);
+      if (single !== null) {
+        result.push(single);
+        continue;
+      }
+      const many = resolveQubitSet(arg);
+      if (many === null) return null;
+      result.push(...many);
+    }
+    return result;
+  }
 
   /** Qubits touched by any gate so far — what `.measure_active()` measures. */
   const activeQubits = new Set<number>();
@@ -360,6 +383,19 @@ export function extractCircuit(source: string): ExtractResult {
         const active = Array.from(activeQubits).sort((a, b) => a - b);
         for (const q of active) pushGate({ gate: "measure", qubits: [q] });
         numClbits += active.length;
+        continue;
+      }
+
+      if (attr === "barrier") {
+        if (node.args.length === 0) {
+          pushGate({ gate: "barrier", qubits: [] });
+          continue;
+        }
+        const qubits = resolveQubitArgs(node.args);
+        if (qubits === null) continue;
+        for (const q of qubits) reportRange("qubit", q, numQubits);
+        const unique = Array.from(new Set(qubits)).sort((a, b) => a - b);
+        pushGate({ gate: "barrier", qubits: unique });
         continue;
       }
 

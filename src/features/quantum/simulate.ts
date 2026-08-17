@@ -86,6 +86,9 @@ function applySwap(state: StateVector, a: number, b: number): StateVector {
 export function applyGate(state: StateVector, gate: Gate): StateVector {
   const name = gate.gate.toLowerCase();
 
+  if (name === "barrier") {
+    return state;
+  }
   if (name === "cx" || name === "cnot") {
     return applyControlledX(state, gate.qubits[0], gate.qubits[1]);
   }
