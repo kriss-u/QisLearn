@@ -201,14 +201,32 @@ three tags above. Progress is per-lesson, not per-step: visiting a lesson marks 
 marks it `completed` once the learner scrolls there (see `store/progressStore.ts`;
 `setStatus` also refuses to downgrade a `completed` lesson back to `in-progress`).
 
-To add a lesson: create `src/content/lessons/<nn-slug>.mdx` with frontmatter (unique
-`id`, `order` within its `track`, `prerequisites` naming other lessons' `id`s if
-applicable), then write the body. The registry (`src/content/index.ts`) picks it up
+To add a lesson: create `src/content/lessons/<order-slug>.mdx` with frontmatter
+(unique `id`, `order`, `prerequisites` naming other lessons' `id`s if applicable),
+then write the body. The registry (`src/content/index.ts`) picks it up
 automatically via `import.meta.glob`; no manual registration needed. If the
 frontmatter doesn't match `LessonFrontmatterSchema`, it fails loudly (zod throws)
 rather than silently rendering something broken; the MDX body itself isn't
 schema-validated (it's compiled JSX, not data), so a broken `<CodeExercise .../>`
 prop shape only fails at render/type-check time, not at content-load time.
+
+**`id` vs. `order`, and why neither is a sequential integer suffix**: `id` is a
+stable, purely descriptive slug (e.g. `algorithms-oracles`, not
+`algorithms-08-oracles`). It's the Dexie key for saved code snapshots and quiz
+answers (`lessonId::exerciseId` / `lessonId::quizId`) and the target of other
+lessons' `prerequisites` arrays, so it must never be renumbered once a lesson has
+shipped, for the same reason `CodeExercise`/`Quiz` ids must stay stable (see
+above). `order` is the only field that encodes position, is a plain `number`
+compared **globally across all tracks** (`content/index.ts`'s `loadLessonEntries`
+sorts the full lesson list by `order`, and `getNextLesson` walks that same flat
+list for the lesson-to-lesson "next" link, so `order` values must be globally
+distinct and monotonic across tracks, not just unique within one track), and uses
+steps of 100 (100, 200, 300, ...) precisely so a lesson can be inserted later
+without renumbering its neighbors: pick the midpoint (150 between 100 and 200),
+and if that gap fills too, bisect again (125 or 175). The `.mdx` filename mirrors
+`order` as a prefix purely for directory browsability (`600-multi-qubit-
+superposition.mdx`); unlike `id`, nothing in code reads the filename, so renaming
+one when inserting a lesson is just a `git mv`, not a data-migration concern.
 
 **Why frontmatter is read from raw text, not the compiled MDX export**: an earlier
 version read frontmatter via `remark-mdx-frontmatter`'s generated `frontmatter`
