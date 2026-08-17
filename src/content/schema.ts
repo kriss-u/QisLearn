@@ -28,7 +28,7 @@ export const CircuitSchema = z.object({
 });
 export type Circuit = z.infer<typeof CircuitSchema>;
 
-export const VisualizationViewSchema = z.enum(["circuit", "bloch", "statevector", "probabilities"]);
+export const VisualizationViewSchema = z.enum(["circuit", "bloch", "statevector", "probabilities", "table"]);
 export type VisualizationView = z.infer<typeof VisualizationViewSchema>;
 
 export const QuizChoiceSchema = z.object({

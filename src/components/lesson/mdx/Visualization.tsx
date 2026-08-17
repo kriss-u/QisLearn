@@ -12,6 +12,7 @@ import { GateTimeline } from "../../viz/GateTimeline";
 import { KatexSpan, useVizLatex, VizLatexToggle } from "../../viz/latexLabels";
 import { ProbabilityBars } from "../../viz/ProbabilityBars";
 import { defaultQubitLabel } from "../../viz/qubitLabel";
+import { StateTable } from "../../viz/StateTable";
 import { VizActions } from "../../viz/VizActions";
 import { VizSection } from "../../viz/VizSection";
 import { Markdown } from "../Markdown";
@@ -188,6 +189,16 @@ export function Visualization({ title, description, circuit, views = DEFAULT_VIE
               </VizLatexToggle>
             )}
           </SimpleGrid>
+        )}
+
+        {views.includes("table") && (
+          <VizLatexToggle>
+            {(latexAction) => (
+              <VizSection title="Exact State" action={latexAction}>
+                <StateTable amplitudes={snapshot.amplitudes} numQubits={circuit.numQubits} />
+              </VizSection>
+            )}
+          </VizLatexToggle>
         )}
 
         {showBloch && (
