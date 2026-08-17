@@ -1,4 +1,4 @@
-import { Table, Text } from "@chakra-ui/react";
+import { HStack, Progress, Table, Text } from "@chakra-ui/react";
 import { basisLabels, probabilities, type StateVector } from "../../features/quantum/simulate";
 import { ketLatex } from "./gateLatexLabels";
 import { KatexSpan, useVizLatex } from "./latexLabels";
@@ -27,7 +27,7 @@ export function StateTable({ amplitudes, numQubits }: StateTableProps) {
             <Table.ColumnHeader>Basis state</Table.ColumnHeader>
             <Table.ColumnHeader>Re</Table.ColumnHeader>
             <Table.ColumnHeader>Im</Table.ColumnHeader>
-            <Table.ColumnHeader textAlign="right">Probability</Table.ColumnHeader>
+            <Table.ColumnHeader>Probability</Table.ColumnHeader>
           </Table.Row>
         </Table.Header>
         <Table.Body>
@@ -45,10 +45,17 @@ export function StateTable({ amplitudes, numQubits }: StateTableProps) {
                 <Table.Cell fontFamily="mono" color={isZero ? "fg.muted" : undefined}>
                   {formatComponent(amp.im)}
                 </Table.Cell>
-                <Table.Cell fontFamily="mono" textAlign="right" color={isZero ? "fg.muted" : "colorPalette.fg"}>
-                  <Text as="span" fontWeight={isZero ? "normal" : "semibold"}>
-                    {(probs[i] * 100).toFixed(1)}%
-                  </Text>
+                <Table.Cell fontFamily="mono" color={isZero ? "fg.muted" : "colorPalette.fg"}>
+                  <HStack gap="3" justify="flex-end">
+                    <Progress.Root value={probs[i] * 100} flex="1" minW="16" size="xs" colorPalette="quantum">
+                      <Progress.Track rounded="full" bg="bg.muted">
+                        <Progress.Range />
+                      </Progress.Track>
+                    </Progress.Root>
+                    <Text as="span" fontWeight={isZero ? "normal" : "semibold"} textAlign="right" w="12">
+                      {(probs[i] * 100).toFixed(1)}%
+                    </Text>
+                  </HStack>
                 </Table.Cell>
               </Table.Row>
             );
