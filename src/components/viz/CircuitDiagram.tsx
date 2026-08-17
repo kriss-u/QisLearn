@@ -1,6 +1,7 @@
 import { Box, HStack, Text, useToken } from "@chakra-ui/react";
 import type { Circuit } from "../../content/schema";
 import { getControlGateStyle, getGateStyle } from "./gateStyles";
+import { defaultQubitLabel } from "./qubitLabel";
 
 export interface CircuitDiagramProps {
   circuit: Circuit;
@@ -189,7 +190,7 @@ export function CircuitDiagram({ circuit, activeGateIndex, showLegend = true }: 
                 strokeWidth={1.5}
               />
               <text x={0} y={qubitY(q) + 5} fontSize={13} fill={textColor} fontFamily={MONO_FONT} fontWeight={600}>
-                {circuit.qubitLabels?.[q] ?? `q${q}`}
+                {circuit.qubitLabels?.[q] ?? defaultQubitLabel(q, circuit.numQubits)}
               </text>
             </g>
           ))}

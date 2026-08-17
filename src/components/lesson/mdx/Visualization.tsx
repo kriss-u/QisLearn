@@ -6,6 +6,7 @@ import { blochVector, simulateCircuit } from "../../../features/quantum/simulate
 import { CircuitDiagram } from "../../viz/CircuitDiagram";
 import { GateTimeline } from "../../viz/GateTimeline";
 import { ProbabilityBars } from "../../viz/ProbabilityBars";
+import { defaultQubitLabel } from "../../viz/qubitLabel";
 import { VizSection } from "../../viz/VizSection";
 import { Markdown } from "../Markdown";
 import { MdxCard } from "./MdxCard";
@@ -84,7 +85,7 @@ export function Visualization({ title, description, circuit, views = DEFAULT_VIE
               {Array.from({ length: circuit.numQubits }, (_, q) => (
                 <VStack key={q} gap="3">
                   <Text fontSize="sm" fontFamily="mono" fontWeight="semibold" color="colorPalette.fg">
-                    {`q${q}`}
+                    {defaultQubitLabel(q, circuit.numQubits)}
                   </Text>
                   <Suspense fallback={<Skeleton h="320px" rounded="l3" w="full" />}>
                     <BlochSphere vector={blochVector(snapshot.amplitudes, q)} />
