@@ -32,7 +32,13 @@ export function PrerequisitesList({ prerequisiteIds }: { prerequisiteIds: string
           return (
             <HStack key={id} gap="2">
               {STATUS_ICON[status]}
-              <Text asChild fontSize="sm" color={status === "completed" ? "fg.muted" : "fg"}>
+              <Text
+                asChild
+                fontSize="sm"
+                color={status === "completed" ? "fg.muted" : "fg"}
+                _hover={{ color: "quantum.solid", textDecoration: "underline" }}
+                transition="color 0.15s ease"
+              >
                 <Link to={`/lesson/${prereq.id}`}>{prereq.title}</Link>
               </Text>
             </HStack>
