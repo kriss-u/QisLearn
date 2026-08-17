@@ -6,9 +6,16 @@ import { Tooltip } from "../ui/tooltip";
 export interface VizActionsProps {
   onCopy: () => Promise<void>;
   onDownload: () => Promise<void>;
+  copyLabel?: string;
+  downloadLabel?: string;
 }
 
-export function VizActions({ onCopy, onDownload }: VizActionsProps) {
+export function VizActions({
+  onCopy,
+  onDownload,
+  copyLabel = "Copy as image",
+  downloadLabel = "Download as PNG",
+}: VizActionsProps) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
@@ -19,13 +26,13 @@ export function VizActions({ onCopy, onDownload }: VizActionsProps) {
 
   return (
     <HStack gap="1">
-      <Tooltip content={copied ? "Copied!" : "Copy as image"}>
-        <IconButton aria-label="Copy as image" size="xs" variant="ghost" onClick={handleCopy}>
+      <Tooltip content={copied ? "Copied!" : copyLabel}>
+        <IconButton aria-label={copyLabel} size="xs" variant="ghost" onClick={handleCopy}>
           {copied ? <LuCheck /> : <LuCopy />}
         </IconButton>
       </Tooltip>
-      <Tooltip content="Download as PNG">
-        <IconButton aria-label="Download as PNG" size="xs" variant="ghost" onClick={onDownload}>
+      <Tooltip content={downloadLabel}>
+        <IconButton aria-label={downloadLabel} size="xs" variant="ghost" onClick={onDownload}>
           <LuDownload />
         </IconButton>
       </Tooltip>

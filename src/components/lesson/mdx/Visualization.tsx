@@ -2,9 +2,10 @@ import { Box, HStack, SimpleGrid, Skeleton, Text, useToken, VStack } from "@chak
 import { Suspense, lazy, useMemo, useRef, useState } from "react";
 import { LuAtom } from "react-icons/lu";
 import type { Circuit, VisualizationView } from "../../../content/schema";
-import { copyPngToClipboard, downloadBlob } from "../../../features/export/clipboard";
+import { copyPngToClipboard, copyTextToClipboard, downloadBlob } from "../../../features/export/clipboard";
 import { canvasToPngBlob, plotlyToPngBlob, svgElementToPngBlob } from "../../../features/export/pngExport";
 import { drawProbabilityBarsPng } from "../../../features/export/probabilityBarsCanvas";
+import { stateTableToCsv } from "../../../features/export/stateTableExport";
 import { basisLabels, blochVector, probabilities, simulateCircuit } from "../../../features/quantum/simulate";
 import { CircuitDiagram } from "../../viz/CircuitDiagram";
 import { qubitLatex } from "../../viz/gateLatexLabels";
@@ -92,6 +93,14 @@ export function Visualization({ title, description, circuit, views = DEFAULT_VIE
   }
   async function handleProbabilitiesDownload() {
     downloadBlob(await probabilityBarsBlob(), "measurement-probabilities.png");
+  }
+
+  async function handleTableCopy() {
+    await copyTextToClipboard(stateTableToCsv(snapshot.amplitudes, circuit.numQubits));
+  }
+  async function handleTableDownload() {
+    const csv = stateTableToCsv(snapshot.amplitudes, circuit.numQubits);
+    downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), "exact-state.csv");
   }
 
   async function handleBlochCopy(q: number) {
@@ -194,7 +203,20 @@ export function Visualization({ title, description, circuit, views = DEFAULT_VIE
         {views.includes("table") && (
           <VizLatexToggle>
             {(latexAction) => (
-              <VizSection title="Exact State" action={latexAction}>
+              <VizSection
+                title="Exact State"
+                action={
+                  <HStack gap="1">
+                    {latexAction}
+                    <VizActions
+                      onCopy={handleTableCopy}
+                      onDownload={handleTableDownload}
+                      copyLabel="Copy as CSV"
+                      downloadLabel="Download as CSV"
+                    />
+                  </HStack>
+                }
+              >
                 <StateTable amplitudes={snapshot.amplitudes} numQubits={circuit.numQubits} />
               </VizSection>
             )}

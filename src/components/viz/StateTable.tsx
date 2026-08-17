@@ -10,7 +10,7 @@ export interface StateTableProps {
 
 const ZERO_EPSILON = 1e-9;
 
-function formatComponent(value: number): string {
+export function formatComponent(value: number): string {
   return Math.abs(value) < ZERO_EPSILON ? "0" : value.toFixed(3);
 }
 
