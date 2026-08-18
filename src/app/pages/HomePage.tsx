@@ -1,9 +1,40 @@
 import { Badge, Box, Card, Container, HStack, Heading, SimpleGrid, Text, VStack } from "@chakra-ui/react";
-import { Link } from "react-router";
-import { lessonsByTrack } from "../../content";
+import { Link, type MetaFunction } from "react-router";
+import { lessons, lessonsByTrack } from "../../content";
 import { useProgressStore } from "../../store/progressStore";
 import { STATUS_COLOR_PALETTE } from "../../store/statusColor";
 import { Logo } from "../../components/ui/Logo";
+import { SITE_URL, buildPageMeta } from "../../lib/seo";
+
+const TITLE = "QisLearn — Learn Quantum Computing with Qiskit";
+const DESCRIPTION =
+  "Interactive, browser-based lessons for learning quantum computing with Qiskit — circuits, the Bloch sphere, statevectors, and hands-on code exercises. No backend, no install, runs entirely in your browser.";
+
+export const meta: MetaFunction = () =>
+  buildPageMeta({
+    title: TITLE,
+    description: DESCRIPTION,
+    path: "/",
+    ldJson: {
+      "@context": "https://schema.org",
+      "@type": "Course",
+      name: "QisLearn",
+      description: DESCRIPTION,
+      url: SITE_URL,
+      provider: { "@type": "Organization", name: "QisLearn", url: SITE_URL },
+      hasCourseInstance: {
+        "@type": "CourseInstance",
+        courseMode: "online",
+        courseWorkload: "PT" + lessons.reduce((sum, l) => sum + l.estimatedMinutes, 0) + "M",
+      },
+      hasPart: lessons.map((lesson) => ({
+        "@type": "LearningResource",
+        name: lesson.title,
+        description: lesson.summary,
+        url: `${SITE_URL}/lesson/${lesson.id}`,
+      })),
+    },
+  });
 
 export default function HomePage() {
   const statusByLesson = useProgressStore((s) => s.statusByLesson);

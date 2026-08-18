@@ -7,6 +7,7 @@
 export function resolveCssVar(value: string): string {
   const match = /^var\((--[\w-]+)\)$/.exec(value.trim());
   if (!match) return value;
+  if (typeof window === "undefined") return value;
   const resolved = getComputedStyle(document.documentElement).getPropertyValue(match[1]).trim();
   return resolved || value;
 }

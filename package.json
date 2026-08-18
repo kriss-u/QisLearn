@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "react-router dev",
-    "build": "react-router typegen && tsc -b && react-router build && rm -rf dist && mv build/client dist && rm -rf build",
+    "build": "react-router typegen && tsc -b && react-router build && rm -rf dist && mv build/client dist && rm -rf build && node scripts/generate-sitemap.mjs",
     "lint": "oxlint",
     "preview": "serve -s dist"
   },

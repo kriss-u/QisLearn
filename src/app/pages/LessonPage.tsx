@@ -1,7 +1,7 @@
 import { Box, Button, CloseButton, Container, Dialog, HStack, Portal, Skeleton, Text } from "@chakra-ui/react";
 import { Suspense, lazy, useMemo, useState } from "react";
 import { LuArrowRight } from "react-icons/lu";
-import { Navigate, useNavigate, useParams } from "react-router";
+import { Navigate, useNavigate, useParams, type MetaFunction } from "react-router";
 import { getLesson, getNextLesson, loadLessonContent } from "../../content";
 import type { LessonFrontmatter } from "../../content/schema";
 import { LessonLayout, getLessonMaxWidth } from "../../components/lesson/LessonLayout";
@@ -10,6 +10,31 @@ import { PrerequisitesList } from "../../components/lesson/PrerequisitesList";
 import { LessonProgressProvider, useLessonProgress } from "../../components/lesson/LessonProgressContext";
 import { mdxComponents } from "../../components/lesson/mdxComponents";
 import { useProgressStore } from "../../store/progressStore";
+import { SITE_URL, buildPageMeta } from "../../lib/seo";
+
+export const meta: MetaFunction = ({ params }) => {
+  const lesson = getLesson(params.lessonId ?? "");
+  if (!lesson) return buildPageMeta({ title: "QisLearn", description: "QisLearn lesson.", path: "/" });
+
+  const path = `/lesson/${lesson.id}`;
+  const title = `${lesson.title} — QisLearn`;
+  return buildPageMeta({
+    title,
+    description: lesson.summary,
+    path,
+    ldJson: {
+      "@context": "https://schema.org",
+      "@type": "LearningResource",
+      name: lesson.title,
+      description: lesson.summary,
+      url: `${SITE_URL}${path}`,
+      isPartOf: { "@type": "Course", name: "QisLearn", url: SITE_URL },
+      learningResourceType: "Lesson",
+      timeRequired: `PT${lesson.estimatedMinutes}M`,
+      educationalLevel: lesson.track,
+    },
+  });
+};
 
 function LessonNextAction({ lessonId, next }: { lessonId: string; next: LessonFrontmatter | undefined }) {
   const navigate = useNavigate();
