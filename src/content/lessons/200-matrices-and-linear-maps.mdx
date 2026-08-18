@@ -36,6 +36,16 @@ $$XH = \begin{pmatrix} 0 & 1 \\ 1 & 0 \end{pmatrix}\begin{pmatrix} \tfrac{1}{\sq
 
 Different matrices ($XH \neq HX$), confirming $H$ then $X$ isn't the same circuit as $X$ then $H$.
 
+<MatrixTransformPlayground
+  title="Play with a gate as a linear map"
+  description="Pick a gate $M$ and sweep the input vector $v$ around the circle; the solid arrow $Mv$ shows where that gate actually sends it."
+  presets={[
+    { id: "x", label: "X", matrix: [[0, 1], [1, 0]] },
+    { id: "z", label: "Z", matrix: [[1, 0], [0, -1]] },
+    { id: "h", label: "H", matrix: [[0.7071, 0.7071], [0.7071, -0.7071]] },
+  ]}
+/>
+
 <Quiz
   id="quiz-matrix-apply"
   question="What is $Z|1\rangle$, where $Z = \begin{pmatrix} 1 & 0 \\ 0 & -1 \end{pmatrix}$ and $|1\rangle = \begin{pmatrix}0\\1\end{pmatrix}$?"

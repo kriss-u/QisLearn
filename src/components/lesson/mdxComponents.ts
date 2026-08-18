@@ -1,8 +1,15 @@
 import { markdownElements } from "./markdownElements";
 import { CodeExercise } from "./mdx/CodeExercise";
+import { ComplexPlaneExplorer } from "./mdx/ComplexPlaneExplorer";
+import { GroverRotationPlayground } from "./mdx/GroverRotationPlayground";
 import { Measurement } from "./mdx/Measurement";
+import { MatrixTransformPlayground } from "./mdx/MatrixTransformPlayground";
+import { ModularExponentiationExplorer } from "./mdx/ModularExponentiationExplorer";
 import { OracleFigure } from "./mdx/OracleFigure";
+import { PhaseEstimationPlayground } from "./mdx/PhaseEstimationPlayground";
+import { QFTPhaseWheel } from "./mdx/QFTPhaseWheel";
 import { Quiz } from "./mdx/Quiz";
+import { TensorProductBuilder } from "./mdx/TensorProductBuilder";
 import { Visualization } from "./mdx/Visualization";
 
 /**
@@ -17,4 +24,11 @@ export const mdxComponents = {
   Visualization,
   Measurement,
   OracleFigure,
+  ComplexPlaneExplorer,
+  MatrixTransformPlayground,
+  TensorProductBuilder,
+  GroverRotationPlayground,
+  QFTPhaseWheel,
+  PhaseEstimationPlayground,
+  ModularExponentiationExplorer,
 };

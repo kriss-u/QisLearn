@@ -41,6 +41,17 @@ Here's the fact Quantum Phase Estimation is eventually built on: every eigenvalu
 
 Measurement. Collapsing a superposition down to a single definite outcome is fundamentally irreversible: it's a many-to-one process, many different pre-measurement states can collapse to the same post-measurement outcome, and a many-to-one map can never have an inverse. This is also exactly the reversibility argument the oracle lesson makes about classical functions: a generic $f$ isn't invertible either, which is why an oracle has to be built as an XOR-into-an-ancilla unitary instead of "compute $f(x)$ and overwrite the answer directly."
 
+<MatrixTransformPlayground
+  title="Watch norm preservation happen (or fail)"
+  description="The violet loop traces $Mv$ for every direction $v$. For $X$ or $H$ it stays a perfect circle: norm preserved, exactly the unitary condition. Switch to the non-unitary matrix from the quiz below and watch the loop distort."
+  presets={[
+    { id: "x", label: "X (unitary)", matrix: [[0, 1], [1, 0]] },
+    { id: "h", label: "H (unitary)", matrix: [[0.7071, 0.7071], [0.7071, -0.7071]] },
+    { id: "m", label: "M (not unitary)", matrix: [[1, 1], [0, 1]] },
+  ]}
+  showTrace
+/>
+
 <Quiz
   id="quiz-unitary-check"
   question="Is $M = \begin{pmatrix}1 & 1\\0 & 1\end{pmatrix}$ unitary?"

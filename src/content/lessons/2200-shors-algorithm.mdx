@@ -41,6 +41,11 @@ Steps 1, 3, 4, 5 are all classical and efficient (polynomial-time). Step 2 is th
 
 $15 = 3 \times 5$. Every step above, order 4, the even/not-$-1$ check, both gcds, exactly matches the order-finding lesson's worked classical example; the only new piece this lesson adds is *how the quantum subroutine produced $r=4$ in the first place*, without ever needing to already know it.
 
+<ModularExponentiationExplorer
+  title="Retry step 1 with a different $a$"
+  description="Some choices of $a$ give an odd $r$, or an $r$ where $a^{r/2}$ lands on $-1 \bmod 15$, exactly the retry case step 4 of the algorithm handles. Try a few values and see which ones would actually hand you 15's factors."
+/>
+
 ## Why This Matters
 
 Factoring a large $N$ is believed to be classically hard, no known classical algorithm factors an $n$-digit number in time polynomial in $n$; the best known classical methods scale worse than exponentially in the digit count. Shor's algorithm factors it in polynomial time, using nothing exotic beyond gates this course has already built: $H$, $X$, controlled-phase (for QFT/QPE), and a modular-multiplication oracle $U_a$ (whose internal gate-by-gate construction, for realistic $N$, is its own substantial reversible-arithmetic circuit, out of scope here, the same way `basics-oracles` deliberately scoped its own oracle construction down to just the linear case rather than every possible $f$). This is the algorithm that put post-quantum cryptography on the map: RSA's security rests entirely on factoring being classically hard, and this course has now built, gate by gate, every non-black-box piece of the algorithm that breaks that assumption.

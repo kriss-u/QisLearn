@@ -18,6 +18,11 @@ $$\text{QFT}|j\rangle = \frac{1}{\sqrt N}\sum_{k=0}^{N-1} e^{2\pi i jk/N}|k\rang
 
 Compare this to $H$ on a single qubit ($N=2$): $H|0\rangle = \tfrac{1}{\sqrt2}(|0\rangle+|1\rangle)$, $H|1\rangle = \tfrac{1}{\sqrt2}(|0\rangle - |1\rangle) = \tfrac1{\sqrt2}\sum_k e^{2\pi i \cdot 1 \cdot k/2}|k\rangle$. $H$ *is* the 1-qubit QFT; the general QFT is what you get generalizing that same "spread into a phase-encoded superposition" idea to $n$ qubits, $N=2^n$.
 
+<QFTPhaseWheel
+  title="See the phase pattern $\text{QFT}|k\rangle$ produces"
+  description="Slide $k$ and watch the $N$ output phases rotate around the circle: every basis state keeps the same $1/\sqrt N$ magnitude, only the phase spacing between them changes with $k$."
+/>
+
 ## Requires a New Gate: Controlled-Phase
 
 Building the $n$-qubit case needs a gate this course hasn't used yet: **controlled-phase**, $CP(\theta)$, `qc.cp(theta, control, target)`. It applies a phase rotation $P(\theta) = \text{diag}(1, e^{i\theta})$ to the target, but *only* on the branch where the control qubit is $|1\rangle$, otherwise it does nothing. $CP$ is physically symmetric in its two qubits (swapping which one you call "control" gives the identical gate), which is why circuit diagrams draw it as a plain dot on both wires rather than $CX$'s dot-and-ring.

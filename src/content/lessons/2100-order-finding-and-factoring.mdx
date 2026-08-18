@@ -34,6 +34,11 @@ $$\gcd(4-1,\,15) = \gcd(3,15) = 3, \qquad \gcd(4+1,\,15) = \gcd(5,15) = 5$$
 
 $3 \times 5 = 15$. Factored, using nothing but the order $r=4$ and two classical gcd computations, both efficient (Euclid's algorithm).
 
+<ModularExponentiationExplorer
+  title="Watch the order $r$ change with $a$"
+  description="Switch $a$ and see the sequence $a^k \bmod 15$ cycle back to 1 after a different number of steps each time, that step count is $r$."
+/>
+
 ## Order-Finding as a Unitary
 
 Finding $r$ classically (trying powers of $a$ one at a time) takes exponentially many steps in the number of digits of $N$; this is the actual hard part real-world factoring relies on. Quantum Phase Estimation can find $r$ efficiently, given the right unitary. Define $U_a$ on a register large enough to hold values $0,\ldots,N-1$:

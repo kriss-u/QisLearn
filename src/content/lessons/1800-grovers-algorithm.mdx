@@ -94,6 +94,12 @@ qc.h([0, 1])
 
 This lesson's oracle only marks $|11\rangle$, because that's exactly what $CZ$ flips the sign of. To mark a different target, say $|01\rangle$, sandwich the same $CZ$ between $X$ gates on whichever qubits should read 0 in the target (here, qubit 0): $X$ on qubit 0 remaps $01\to11$, $CZ$ catches it, $X$ undoes the remap, exactly the same trick the diffusion operator's own construction already used above to target $|00\rangle$ instead of $|11\rangle$.
 
+<GroverRotationPlayground
+  title="Try the iteration count for bigger $N$"
+  description="Switch $N$ to 16 before the quiz below: watch how many iterations it actually takes to peak, and how the peak probability compares to the $N=4$ case above."
+  nOptions={[4, 16, 64]}
+/>
+
 <Quiz
   id="quiz-grover-iteration-count"
   question="For $N = 16$ items (4 qubits) with one marked item, roughly how many Grover iterations are needed, and how does that compare to the classical worst case?"

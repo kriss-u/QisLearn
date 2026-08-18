@@ -105,6 +105,11 @@ qc.h(1)
   explanation="This is the entire mechanism QPE relies on: by definition, $U|\\psi\\rangle = e^{2\\pi i\\theta}|\\psi\\rangle$ for an eigenvector $|\\psi\\rangle$, so no power of $U$ can ever move $|\\psi\\rangle$ elsewhere, it can only attach a phase. That phase gets kicked back onto the controlling qubit instead (the same phase-kickback idea from Phase Kickback), which is exactly why the eigenstate register looks completely untouched at the end while the counting register ends up holding the answer."
 />
 
+<PhaseEstimationPlayground
+  title="See the precision/qubit-count tradeoff"
+  description="Pick a $\theta$ that doesn't land on a clean binary fraction, then drag $t$ up and watch the measurement distribution sharpen around the best $n$-bit estimate instead of spreading across several outcomes."
+/>
+
 <Quiz
   id="quiz-qpe-precision"
   question="If $\theta$ isn't exactly representable in $n$ bits (e.g. $\theta = 1/3$ with only 2 counting qubits), what does QPE return?"

@@ -47,6 +47,16 @@ That second line, $X|-\rangle = -|-\rangle$, is exactly the fact the phase-kickb
 
 $|0\rangle,|1\rangle$ form a complete basis of eigenvectors for $Z$ (its **eigenbasis**); $|+\rangle,|-\rangle$ form one for $X$. Every $2\times2$ matrix relevant to this course has an eigenbasis like this: a basis of eigenvectors that the matrix acts on by pure scaling, no rotation. Later, Quantum Phase Estimation (in the algorithms track) is built entirely around a single question: given an eigenvector of some unitary $U$, what is its eigenvalue? Since a unitary's eigenvalues always have the form $e^{i\theta}$ (the Unitary Matrices lesson right after this one covers why), "find the eigenvalue" really means "find the phase $\theta$," which is where that lesson's name comes from.
 
+<MatrixTransformPlayground
+  title="Hunt for an eigendirection"
+  description="Sweep $v$ around the circle for $X$ or $Z$ and watch for the exact angles where $Mv$ snaps onto the same line as $v$, that's an eigenvector, and the badge shows its eigenvalue $\lambda$."
+  presets={[
+    { id: "z", label: "Z", matrix: [[1, 0], [0, -1]] },
+    { id: "x", label: "X", matrix: [[0, 1], [1, 0]] },
+  ]}
+  showEigenReadout
+/>
+
 <Quiz
   id="quiz-eigenvalue-check"
   question="Is $v = \begin{pmatrix}1\\2\end{pmatrix}$ an eigenvector of $A = \begin{pmatrix}2 & 0\\0 & 3\end{pmatrix}$?"

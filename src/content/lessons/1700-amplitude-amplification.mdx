@@ -44,6 +44,11 @@ $$k_{\text{opt}} \approx \frac{\pi}{4}\sqrt N$$
 
 $O(\sqrt N)$ iterations, each one query to the oracle, versus $O(N)$ classically: a **quadratic speedup**. It's smaller than Deutsch-Jozsa's exponential gap, but it applies to a much more general problem: searching *anything* representable as "find the input a black-box function accepts," with no structure to exploit at all.
 
+<GroverRotationPlayground
+  title="Watch the rotation toward $|\omega\rangle$"
+  description="Slide $k$ to add Grover iterations and see the state vector rotate by $2\theta$ each time, with the success probability tracking $\sin^2((2k+1)\theta)$ below."
+/>
+
 <Quiz
   id="quiz-reflection-rotation"
   question="Why does composing the oracle reflection and the diffusion reflection produce a rotation, specifically, toward the marked state?"

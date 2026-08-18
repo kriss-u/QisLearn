@@ -43,7 +43,7 @@ qc.cx(2, 3)
 
 <Visualization
   title="$U_f$ for $f(x_0, x_1, x_2) = x_0 \oplus x_2$"
-  description="Set input qubits 0 and 2, then watch qubit 3 (the ancilla) in the Exact State table: it tracks x_0 XOR x_2 exactly, completely independent of whatever qubit 1 is set to."
+  description="Set input qubits 0 and 2, then watch qubit 3 (the ancilla) in the Exact State table: it tracks $x_0 \oplus x_2$ exactly, completely independent of whatever qubit 1 is set to."
   circuit={{ numQubits: 4, gates: [{ gate: "cx", qubits: [0, 3] }, { gate: "cx", qubits: [2, 3] }] }}
   views={["circuit", "table"]}
 />
