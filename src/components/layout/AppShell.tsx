@@ -14,7 +14,7 @@ import {
 } from "@chakra-ui/react";
 import type { PropsWithChildren } from "react";
 import { useState } from "react";
-import { LuMenu } from "react-icons/lu";
+import { LuGithub, LuMenu } from "react-icons/lu";
 import { Link, useParams } from "react-router";
 import { lessonsByTrack } from "../../content";
 import { useProgressStore } from "../../store/progressStore";
@@ -109,7 +109,15 @@ function NavContent({ onNavigate }: { onNavigate?: () => void }) {
 
       <Box as="footer" px="6" py="4" borderTopWidth="1px" borderColor="border.muted" flexShrink={0}>
         <Text fontSize="xs" color="fg.subtle">
-          Made by Krishna Upadhyay
+          Made with ❤️ by{" "}
+          <a
+            href="https://www.krishnaupadhyay.com.np/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ textDecoration: "underline" }}
+          >
+            Krishna Upadhyay
+          </a>
         </Text>
       </Box>
     </Flex>
@@ -185,6 +193,16 @@ export function AppShell({ children }: PropsWithChildren) {
             </Link>
           </HStack>
           <Box flex="1" />
+          <IconButton
+            asChild
+            aria-label="View source on GitHub"
+            variant="ghost"
+            size="sm"
+          >
+            <a href="https://github.com/kriss-u/QisLearn" target="_blank" rel="noopener noreferrer">
+              <LuGithub />
+            </a>
+          </IconButton>
           <LatexModeButton />
           <ColorModeButton />
         </HStack>
