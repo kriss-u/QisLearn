@@ -1,13 +1,12 @@
 # QisLearn
 
-An interactive, entirely browser-based course for learning quantum computing with
-[Qiskit](https://www.ibm.com/quantum/qiskit) — from "what is a qubit" up through
-entanglement and beyond.
+Interactive, browser-based [Qiskit](https://www.ibm.com/quantum/qiskit) course —
+lessons, a code editor, static circuit checking, and live visualizations (Bloch
+sphere, statevectors). No backend, runs fully client-side.
 
-There's no backend and no server-side Python. Lessons ship as JSON content bundled
-with the app; your progress and saved code live only in your browser's IndexedDB.
-Code you write is checked statically (parsed, not executed) against what each
-exercise expects.
+Lessons ship as JSON content bundled with the app; your progress and saved code
+live only in your browser's IndexedDB. Code you write is checked statically
+(parsed, not executed) against what each exercise expects.
 
 > **Working on this repo, human or agent?** See **[AGENTS.md](./AGENTS.md)** for the
 > architecture, conventions, and Qiskit-specific correctness rules (bit ordering
@@ -59,3 +58,7 @@ simulator, and three example lessons (qubits, single-qubit gates, entanglement) 
 in place and working end to end. It's meant to be built out lesson by lesson from
 here — see [AGENTS.md](./AGENTS.md) for known limitations (no real Python
 execution, no classical registers yet) and where to extend things.
+
+## Author
+
+Made with ❤️ by [Krishna Upadhyay](https://krishnaupadhyay.com.np)
