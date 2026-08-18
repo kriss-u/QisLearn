@@ -42,6 +42,10 @@ const MONO_FONT = "'Fira Code', ui-monospace, monospace";
  * its line. A `barrier` occupies a column on every qubit line it spans (all
  * lines, for the empty-`qubits` "barrier everything" form) and advances all
  * of those lines past it, so later gates on a barred qubit are pushed after it.
+ * A multi-qubit gate's connector is drawn spanning every qubit line between
+ * its min and max qubit, not just the ones it targets, so it blocks (and
+ * advances) every line in that range too; otherwise a later gate on an
+ * in-between qubit could land in the same column and overlap the connector.
  */
 function layoutColumns(circuit: Circuit): { columns: number; columnOf: number[] } {
   const nextAvailable = new Array<number>(circuit.numQubits).fill(0);
@@ -55,8 +59,16 @@ function layoutColumns(circuit: Circuit): { columns: number; columnOf: number[] 
         ? Array.from({ length: circuit.numQubits }, (_, i) => i)
         : gate.qubits;
 
-    const column = qubits.length === 0 ? 0 : Math.max(...qubits.map((q) => nextAvailable[q] ?? 0));
-    for (const q of qubits) nextAvailable[q] = column + 1;
+    const spannedQubits =
+      qubits.length >= 2
+        ? Array.from(
+            { length: Math.max(...qubits) - Math.min(...qubits) + 1 },
+            (_, i) => Math.min(...qubits) + i,
+          )
+        : qubits;
+
+    const column = spannedQubits.length === 0 ? 0 : Math.max(...spannedQubits.map((q) => nextAvailable[q] ?? 0));
+    for (const q of spannedQubits) nextAvailable[q] = column + 1;
 
     columnOf.push(column);
     maxColumn = Math.max(maxColumn, column);
