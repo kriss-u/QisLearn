@@ -3,7 +3,7 @@ import { python } from "@codemirror/lang-python";
 import { EditorView } from "@codemirror/view";
 import { githubDark, githubLight } from "@uiw/codemirror-theme-github";
 import CodeMirror from "@uiw/react-codemirror";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LuCheck, LuCopy } from "react-icons/lu";
 import { useColorMode } from "../ui/color-mode";
 
@@ -29,6 +29,18 @@ export function PyEditor({
 }: PyEditorProps) {
   const { colorMode } = useColorMode();
   const [copied, setCopied] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
+
+  useEffect(() => {
+    const onBeforePrint = () => setIsPrinting(true);
+    const onAfterPrint = () => setIsPrinting(false);
+    window.addEventListener("beforeprint", onBeforePrint);
+    window.addEventListener("afterprint", onAfterPrint);
+    return () => {
+      window.removeEventListener("beforeprint", onBeforePrint);
+      window.removeEventListener("afterprint", onAfterPrint);
+    };
+  }, []);
 
   async function handleCopy() {
     await navigator.clipboard.writeText(value);
@@ -58,7 +70,7 @@ export function PyEditor({
           value={value}
           onChange={onChange}
           minHeight={minHeight}
-          theme={colorMode === "dark" ? githubDark : githubLight}
+          theme={colorMode === "dark" && !isPrinting ? githubDark : githubLight}
           extensions={[python(), fontTheme]}
           readOnly={readOnly}
           basicSetup={{

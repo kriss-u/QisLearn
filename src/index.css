@@ -68,14 +68,17 @@ body {
     background-image: none !important;
   }
 
-  /* CodeMirror's own oneDark theme isn't driven by the tokens above, so flatten it directly. */
+  /*
+   * PyEditor forces the light CodeMirror theme while printing (see
+   * beforeprint/afterprint handling in PyEditor.tsx), so its syntax colors
+   * already read fine on paper. Browsers strip background colors from print
+   * by default, so opt back in to keep the token backgrounds (e.g. selection,
+   * diff highlights) instead of flattening everything to black text.
+   */
   .cm-editor,
   .cm-editor * {
-    background: transparent !important;
-    color: #000 !important;
-  }
-  .cm-editor {
-    background: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   .quiz-choices {
