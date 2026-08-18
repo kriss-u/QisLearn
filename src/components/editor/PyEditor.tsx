@@ -1,7 +1,7 @@
 import { Box, HStack, IconButton, Text } from "@chakra-ui/react";
 import { python } from "@codemirror/lang-python";
-import { oneDark } from "@codemirror/theme-one-dark";
 import { EditorView } from "@codemirror/view";
+import { githubDark, githubLight } from "@uiw/codemirror-theme-github";
 import CodeMirror from "@uiw/react-codemirror";
 import { useState } from "react";
 import { LuCheck, LuCopy } from "react-icons/lu";
@@ -58,7 +58,7 @@ export function PyEditor({
           value={value}
           onChange={onChange}
           minHeight={minHeight}
-          theme={colorMode === "dark" ? oneDark : "light"}
+          theme={colorMode === "dark" ? githubDark : githubLight}
           extensions={[python(), fontTheme]}
           readOnly={readOnly}
           basicSetup={{
