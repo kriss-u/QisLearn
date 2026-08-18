@@ -8,6 +8,16 @@ export function handleAssign(ctx: ExtractionContext, node: Assign) {
     if (target.nodeType === "Name") ctx.boundNames.add(target.id);
   }
 
+  const targetName = node.targets[0];
+  if (targetName?.nodeType === "Name") {
+    const literal = numericLiteral(node.value);
+    if (literal !== null) {
+      ctx.scalarInts.set(targetName.id, literal);
+    } else {
+      ctx.scalarInts.delete(targetName.id);
+    }
+  }
+
   if (node.value.nodeType !== "Call") return;
   const call = node.value;
   const target = node.targets[0];

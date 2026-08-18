@@ -29,6 +29,9 @@ export class ExtractionContext {
   importedNames = new Set<string>();
   boundNames = new Set<string>();
 
+  /** Plain `x = <number>` assignments, so `qc.h(x)` resolves the same way `qc.h(2)` would. */
+  scalarInts = new Map<string, number>();
+
   /** Qubits touched by any gate so far — what `.measure_active()` measures. */
   activeQubits = new Set<number>();
 
@@ -56,12 +59,24 @@ export class ExtractionContext {
     }
   }
 
-  /** A plain int, or `register[i]` where `register` is a tracked register — both mean the same qubit/clbit index. */
+  /**
+   * A plain int, `register[i]` where `register` is a tracked register, or a
+   * plain variable previously assigned a literal number — all mean the same
+   * qubit/clbit index. A bare name that isn't any of those and was never
+   * bound at all (not a loop variable, function parameter, import, etc.) is
+   * reported as an undefined-name error, mirroring Python's `NameError`.
+   */
   resolveIndex(node: ExprNode, registers: Map<string, RegisterInfo>): number | null {
     const literal = numericLiteral(node);
     if (literal !== null) return literal;
     if (node.nodeType === "Subscript" && node.value.nodeType === "Name" && registers.has(node.value.id)) {
       return numericLiteral(node.slice);
+    }
+    if (node.nodeType === "Name") {
+      if (this.scalarInts.has(node.id)) return this.scalarInts.get(node.id)!;
+      if (!this.boundNames.has(node.id) && !registers.has(node.id)) {
+        this.report(`\`${node.id}\` is used but never defined. Real Qiskit/Python would raise a NameError here.`);
+      }
     }
     return null;
   }

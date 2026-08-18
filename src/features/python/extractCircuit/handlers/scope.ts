@@ -1,9 +1,11 @@
-import type { ASTNodeUnion } from "py-ast";
+import type { ASTNodeUnion, ExprNode } from "py-ast";
 import { CIRCUIT_METHOD_NAMES } from "../constants";
 import type { ExtractionContext } from "../context";
 
 type ImportNode = Extract<ASTNodeUnion, { nodeType: "Import" }>;
 type ImportFromNode = Extract<ASTNodeUnion, { nodeType: "ImportFrom" }>;
+type ForNode = Extract<ASTNodeUnion, { nodeType: "For" | "AsyncFor" }>;
+type FunctionDefNode = Extract<ASTNodeUnion, { nodeType: "FunctionDef" | "AsyncFunctionDef" }>;
 
 export function handleImport(ctx: ExtractionContext, node: ImportNode) {
   for (const alias of node.names) {
@@ -19,6 +21,39 @@ export function handleImportFrom(ctx: ExtractionContext, node: ImportFromNode) {
     ctx.importedNames.add(bound);
     ctx.boundNames.add(bound);
   }
+}
+
+/** Recursively binds every `Name` in a target expression, including `for i, q in ...` tuple/list unpacking. */
+function bindTarget(ctx: ExtractionContext, target: ExprNode) {
+  if (target.nodeType === "Name") {
+    ctx.boundNames.add(target.id);
+    return;
+  }
+  if (target.nodeType === "Tuple" || target.nodeType === "List") {
+    for (const elt of target.elts) bindTarget(ctx, elt);
+  }
+}
+
+/**
+ * `for i in range(n): ...` binds the loop variable(s) for the rest of the
+ * (flat, single-pass) walk, so a later `qc.h(i)` isn't mistaken for a
+ * reference to an undefined name. The loop variable itself still can't be
+ * constant-folded to a qubit index (that would require real execution), so
+ * gate calls using it still resolve to "needs a qubit argument" rather than
+ * a concrete gate, same as any other non-literal expression.
+ */
+export function handleFor(ctx: ExtractionContext, node: ForNode) {
+  bindTarget(ctx, node.target);
+}
+
+/** Binds a function's parameter names so calls inside its body don't get flagged as referencing undefined names. */
+export function handleFunctionDef(ctx: ExtractionContext, node: FunctionDefNode) {
+  ctx.boundNames.add(node.name);
+  for (const arg of [...node.args.posonlyargs, ...node.args.args, ...node.args.kwonlyargs]) {
+    ctx.boundNames.add(arg.arg);
+  }
+  if (node.args.vararg) ctx.boundNames.add(node.args.vararg.arg);
+  if (node.args.kwarg) ctx.boundNames.add(node.args.kwarg.arg);
 }
 
 /** Spots `qc.h` referenced without being called (no parens) — a gate isn't applied until `qc.h(0)` runs. */

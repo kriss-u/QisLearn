@@ -1,5 +1,5 @@
 import { Box, HStack, Text, useToken } from "@chakra-ui/react";
-import { forwardRef } from "react";
+import { forwardRef, useId } from "react";
 import type { Circuit } from "../../content/schema";
 import { getControlGateStyle, getGateStyle } from "./gateStyles";
 import { customLabelLatex, getGateLatex, qubitLatex } from "./gateLatexLabels";
@@ -77,19 +77,63 @@ function layoutColumns(circuit: Circuit): { columns: number; columnOf: number[] 
   return { columns: maxColumn + 1, columnOf };
 }
 
-/** Small vertical dashed tick marking a barrier on one qubit's wire. */
-function BarrierTick({ x, y, color }: { x: number; y: number; color: string }) {
+const BARRIER_WIDTH = 9;
+
+/**
+ * A dot-patterned, borderless block marking a barrier over one contiguous
+ * run of qubit lines (`fromY`/`toY` are the row centers of the run's first
+ * and last qubit). Drawn as a single rect spanning the *full* row height of
+ * every qubit in the run (not inset), so two barrier gates stacked top-to-
+ * bottom on adjacent qubits butt up against each other with no gap and read
+ * as one continuous block, matching Qiskit's own `.draw()`. Fill is a dot
+ * pattern (see `BarrierDotPattern`) rather than a solid color or an outlined
+ * shape, so it reads as a distinct texture instead of another bordered box
+ * next to the gate fills.
+ */
+function BarrierBlock({
+  x,
+  fromY,
+  toY,
+  patternId,
+}: {
+  x: number;
+  fromY: number;
+  toY: number;
+  patternId: string;
+}) {
   return (
-    <line
-      x1={x}
-      y1={y - ROW_HEIGHT / 2 + 4}
-      x2={x}
-      y2={y + ROW_HEIGHT / 2 - 4}
-      stroke={color}
-      strokeWidth={2}
-      strokeDasharray="4 3"
+    <rect
+      x={x - BARRIER_WIDTH / 2}
+      y={fromY - ROW_HEIGHT / 2}
+      width={BARRIER_WIDTH}
+      height={toY - fromY + ROW_HEIGHT}
+      fill={`url(#${patternId})`}
     />
   );
+}
+
+/** Dot `<pattern>` def used as the barrier block's fill; keep tile size small relative to `BARRIER_WIDTH`. */
+function BarrierDotPattern({ id, color }: { id: string; color: string }) {
+  return (
+    <pattern id={id} width={2.25} height={2.25} patternUnits="userSpaceOnUse">
+      <circle cx={1.125} cy={1.125} r={0.45} fill={color} fillOpacity={0.8} />
+    </pattern>
+  );
+}
+
+/** Splits a sorted qubit index list into runs of consecutive integers, e.g. `[0, 1, 2, 4]` -> `[[0, 1, 2], [4]]`. */
+function contiguousRuns(qubits: number[]): number[][] {
+  const sorted = [...qubits].sort((a, b) => a - b);
+  const runs: number[][] = [];
+  for (const q of sorted) {
+    const last = runs.at(-1);
+    if (last && q === last.at(-1)! + 1) {
+      last.push(q);
+    } else {
+      runs.push([q]);
+    }
+  }
+  return runs;
 }
 
 /** The standard meter-with-needle glyph used for measurement in circuit diagrams. */
@@ -142,9 +186,30 @@ export const CircuitDiagram = forwardRef<SVGSVGElement, CircuitDiagramProps>(fun
 ) {
   const [wireColor, activeRing, textColor] = useToken("colors", ["border", "quantum.400", "fg"]);
   const latex = useVizLatex();
+  const barrierPatternId = `barrier-hatch-${useId().replace(/:/g, "")}`;
 
   const { columns, columnOf } = layoutColumns(circuit);
   const measureGates = circuit.gates.filter((g) => g.gate.toLowerCase() === "measure");
+
+  /**
+   * Barrier qubits are merged per column (not per gate) before splitting into
+   * contiguous runs, so two separate `.barrier()` calls that land in the same
+   * column on adjacent qubits (e.g. `qc.barrier(0)` then `qc.barrier(1)`)
+   * render as one seamless block instead of two rects with visible seams
+   * where their rounded corners meet.
+   */
+  const barrierQubitsByColumn = new Map<number, Set<number>>();
+  circuit.gates.forEach((gate, index) => {
+    if (gate.gate.toLowerCase() !== "barrier") return;
+    const qubits = gate.qubits.length === 0 ? Array.from({ length: circuit.numQubits }, (_, i) => i) : gate.qubits;
+    const column = columnOf[index];
+    const set = barrierQubitsByColumn.get(column) ?? new Set<number>();
+    for (const q of qubits) set.add(q);
+    barrierQubitsByColumn.set(column, set);
+  });
+  const barrierBlocks = Array.from(barrierQubitsByColumn.entries()).flatMap(([column, qubitSet]) =>
+    contiguousRuns(Array.from(qubitSet)).map((run) => ({ column, run })),
+  );
 
   const qubitY = (q: number) => TOP_MARGIN + q * ROW_HEIGHT + GATE_SIZE / 2;
 
@@ -211,6 +276,9 @@ export const CircuitDiagram = forwardRef<SVGSVGElement, CircuitDiagramProps>(fun
       )}
       <Box overflowX="auto">
         <svg ref={ref} width={width} height={Math.max(height, 80)} role="img" aria-label="Quantum circuit diagram">
+          <defs>
+            <BarrierDotPattern id={barrierPatternId} color={textColor} />
+          </defs>
           {Array.from({ length: circuit.numQubits }, (_, q) => {
             const plainLabel = circuit.qubitLabels?.[q] ?? defaultQubitLabel(q, circuit.numQubits);
             return (
@@ -281,23 +349,22 @@ export const CircuitDiagram = forwardRef<SVGSVGElement, CircuitDiagramProps>(fun
             </g>
           ))}
 
+          {barrierBlocks.map(({ column, run }) => (
+            <BarrierBlock
+              key={`barrier-${column}-${run[0]}`}
+              x={leftMargin + (column + 0.75) * COLUMN_WIDTH}
+              fromY={qubitY(run[0])}
+              toY={qubitY(run.at(-1)!)}
+              patternId={barrierPatternId}
+            />
+          ))}
+
           {circuit.gates.map((gate, index) => {
             const x = leftMargin + (columnOf[index] + 0.75) * COLUMN_WIDTH;
             const isActive = activeGateIndex === index;
             const name = gate.gate.toLowerCase();
 
-            if (name === "barrier") {
-              const qubits = gate.qubits.length === 0
-                ? Array.from({ length: circuit.numQubits }, (_, i) => i)
-                : gate.qubits;
-              return (
-                <g key={`gate-${index}`}>
-                  {qubits.map((q) => (
-                    <BarrierTick key={`barrier-${index}-${q}`} x={x} y={qubitY(q)} color={textColor} />
-                  ))}
-                </g>
-              );
-            }
+            if (name === "barrier") return null;
 
             if (TWO_QUBIT_GATES.has(name) && gate.qubits.length >= 2) {
               const [q0, q1] = gate.qubits;
@@ -350,7 +417,6 @@ export const CircuitDiagram = forwardRef<SVGSVGElement, CircuitDiagramProps>(fun
                     y={y - GATE_SIZE / 2 - 4}
                     width={GATE_SIZE + 8}
                     height={GATE_SIZE + 8}
-                    rx={12}
                     fill="none"
                     stroke={activeRing}
                     strokeWidth={2.5}
@@ -361,7 +427,6 @@ export const CircuitDiagram = forwardRef<SVGSVGElement, CircuitDiagramProps>(fun
                   y={y - GATE_SIZE / 2}
                   width={GATE_SIZE}
                   height={GATE_SIZE}
-                  rx={9}
                   fill={style.fill}
                 />
                 {name === "measure" ? (
@@ -428,7 +493,7 @@ export const CircuitDiagram = forwardRef<SVGSVGElement, CircuitDiagramProps>(fun
             const style = TWO_QUBIT_GATES.has(name) ? getControlGateStyle(name) : getGateStyle(name);
             return (
               <HStack key={name} gap="1.5">
-                <Box w="2.5" h="2.5" rounded="sm" bg={style.fill} flexShrink={0} />
+                <Box w="2.5" h="2.5" bg={style.fill} flexShrink={0} />
                 <Text fontSize="xs" color="fg.muted" fontFamily="mono">
                   {name}
                 </Text>

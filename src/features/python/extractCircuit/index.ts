@@ -2,7 +2,13 @@ import { parseModule, walk } from "py-ast";
 import { ExtractionContext } from "./context";
 import { handleAssign } from "./handlers/assign";
 import { handleAttributeCall } from "./handlers/gateCall";
-import { checkBareAttributeReference, handleImport, handleImportFrom } from "./handlers/scope";
+import {
+  checkBareAttributeReference,
+  handleFor,
+  handleFunctionDef,
+  handleImport,
+  handleImportFrom,
+} from "./handlers/scope";
 import type { ExtractResult } from "./types";
 
 export type { ExtractIssue, ExtractResult } from "./types";
@@ -76,6 +82,16 @@ export function extractCircuit(source: string): ExtractResult {
 
     if (node.nodeType === "Assign") {
       handleAssign(ctx, node);
+      continue;
+    }
+
+    if (node.nodeType === "For" || node.nodeType === "AsyncFor") {
+      handleFor(ctx, node);
+      continue;
+    }
+
+    if (node.nodeType === "FunctionDef" || node.nodeType === "AsyncFunctionDef") {
+      handleFunctionDef(ctx, node);
       continue;
     }
 
