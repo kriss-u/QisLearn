@@ -143,6 +143,17 @@ export function CodeExercise({ id: exerciseId, prompt, starterCode, expectedCirc
         </Alert.Root>
       )}
 
+      {!result && extracted.issues.length > 0 && (
+        <Alert.Root className="no-print" status="warning" rounded="l2">
+          <Alert.Indicator />
+          <Alert.Content>
+            {extracted.issues.map((issue, i) => (
+              <Alert.Description key={i}>{issue.message}</Alert.Description>
+            ))}
+          </Alert.Content>
+        </Alert.Root>
+      )}
+
       {extracted.circuit && extracted.circuit.numQubits > 0 && (
         <VizLatexToggle>
           {(latexAction) => {

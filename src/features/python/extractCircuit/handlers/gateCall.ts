@@ -59,7 +59,17 @@ function handleBarrier(ctx: ExtractionContext, node: Call) {
 function handleAppend(ctx: ExtractionContext, node: Call) {
   const gateCall = node.args[0];
   const qubitArg = node.args[1];
-  if (gateCall?.nodeType !== "Call") return;
+  if (!gateCall) {
+    ctx.reportMissingQubit(`${ctx.circuitVar}.append(<GateClass>(), [...])`);
+    return;
+  }
+  if (gateCall.nodeType !== "Call") {
+    ctx.report(
+      `\`${ctx.circuitVar}.append(...)\` needs a gate constructed inline, e.g. \`${ctx.circuitVar}.append(HGate(), [0])\` — ` +
+        "a gate built in a separate variable isn't supported here.",
+    );
+    return;
+  }
   const className = identifierName(gateCall.func);
   if (!className) return;
   if (gateCall.func.nodeType === "Name") {
