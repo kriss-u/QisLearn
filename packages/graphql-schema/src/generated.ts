@@ -36,6 +36,35 @@ export type ContentBlock = {
   type: Scalars['String']['output'];
 };
 
+export type ContentBlockFieldSpec = {
+  __typename?: 'ContentBlockFieldSpec';
+  kind: FieldKind;
+  label: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  required: Scalars['Boolean']['output'];
+};
+
+export type ContentBlockTypeSpec = {
+  __typename?: 'ContentBlockTypeSpec';
+  fields: Array<ContentBlockFieldSpec>;
+  label: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+};
+
+export type FieldKind =
+  | 'BOOLEAN'
+  | 'CIRCUIT'
+  | 'INLINE_MATH'
+  | 'LONG_TEXT'
+  | 'MARKDOWN'
+  | 'MATRIX_PRESETS'
+  | 'NUMBER'
+  | 'NUMBER_ARRAY'
+  | 'QUIZ_CHOICES'
+  | 'STRING'
+  | 'STRING_ARRAY'
+  | 'VISUALIZATION_VIEWS';
+
 export type Lesson = {
   __typename?: 'Lesson';
   contentBlocks: Array<ContentBlock>;
@@ -57,6 +86,12 @@ export type LessonDifficulty =
   | 'ADVANCED'
   | 'BEGINNER'
   | 'INTERMEDIATE';
+
+export type LessonLayoutSpec = {
+  __typename?: 'LessonLayoutSpec';
+  label: Scalars['String']['output'];
+  value: Scalars['String']['output'];
+};
 
 export type LessonProgress = {
   __typename?: 'LessonProgress';
@@ -240,7 +275,9 @@ export type MutationUpdateTrackArgs = {
 
 export type Query = {
   __typename?: 'Query';
+  adminBlockTypes: Array<ContentBlockTypeSpec>;
   adminLesson?: Maybe<Lesson>;
+  adminLessonLayouts: Array<LessonLayoutSpec>;
   adminTags: Array<Tag>;
   health: Scalars['String']['output'];
   lesson?: Maybe<Lesson>;
@@ -323,6 +360,16 @@ export type AdminTagsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type AdminTagsQuery = { __typename?: 'Query', adminTags: Array<{ __typename?: 'Tag', id: string, slug: string, label: string }> };
+
+export type AdminBlockTypesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminBlockTypesQuery = { __typename?: 'Query', adminBlockTypes: Array<{ __typename?: 'ContentBlockTypeSpec', type: string, label: string, fields: Array<{ __typename?: 'ContentBlockFieldSpec', name: string, label: string, kind: FieldKind, required: boolean }> }> };
+
+export type AdminLessonLayoutsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminLessonLayoutsQuery = { __typename?: 'Query', adminLessonLayouts: Array<{ __typename?: 'LessonLayoutSpec', value: string, label: string }> };
 
 export type CreateTrackMutationVariables = Exact<{
   slug: Scalars['String']['input'];
@@ -713,6 +760,98 @@ export type AdminTagsQueryHookResult = ReturnType<typeof useAdminTagsQuery>;
 export type AdminTagsLazyQueryHookResult = ReturnType<typeof useAdminTagsLazyQuery>;
 export type AdminTagsSuspenseQueryHookResult = ReturnType<typeof useAdminTagsSuspenseQuery>;
 export type AdminTagsQueryResult = Apollo.QueryResult<AdminTagsQuery, AdminTagsQueryVariables>;
+export const AdminBlockTypesDocument = gql`
+    query AdminBlockTypes {
+  adminBlockTypes {
+    type
+    label
+    fields {
+      name
+      label
+      kind
+      required
+    }
+  }
+}
+    `;
+
+/**
+ * __useAdminBlockTypesQuery__
+ *
+ * To run a query within a React component, call `useAdminBlockTypesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useAdminBlockTypesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useAdminBlockTypesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useAdminBlockTypesQuery(baseOptions?: Apollo.QueryHookOptions<AdminBlockTypesQuery, AdminBlockTypesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<AdminBlockTypesQuery, AdminBlockTypesQueryVariables>(AdminBlockTypesDocument, options);
+      }
+export function useAdminBlockTypesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<AdminBlockTypesQuery, AdminBlockTypesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<AdminBlockTypesQuery, AdminBlockTypesQueryVariables>(AdminBlockTypesDocument, options);
+        }
+// @ts-ignore
+export function useAdminBlockTypesSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<AdminBlockTypesQuery, AdminBlockTypesQueryVariables>): Apollo.UseSuspenseQueryResult<AdminBlockTypesQuery, AdminBlockTypesQueryVariables>;
+export function useAdminBlockTypesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<AdminBlockTypesQuery, AdminBlockTypesQueryVariables>): Apollo.UseSuspenseQueryResult<AdminBlockTypesQuery | undefined, AdminBlockTypesQueryVariables>;
+export function useAdminBlockTypesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<AdminBlockTypesQuery, AdminBlockTypesQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<AdminBlockTypesQuery, AdminBlockTypesQueryVariables>(AdminBlockTypesDocument, options);
+        }
+export type AdminBlockTypesQueryHookResult = ReturnType<typeof useAdminBlockTypesQuery>;
+export type AdminBlockTypesLazyQueryHookResult = ReturnType<typeof useAdminBlockTypesLazyQuery>;
+export type AdminBlockTypesSuspenseQueryHookResult = ReturnType<typeof useAdminBlockTypesSuspenseQuery>;
+export type AdminBlockTypesQueryResult = Apollo.QueryResult<AdminBlockTypesQuery, AdminBlockTypesQueryVariables>;
+export const AdminLessonLayoutsDocument = gql`
+    query AdminLessonLayouts {
+  adminLessonLayouts {
+    value
+    label
+  }
+}
+    `;
+
+/**
+ * __useAdminLessonLayoutsQuery__
+ *
+ * To run a query within a React component, call `useAdminLessonLayoutsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useAdminLessonLayoutsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useAdminLessonLayoutsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useAdminLessonLayoutsQuery(baseOptions?: Apollo.QueryHookOptions<AdminLessonLayoutsQuery, AdminLessonLayoutsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<AdminLessonLayoutsQuery, AdminLessonLayoutsQueryVariables>(AdminLessonLayoutsDocument, options);
+      }
+export function useAdminLessonLayoutsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<AdminLessonLayoutsQuery, AdminLessonLayoutsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<AdminLessonLayoutsQuery, AdminLessonLayoutsQueryVariables>(AdminLessonLayoutsDocument, options);
+        }
+// @ts-ignore
+export function useAdminLessonLayoutsSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<AdminLessonLayoutsQuery, AdminLessonLayoutsQueryVariables>): Apollo.UseSuspenseQueryResult<AdminLessonLayoutsQuery, AdminLessonLayoutsQueryVariables>;
+export function useAdminLessonLayoutsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<AdminLessonLayoutsQuery, AdminLessonLayoutsQueryVariables>): Apollo.UseSuspenseQueryResult<AdminLessonLayoutsQuery | undefined, AdminLessonLayoutsQueryVariables>;
+export function useAdminLessonLayoutsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<AdminLessonLayoutsQuery, AdminLessonLayoutsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<AdminLessonLayoutsQuery, AdminLessonLayoutsQueryVariables>(AdminLessonLayoutsDocument, options);
+        }
+export type AdminLessonLayoutsQueryHookResult = ReturnType<typeof useAdminLessonLayoutsQuery>;
+export type AdminLessonLayoutsLazyQueryHookResult = ReturnType<typeof useAdminLessonLayoutsLazyQuery>;
+export type AdminLessonLayoutsSuspenseQueryHookResult = ReturnType<typeof useAdminLessonLayoutsSuspenseQuery>;
+export type AdminLessonLayoutsQueryResult = Apollo.QueryResult<AdminLessonLayoutsQuery, AdminLessonLayoutsQueryVariables>;
 export const CreateTrackDocument = gql`
     mutation CreateTrack($slug: String!, $title: String!, $order: Int!) {
   createTrack(slug: $slug, title: $title, order: $order) {

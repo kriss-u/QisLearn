@@ -67,6 +67,26 @@ query AdminTags {
   }
 }
 
+query AdminBlockTypes {
+  adminBlockTypes {
+    type
+    label
+    fields {
+      name
+      label
+      kind
+      required
+    }
+  }
+}
+
+query AdminLessonLayouts {
+  adminLessonLayouts {
+    value
+    label
+  }
+}
+
 mutation CreateTrack($slug: String!, $title: String!, $order: Int!) {
   createTrack(slug: $slug, title: $title, order: $order) {
     id

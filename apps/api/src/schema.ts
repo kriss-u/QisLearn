@@ -14,9 +14,34 @@ import {
 import { GraphQLError } from "graphql";
 import { createSchema } from "graphql-yoga";
 import { JSONResolver } from "graphql-scalars";
+import { ZodError } from "zod";
 import { db } from "./db.js";
 import { requireAdmin, requireUser } from "./authz-guards.js";
+import { CONTENT_BLOCK_REGISTRY, validateContentBlockData } from "./content-block-registry.js";
+import { LESSON_LAYOUTS, LESSON_LAYOUT_VALUES } from "./lesson-layouts.js";
 import type { GraphQLContext } from "./context.js";
+
+function badInput(message: string): never {
+  throw new GraphQLError(message, { extensions: { code: "BAD_USER_INPUT" } });
+}
+
+function validateLayout(layout: string) {
+  if (!LESSON_LAYOUT_VALUES.includes(layout)) {
+    badInput(`Invalid lesson layout: ${layout}. Must be one of ${LESSON_LAYOUT_VALUES.join(", ")}.`);
+  }
+}
+
+function validateBlockData(type: string, data: Record<string, unknown>): Record<string, unknown> {
+  try {
+    return validateContentBlockData(type, data);
+  } catch (err) {
+    if (err instanceof ZodError) {
+      badInput(`Invalid data for block type "${type}": ${err.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ")}`);
+    }
+    if (err instanceof Error) badInput(err.message);
+    throw err;
+  }
+}
 
 const LESSON_STATUSES = ["not-started", "in-progress", "completed"] as const;
 type LessonStatusValue = (typeof LESSON_STATUSES)[number];
@@ -33,6 +58,12 @@ function toStatusValue(graphqlEnumValue: string): LessonStatusValue {
 
 function toEnumValue(value: string): string {
   return value.toUpperCase().replace(/-/g, "_");
+}
+
+// FieldKind values are camelCase in TS ("longText") and SCREAMING_SNAKE in
+// GraphQL ("LONG_TEXT"); this generically converts one to the other.
+function toFieldKindEnum(kind: string): string {
+  return kind.replace(/([A-Z])/g, "_$1").toUpperCase();
 }
 
 function fromEnumValue(value: string): string {
@@ -66,6 +97,8 @@ export const schema = createSchema<GraphQLContext>({
       myQuizAttempt(lessonSlug: String!, quizId: String!): QuizAttempt
       adminLesson(id: ID!): Lesson
       adminTags: [Tag!]!
+      adminBlockTypes: [ContentBlockTypeSpec!]!
+      adminLessonLayouts: [LessonLayoutSpec!]!
     }
 
     type Mutation {
@@ -214,6 +247,39 @@ export const schema = createSchema<GraphQLContext>({
       type: String!
       data: JSON!
     }
+
+    enum FieldKind {
+      STRING
+      LONG_TEXT
+      MARKDOWN
+      INLINE_MATH
+      NUMBER
+      BOOLEAN
+      STRING_ARRAY
+      NUMBER_ARRAY
+      CIRCUIT
+      QUIZ_CHOICES
+      VISUALIZATION_VIEWS
+      MATRIX_PRESETS
+    }
+
+    type ContentBlockFieldSpec {
+      name: String!
+      label: String!
+      kind: FieldKind!
+      required: Boolean!
+    }
+
+    type ContentBlockTypeSpec {
+      type: String!
+      label: String!
+      fields: [ContentBlockFieldSpec!]!
+    }
+
+    type LessonLayoutSpec {
+      value: String!
+      label: String!
+    }
   `,
   resolvers: {
     JSON: JSONResolver,
@@ -280,6 +346,14 @@ export const schema = createSchema<GraphQLContext>({
       adminTags: (_parent, _args, ctx) => {
         requireAdmin(ctx);
         return db.query.tag.findMany({ orderBy: (t, { asc }) => asc(t.label) });
+      },
+      adminBlockTypes: (_parent, _args, ctx) => {
+        requireAdmin(ctx);
+        return CONTENT_BLOCK_REGISTRY.map((e) => ({ type: e.type, label: e.label, fields: e.fields }));
+      },
+      adminLessonLayouts: (_parent, _args, ctx) => {
+        requireAdmin(ctx);
+        return LESSON_LAYOUTS;
       },
     },
     Mutation: {
@@ -455,6 +529,7 @@ export const schema = createSchema<GraphQLContext>({
         ctx,
       ) => {
         requireAdmin(ctx);
+        validateLayout(args.layout);
         const [row] = await db
           .insert(lesson)
           .values({
@@ -489,6 +564,7 @@ export const schema = createSchema<GraphQLContext>({
         ctx,
       ) => {
         requireAdmin(ctx);
+        if (args.layout !== undefined) validateLayout(args.layout);
         const { id, difficulty, ...rest } = args;
         const set = pickDefined({ ...rest, difficulty: difficulty !== undefined ? fromEnumValue(difficulty) : undefined });
         const [row] = await db.update(lesson).set(set).where(eq(lesson.id, id)).returning();
@@ -564,7 +640,8 @@ export const schema = createSchema<GraphQLContext>({
         ctx,
       ) => {
         requireAdmin(ctx);
-        const [row] = await db.insert(contentBlock).values(args).returning();
+        const data = validateBlockData(args.type, args.data);
+        const [row] = await db.insert(contentBlock).values({ ...args, data }).returning();
         return row;
       },
       updateContentBlock: async (
@@ -574,6 +651,11 @@ export const schema = createSchema<GraphQLContext>({
       ) => {
         requireAdmin(ctx);
         const { id, ...rest } = args;
+        if (rest.data !== undefined) {
+          const existing = await db.query.contentBlock.findFirst({ where: eq(contentBlock.id, id) });
+          if (!existing) throw new GraphQLError("Content block not found.");
+          rest.data = validateBlockData(rest.type ?? existing.type, rest.data);
+        }
         const [row] = await db
           .update(contentBlock)
           .set(pickDefined(rest))
@@ -600,6 +682,9 @@ export const schema = createSchema<GraphQLContext>({
           where: (l, { eq: eqOp }) => eqOp(l.moduleId, parent.id),
           orderBy: (l, { asc }) => asc(l.order),
         }),
+    },
+    ContentBlockFieldSpec: {
+      kind: (parent: { kind: string }) => toFieldKindEnum(parent.kind),
     },
   },
 });

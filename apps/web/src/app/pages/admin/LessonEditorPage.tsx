@@ -6,6 +6,7 @@ import {
   CloseButton,
   Dialog,
   Field,
+  Flex,
   HStack,
   Heading,
   Input,
@@ -18,10 +19,12 @@ import {
   VStack,
   Wrap,
 } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useParams } from "react-router";
 import {
   type LessonDifficulty,
+  useAdminBlockTypesQuery,
+  useAdminLessonLayoutsQuery,
   useAdminLessonQuery,
   useAdminTagsQuery,
   useAdminTracksQuery,
@@ -33,64 +36,124 @@ import {
   useUpdateLessonMutation,
   useUpdateLessonPrerequisitesMutation,
   useUpdateLessonTagsMutation,
+  type AdminBlockTypesQuery,
 } from "@qislearn/graphql-schema";
+import type { ContentBlockData } from "../../../content";
+import type { LessonFrontmatter } from "../../../content/schema";
+import { DynamicBlockForm } from "./blockEditors/DynamicBlockForm";
+import { DragHandle } from "./DragHandle";
+import { LessonPreviewDialog } from "./LessonPreviewDialog";
+import { spacedOrders, useDragReorder } from "./useDragReorder";
 
-const LAYOUTS = ["standard", "theory-heavy", "circuit-focus", "lab"];
+type BlockTypeSpec = AdminBlockTypesQuery["adminBlockTypes"][number];
 
-function LessonMetadataForm({
+// Owns title/summary (main column, natural document flow) plus every other
+// lesson-settings field (sidebar) under one save action, since they're all
+// part of the same updateLesson/updateLessonPrerequisites mutations. Content
+// blocks render as `children` inside the main column so the page reads as
+// one document — title, summary, blocks — with settings alongside it rather
+// than interleaved as another "field" to fill in.
+export interface LessonMetaDraft {
+  title: string;
+  summary: string;
+  layout: string;
+  difficulty: LessonDifficulty;
+  estimatedMinutes: number;
+}
+
+function LessonMetaEditor({
   lesson,
   allLessons,
   onSaved,
+  onDraftChange,
+  children,
 }: {
   lesson: NonNullable<NonNullable<ReturnType<typeof useAdminLessonQuery>["data"]>["adminLesson"]>;
   allLessons: Array<{ id: string; slug: string; title: string }>;
   onSaved: () => void;
+  onDraftChange: (draft: LessonMetaDraft) => void;
+  children: ReactNode;
 }) {
+  const { data: layoutsData } = useAdminLessonLayoutsQuery();
+  const layouts = layoutsData?.adminLessonLayouts ?? [];
   const [title, setTitle] = useState(lesson.title);
   const [summary, setSummary] = useState(lesson.summary);
   const [layout, setLayout] = useState(lesson.layout);
   const [difficulty, setDifficulty] = useState<LessonDifficulty>(lesson.difficulty);
-  const [order, setOrder] = useState(lesson.order);
   const [estimatedMinutes, setEstimatedMinutes] = useState(lesson.estimatedMinutes);
   const [prerequisiteIds, setPrerequisiteIds] = useState(lesson.prerequisites.map((p) => p.id));
+
+  const onDraftChangeRef = useRef(onDraftChange);
+  useEffect(() => {
+    onDraftChangeRef.current = onDraftChange;
+  });
+  useEffect(() => {
+    onDraftChangeRef.current({ title, summary, layout, difficulty, estimatedMinutes });
+  }, [title, summary, layout, difficulty, estimatedMinutes]);
 
   const [updateLesson, { loading: savingLesson }] = useUpdateLessonMutation();
   const [updatePrerequisites, { loading: savingPrereqs }] = useUpdateLessonPrerequisitesMutation();
 
   async function handleSave() {
-    await updateLesson({
-      variables: { id: lesson.id, title, summary, layout, difficulty, order, estimatedMinutes },
-    });
+    // `order` isn't edited here — a lesson's position within its track is
+    // set by dragging it in the admin content list (AdminHome.tsx).
+    await updateLesson({ variables: { id: lesson.id, title, summary, layout, difficulty, estimatedMinutes } });
     await updatePrerequisites({ variables: { lessonId: lesson.id, prerequisiteLessonIds: prerequisiteIds } });
     onSaved();
   }
 
   return (
-    <VStack align="stretch" gap="4" borderWidth="1px" borderColor="border" rounded="l3" p="4">
-      <Field.Root>
-        <Field.Label>Title</Field.Label>
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-      </Field.Root>
-      <Field.Root>
-        <Field.Label>Summary</Field.Label>
-        <Textarea value={summary} onChange={(e) => setSummary(e.target.value)} rows={2} />
-      </Field.Root>
-      <HStack align="start">
+    <Flex gap="6" align="start" direction={{ base: "column", lg: "row" }}>
+      <Box flex="1" minW="0">
+        <VStack align="stretch" gap="2" mb="6">
+          <Input
+            variant="flushed"
+            fontSize="xl"
+            fontWeight="semibold"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Lesson title"
+          />
+          <Textarea
+            variant="flushed"
+            color="fg.muted"
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
+            rows={2}
+            placeholder="One or two sentences describing this lesson"
+          />
+        </VStack>
+        {children}
+      </Box>
+
+      <VStack
+        as="aside"
+        align="stretch"
+        gap="4"
+        w={{ base: "full", lg: "300px" }}
+        flexShrink={0}
+        position={{ lg: "sticky" }}
+        top={{ lg: "4" }}
+        borderWidth="1px"
+        borderColor="border"
+        rounded="l3"
+        p="4"
+      >
         <Field.Root>
-          <Field.Label>Layout</Field.Label>
-          <NativeSelect.Root>
+          <Field.Label fontSize="xs">Layout</Field.Label>
+          <NativeSelect.Root size="sm">
             <NativeSelect.Field value={layout} onChange={(e) => setLayout(e.target.value)}>
-              {LAYOUTS.map((l) => (
-                <option key={l} value={l}>
-                  {l}
+              {layouts.map((l) => (
+                <option key={l.value} value={l.value}>
+                  {l.label}
                 </option>
               ))}
             </NativeSelect.Field>
           </NativeSelect.Root>
         </Field.Root>
         <Field.Root>
-          <Field.Label>Difficulty</Field.Label>
-          <NativeSelect.Root>
+          <Field.Label fontSize="xs">Difficulty</Field.Label>
+          <NativeSelect.Root size="sm">
             <NativeSelect.Field
               value={difficulty}
               onChange={(e) => setDifficulty(e.target.value as LessonDifficulty)}
@@ -101,56 +164,53 @@ function LessonMetadataForm({
             </NativeSelect.Field>
           </NativeSelect.Root>
         </Field.Root>
-        <Field.Root maxW="28">
-          <Field.Label>Order</Field.Label>
-          <Input type="number" value={order} onChange={(e) => setOrder(Number(e.target.value))} />
-        </Field.Root>
         <Field.Root maxW="32">
-          <Field.Label>Minutes</Field.Label>
+          <Field.Label fontSize="xs">Minutes</Field.Label>
           <Input
+            size="sm"
             type="number"
             value={estimatedMinutes}
             onChange={(e) => setEstimatedMinutes(Number(e.target.value))}
           />
         </Field.Root>
-      </HStack>
 
-      <Field.Root>
-        <Field.Label>Prerequisites</Field.Label>
-        <Wrap gap="2">
-          {allLessons
-            .filter((l) => l.id !== lesson.id)
-            .map((l) => {
-              const checked = prerequisiteIds.includes(l.id);
-              return (
-                <Badge
-                  key={l.id}
-                  as="button"
-                  cursor="pointer"
-                  variant={checked ? "solid" : "outline"}
-                  colorPalette={checked ? "quantum" : "gray"}
-                  onClick={() =>
-                    setPrerequisiteIds((prev) =>
-                      checked ? prev.filter((id) => id !== l.id) : [...prev, l.id],
-                    )
-                  }
-                >
-                  {l.title}
-                </Badge>
-              );
-            })}
-        </Wrap>
-      </Field.Root>
+        <Field.Root>
+          <Field.Label fontSize="xs">Prerequisites</Field.Label>
+          <Wrap gap="1.5">
+            {allLessons
+              .filter((l) => l.id !== lesson.id)
+              .map((l) => {
+                const checked = prerequisiteIds.includes(l.id);
+                return (
+                  <Badge
+                    key={l.id}
+                    as="button"
+                    size="sm"
+                    cursor="pointer"
+                    variant={checked ? "solid" : "outline"}
+                    colorPalette={checked ? "quantum" : "gray"}
+                    onClick={() =>
+                      setPrerequisiteIds((prev) =>
+                        checked ? prev.filter((id) => id !== l.id) : [...prev, l.id],
+                      )
+                    }
+                  >
+                    {l.title}
+                  </Badge>
+                );
+              })}
+          </Wrap>
+        </Field.Root>
 
-      <Button
-        alignSelf="start"
-        colorPalette="quantum"
-        onClick={handleSave}
-        loading={savingLesson || savingPrereqs}
-      >
-        Save lesson
-      </Button>
-    </VStack>
+        <Separator />
+
+        <TagPicker lessonId={lesson.id} currentTagIds={lesson.tags.map((t) => t.id)} />
+
+        <Button size="sm" colorPalette="quantum" onClick={handleSave} loading={savingLesson || savingPrereqs}>
+          Save lesson
+        </Button>
+      </VStack>
+    </Flex>
   );
 }
 
@@ -211,56 +271,82 @@ function TagPicker({ lessonId, currentTagIds }: { lessonId: string; currentTagId
 
 interface BlockRowProps {
   block: { id: string; order: number; type: string; data: Record<string, unknown> };
+  blockTypes: BlockTypeSpec[];
   onSaved: () => void;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  onDrop: () => void;
+  /** Reports every in-progress edit (not just saved ones) so the "Preview lesson" dialog can reflect it. */
+  onDraftChange: (patch: { type: string; data: Record<string, unknown> }) => void;
 }
 
-function ContentBlockRow({ block, onSaved }: BlockRowProps) {
+function ContentBlockRow({ block, blockTypes, onSaved, onDragStart, onDragEnd, onDrop, onDraftChange }: BlockRowProps) {
   const [type, setType] = useState(block.type);
-  const [order, setOrder] = useState(block.order);
-  const [dataText, setDataText] = useState(JSON.stringify(block.data, null, 2));
-  const [jsonError, setJsonError] = useState<string | null>(null);
+  const [data, setData] = useState<Record<string, unknown>>(block.data);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [updateBlock, { loading: saving }] = useUpdateContentBlockMutation();
   const [deleteBlock, { loading: deleting }] = useDeleteContentBlockMutation();
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  // Kept in a ref (rather than a useEffect dependency) since onDraftChange
+  // is a fresh closure from the parent every render — only the actual edit
+  // (type/data) should trigger a re-report, not a parent re-render.
+  const onDraftChangeRef = useRef(onDraftChange);
+  useEffect(() => {
+    onDraftChangeRef.current = onDraftChange;
+  });
+  useEffect(() => {
+    onDraftChangeRef.current({ type, data });
+  }, [type, data]);
+
+  const spec = blockTypes.find((t) => t.type === type);
 
   function handleSave() {
-    let parsed: Record<string, unknown>;
-    try {
-      parsed = JSON.parse(dataText);
-    } catch {
-      setJsonError("Data isn't valid JSON — fix it before saving.");
-      return;
-    }
-    setJsonError(null);
-    updateBlock({ variables: { id: block.id, type, order, data: parsed } }).then(() => onSaved());
+    setSaveError(null);
+    updateBlock({ variables: { id: block.id, type, data } })
+      .then(() => onSaved())
+      .catch((err) => setSaveError(err instanceof Error ? err.message : "Failed to save block."));
   }
 
   return (
-    <VStack align="stretch" gap="2" borderWidth="1px" borderColor="border" rounded="l2" p="3">
+    <VStack
+      ref={rowRef}
+      align="stretch"
+      gap="2"
+      borderWidth="1px"
+      borderColor="border"
+      rounded="l2"
+      p="3"
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={onDrop}
+    >
       <HStack>
-        <Field.Root maxW="48">
+        <DragHandle onDragStart={onDragStart} onDragEnd={onDragEnd} rowRef={rowRef} />
+        <Field.Root maxW="56">
           <Field.Label fontSize="xs">Type</Field.Label>
-          <Input size="sm" value={type} onChange={(e) => setType(e.target.value)} />
-        </Field.Root>
-        <Field.Root maxW="24">
-          <Field.Label fontSize="xs">Order</Field.Label>
-          <Input size="sm" type="number" value={order} onChange={(e) => setOrder(Number(e.target.value))} />
+          <NativeSelect.Root size="sm">
+            <NativeSelect.Field value={type} onChange={(e) => setType(e.target.value)}>
+              {blockTypes.map((t) => (
+                <option key={t.type} value={t.type}>
+                  {t.label}
+                </option>
+              ))}
+            </NativeSelect.Field>
+          </NativeSelect.Root>
         </Field.Root>
       </HStack>
-      <Field.Root>
-        <Field.Label fontSize="xs">Data (JSON)</Field.Label>
-        <Textarea
-          fontFamily="mono"
-          fontSize="xs"
-          rows={6}
-          value={dataText}
-          onChange={(e) => setDataText(e.target.value)}
-        />
-      </Field.Root>
-      {jsonError && (
+      {spec ? (
+        <DynamicBlockForm fields={spec.fields} data={data} onChange={setData} />
+      ) : (
+        <Text fontSize="xs" color="fg.muted">
+          Unknown block type "{type}" — no editor form registered for it.
+        </Text>
+      )}
+      {saveError && (
         <Alert.Root status="error" size="sm">
           <Alert.Indicator />
-          <Alert.Description>{jsonError}</Alert.Description>
+          <Alert.Description>{saveError}</Alert.Description>
         </Alert.Root>
       )}
       <HStack>
@@ -307,12 +393,66 @@ function ContentBlockRow({ block, onSaved }: BlockRowProps) {
   );
 }
 
-function NewBlockRow({ lessonId, nextOrder, onCreated }: { lessonId: string; nextOrder: number; onCreated: () => void }) {
+function defaultDataFor(spec: BlockTypeSpec | undefined): Record<string, unknown> {
+  if (!spec) return {};
+  const data: Record<string, unknown> = {};
+  for (const field of spec.fields) {
+    switch (field.kind) {
+      case "STRING":
+      case "LONG_TEXT":
+      case "MARKDOWN":
+        data[field.name] = "";
+        break;
+      case "NUMBER":
+        data[field.name] = undefined;
+        break;
+      case "BOOLEAN":
+        data[field.name] = false;
+        break;
+      case "STRING_ARRAY":
+      case "NUMBER_ARRAY":
+      case "QUIZ_CHOICES":
+      case "VISUALIZATION_VIEWS":
+      case "MATRIX_PRESETS":
+        data[field.name] = [];
+        break;
+      case "CIRCUIT":
+        data[field.name] = { numQubits: 1, gates: [] };
+        break;
+    }
+  }
+  return data;
+}
+
+function NewBlockRow({
+  lessonId,
+  nextOrder,
+  blockTypes,
+  onCreated,
+  onDraftChange,
+}: {
+  lessonId: string;
+  nextOrder: number;
+  blockTypes: BlockTypeSpec[];
+  onCreated: () => void;
+  /** null while the "add block" form is closed — nothing to preview yet. */
+  onDraftChange: (patch: { type: string; data: Record<string, unknown> } | null) => void;
+}) {
   const [open, setOpen] = useState(false);
-  const [type, setType] = useState("markdown");
-  const [dataText, setDataText] = useState('{\n  "content": ""\n}');
-  const [jsonError, setJsonError] = useState<string | null>(null);
+  const [type, setType] = useState(blockTypes[0]?.type ?? "markdown");
+  const [data, setData] = useState<Record<string, unknown>>(() => defaultDataFor(blockTypes[0]));
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [createBlock, { loading }] = useCreateContentBlockMutation();
+
+  const onDraftChangeRef = useRef(onDraftChange);
+  useEffect(() => {
+    onDraftChangeRef.current = onDraftChange;
+  });
+  useEffect(() => {
+    onDraftChangeRef.current(open ? { type, data } : null);
+  }, [open, type, data]);
+
+  const spec = blockTypes.find((t) => t.type === type);
 
   if (!open) {
     return (
@@ -322,41 +462,40 @@ function NewBlockRow({ lessonId, nextOrder, onCreated }: { lessonId: string; nex
     );
   }
 
+  function handleTypeChange(nextType: string) {
+    setType(nextType);
+    setData(defaultDataFor(blockTypes.find((t) => t.type === nextType)));
+  }
+
   function handleCreate() {
-    let parsed: Record<string, unknown>;
-    try {
-      parsed = JSON.parse(dataText);
-    } catch {
-      setJsonError("Data isn't valid JSON — fix it before saving.");
-      return;
-    }
-    setJsonError(null);
-    createBlock({ variables: { lessonId, order: nextOrder, type, data: parsed } }).then(() => {
-      setOpen(false);
-      onCreated();
-    });
+    setSaveError(null);
+    createBlock({ variables: { lessonId, order: nextOrder, type, data } })
+      .then(() => {
+        setOpen(false);
+        onCreated();
+      })
+      .catch((err) => setSaveError(err instanceof Error ? err.message : "Failed to create block."));
   }
 
   return (
     <VStack align="stretch" gap="2" borderWidth="1px" borderColor="border" rounded="l2" p="3">
-      <Field.Root maxW="48">
+      <Field.Root maxW="56">
         <Field.Label fontSize="xs">Type</Field.Label>
-        <Input size="sm" value={type} onChange={(e) => setType(e.target.value)} />
+        <NativeSelect.Root size="sm">
+          <NativeSelect.Field value={type} onChange={(e) => handleTypeChange(e.target.value)}>
+            {blockTypes.map((t) => (
+              <option key={t.type} value={t.type}>
+                {t.label}
+              </option>
+            ))}
+          </NativeSelect.Field>
+        </NativeSelect.Root>
       </Field.Root>
-      <Field.Root>
-        <Field.Label fontSize="xs">Data (JSON)</Field.Label>
-        <Textarea
-          fontFamily="mono"
-          fontSize="xs"
-          rows={6}
-          value={dataText}
-          onChange={(e) => setDataText(e.target.value)}
-        />
-      </Field.Root>
-      {jsonError && (
+      {spec && <DynamicBlockForm fields={spec.fields} data={data} onChange={setData} />}
+      {saveError && (
         <Alert.Root status="error" size="sm">
           <Alert.Indicator />
-          <Alert.Description>{jsonError}</Alert.Description>
+          <Alert.Description>{saveError}</Alert.Description>
         </Alert.Root>
       )}
       <HStack>
@@ -375,26 +514,78 @@ export default function LessonEditorPage() {
   const { lessonId } = useParams();
   const { data, loading, refetch } = useAdminLessonQuery({ variables: { id: lessonId ?? "" }, skip: !lessonId });
   const { data: tracksData } = useAdminTracksQuery();
+  const { data: blockTypesData } = useAdminBlockTypesQuery();
+  const blockTypes = blockTypesData?.adminBlockTypes ?? [];
   const [deleteLesson, { loading: deletingLesson }] = useDeleteLessonMutation();
+  const [updateBlockOrder] = useUpdateContentBlockMutation();
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [metaDraft, setMetaDraft] = useState<LessonMetaDraft | null>(null);
+  const [blockDrafts, setBlockDrafts] = useState<Record<string, { type: string; data: Record<string, unknown> }>>(
+    {},
+  );
+  const [newBlockDraft, setNewBlockDraft] = useState<{ type: string; data: Record<string, unknown> } | null>(null);
 
   useEffect(() => {
     if (lessonId) refetch({ id: lessonId });
   }, [lessonId, refetch]);
 
-  if (loading) return <Spinner />;
-
   const lesson = data?.adminLesson;
+  const sortedBlocks = lesson ? [...lesson.contentBlocks].sort((a, b) => a.order - b.order) : [];
+
+  // Hooks must run unconditionally on every render, so this is declared
+  // before the loading/not-found early returns below even though its
+  // result is only meaningful once `lesson` exists.
+  const blockReorder = useDragReorder(
+    sortedBlocks,
+    (b) => b.id,
+    (orderedIds) => {
+      const newOrders = spacedOrders(orderedIds.length);
+      const updates = orderedIds
+        .map((id, i) => ({ id, order: newOrders[i]! }))
+        .filter(({ id, order }) => sortedBlocks.find((b) => b.id === id)?.order !== order);
+      return Promise.all(updates.map(({ id, order }) => updateBlockOrder({ variables: { id, order } }))).then(() =>
+        refetch(),
+      );
+    },
+  );
+
+  if (loading) return <Spinner />;
   if (!lesson) return <Text>Lesson not found.</Text>;
 
   const allLessons = (tracksData?.tracks ?? []).flatMap((t) => t.lessons);
-  const sortedBlocks = [...lesson.contentBlocks].sort((a, b) => a.order - b.order);
   const nextOrder = sortedBlocks.length > 0 ? Math.max(...sortedBlocks.map((b) => b.order)) + 100 : 100;
+
+  // The preview reflects whatever's currently in the editor, not just what's
+  // saved: each row/field reports its live value via onDraftChange, and this
+  // just overlays those reports onto the last-fetched lesson. displayItems
+  // (not sortedBlocks) so a not-yet-persisted drag reorder shows up too.
+  const previewFrontmatter = {
+    id: lesson.id,
+    track: lesson.track.slug,
+    order: lesson.order,
+    title: metaDraft?.title ?? lesson.title,
+    summary: metaDraft?.summary ?? lesson.summary,
+    layout: (metaDraft?.layout ?? lesson.layout) as LessonFrontmatter["layout"],
+    prerequisites: lesson.prerequisites.map((p) => p.id),
+    estimatedMinutes: metaDraft?.estimatedMinutes ?? lesson.estimatedMinutes,
+  };
+  const previewBlocks: ContentBlockData[] = blockReorder.displayItems.map((block) => ({
+    id: block.id,
+    order: block.order,
+    type: blockDrafts[block.id]?.type ?? block.type,
+    data: blockDrafts[block.id]?.data ?? block.data,
+  }));
+  if (newBlockDraft) {
+    previewBlocks.push({ id: "__new__", order: nextOrder, ...newBlockDraft });
+  }
 
   return (
     <VStack align="stretch" gap="6">
-      <HStack justify="space-between">
-        <Heading size="md">{lesson.title}</Heading>
+      <HStack justify="end">
+        <Button size="sm" variant="outline" onClick={() => setPreviewOpen(true)}>
+          Preview lesson
+        </Button>
         <Dialog.Root open={confirmDeleteOpen} onOpenChange={(d) => setConfirmDeleteOpen(d.open)} role="alertdialog">
           <Dialog.Trigger asChild>
             <Button size="sm" variant="outline" colorPalette="red">
@@ -434,25 +625,40 @@ export default function LessonEditorPage() {
         </Dialog.Root>
       </HStack>
 
-      <LessonMetadataForm lesson={lesson} allLessons={allLessons} onSaved={() => refetch()} />
-
-      <Box borderWidth="1px" borderColor="border" rounded="l3" p="4">
-        <TagPicker lessonId={lesson.id} currentTagIds={lesson.tags.map((t) => t.id)} />
-      </Box>
-
-      <Separator />
-
-      <Box>
+      <LessonMetaEditor lesson={lesson} allLessons={allLessons} onSaved={() => refetch()} onDraftChange={setMetaDraft}>
+        <Separator mb="5" />
         <Heading size="sm" mb="3">
           Content blocks
         </Heading>
         <VStack align="stretch" gap="3">
-          {sortedBlocks.map((block) => (
-            <ContentBlockRow key={block.id} block={block} onSaved={() => refetch()} />
+          {blockReorder.displayItems.map((block) => (
+            <ContentBlockRow
+              key={block.id}
+              block={block}
+              blockTypes={blockTypes}
+              onSaved={() => refetch()}
+              onDragStart={() => blockReorder.startDrag(block.id)}
+              onDragEnd={blockReorder.endDrag}
+              onDrop={() => blockReorder.onDropTarget(block.id)}
+              onDraftChange={(patch) => setBlockDrafts((prev) => ({ ...prev, [block.id]: patch }))}
+            />
           ))}
-          <NewBlockRow lessonId={lesson.id} nextOrder={nextOrder} onCreated={() => refetch()} />
+          <NewBlockRow
+            lessonId={lesson.id}
+            nextOrder={nextOrder}
+            blockTypes={blockTypes}
+            onCreated={() => refetch()}
+            onDraftChange={setNewBlockDraft}
+          />
         </VStack>
-      </Box>
+      </LessonMetaEditor>
+
+      <LessonPreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        frontmatter={previewFrontmatter}
+        blocks={previewBlocks}
+      />
     </VStack>
   );
 }

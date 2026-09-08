@@ -6,7 +6,16 @@ import "@fontsource/fira-code/400.css";
 import "@fontsource/fira-code/500.css";
 import { ApolloProvider } from "@apollo/client";
 import { useEffect, useMemo, type PropsWithChildren, type ReactNode } from "react";
-import { Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData, type MetaFunction } from "react-router";
+import {
+  Links,
+  Meta,
+  Outlet,
+  Scripts,
+  ScrollRestoration,
+  useLoaderData,
+  useMatches,
+  type MetaFunction,
+} from "react-router";
 import { AppShell } from "../components/layout/AppShell";
 import { Provider } from "../components/ui/provider";
 import { getTracks } from "../content";
@@ -76,6 +85,10 @@ export default function Root(): ReactNode {
   // (mutations, future interactive queries); page data still comes from
   // route loaders via useLoaderData, not from this client.
   const apolloClient = useMemo(() => createApolloClient(), []);
+  // /admin gets its own shell (AdminLayout -> AdminShell), not the student
+  // AppShell's sidebar/nav — route id comes from the file path relative to
+  // app/ that routes.ts points "admin" at.
+  const isAdmin = useMatches().some((m) => m.id.includes("pages/admin/AdminLayout"));
 
   useEffect(() => {
     hydrateSettings();
@@ -85,9 +98,13 @@ export default function Root(): ReactNode {
     <ApolloProvider client={apolloClient}>
       <ProgressHydrator />
       <Provider>
-        <AppShell tracks={tracks}>
+        {isAdmin ? (
           <Outlet />
-        </AppShell>
+        ) : (
+          <AppShell tracks={tracks}>
+            <Outlet />
+          </AppShell>
+        )}
       </Provider>
     </ApolloProvider>
   );

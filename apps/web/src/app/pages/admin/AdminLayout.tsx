@@ -1,6 +1,7 @@
-import { Box, Container, HStack, Heading, Link as ChakraLink, Spinner } from "@chakra-ui/react";
-import { Link, Navigate, Outlet } from "react-router";
+import { Container, Spinner } from "@chakra-ui/react";
+import { Navigate, Outlet } from "react-router";
 import { useSession } from "../../../lib/authClient";
+import { AdminShell } from "./AdminShell";
 
 export default function AdminLayout() {
   const { data: session, isPending } = useSession();
@@ -20,16 +21,8 @@ export default function AdminLayout() {
   }
 
   return (
-    <Container maxW="4xl" py={{ base: "6", md: "10" }}>
-      <HStack justify="space-between" mb="8">
-        <Heading size="lg">Content admin</Heading>
-        <ChakraLink asChild fontSize="sm" color="fg.muted">
-          <Link to="/">Back to site</Link>
-        </ChakraLink>
-      </HStack>
-      <Box>
-        <Outlet />
-      </Box>
-    </Container>
+    <AdminShell>
+      <Outlet />
+    </AdminShell>
   );
 }

@@ -1,14 +1,12 @@
 import {
   Badge,
   Box,
-  Button,
   CloseButton,
   Drawer,
   Flex,
   HStack,
   Heading,
   IconButton,
-  Menu,
   Portal,
   Separator,
   Text,
@@ -16,64 +14,16 @@ import {
 } from "@chakra-ui/react";
 import type { PropsWithChildren } from "react";
 import { useState } from "react";
-import { LuGithub, LuMenu, LuShieldCheck, LuUser } from "react-icons/lu";
+import { LuGithub, LuMenu } from "react-icons/lu";
 import { Link, useParams } from "react-router";
 import type { TrackGroup } from "../../content";
-import { useSession, signOut } from "../../lib/authClient";
 import { useProgressStore } from "../../store/progressStore";
 import { STATUS_COLOR_PALETTE } from "../../store/statusColor";
 import { Logo } from "../ui/Logo";
 import { ColorModeButton } from "../ui/color-mode";
 import { LatexModeButton } from "../ui/latex-mode";
+import { AuthMenu } from "./AuthMenu";
 import { ResetDataButton } from "./ResetDataButton";
-
-function AuthMenu() {
-  const { data: session } = useSession();
-
-  if (!session) {
-    return (
-      <HStack gap="2">
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/login">Log in</Link>
-        </Button>
-        <Button asChild colorPalette="quantum" size="sm">
-          <Link to="/signup">Sign up</Link>
-        </Button>
-      </HStack>
-    );
-  }
-
-  const isAdmin = session.user.role === "admin";
-
-  return (
-    <Menu.Root>
-      <Menu.Trigger asChild>
-        <Button variant="ghost" size="sm">
-          <LuUser /> {session.user.name}
-        </Button>
-      </Menu.Trigger>
-      <Portal>
-        <Menu.Positioner>
-          <Menu.Content>
-            <Menu.Item value="profile" asChild>
-              <Link to="/profile">Profile</Link>
-            </Menu.Item>
-            {isAdmin && (
-              <Menu.Item value="admin" asChild>
-                <Link to="/admin">
-                  <LuShieldCheck /> Admin
-                </Link>
-              </Menu.Item>
-            )}
-            <Menu.Item value="logout" onSelect={() => signOut().then(() => window.location.assign("/"))}>
-              Log out
-            </Menu.Item>
-          </Menu.Content>
-        </Menu.Positioner>
-      </Portal>
-    </Menu.Root>
-  );
-}
 
 const STATUS_LABEL: Record<string, string> = {
   "not-started": "",
