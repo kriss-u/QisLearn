@@ -7,3 +7,4 @@ export const placeholder = pgTable("placeholder", {
 
 export * from "./auth-schema.js";
 export * from "./content-schema.js";
+export * from "./user-data-schema.js";

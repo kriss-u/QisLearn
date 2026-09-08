@@ -1,0 +1,225 @@
+query AdminTracks {
+  tracks {
+    id
+    slug
+    title
+    order
+    modules {
+      id
+      slug
+      title
+      order
+    }
+    lessons {
+      id
+      slug
+      title
+      order
+      difficulty
+    }
+  }
+}
+
+query AdminLesson($id: ID!) {
+  adminLesson(id: $id) {
+    id
+    slug
+    title
+    summary
+    layout
+    difficulty
+    order
+    estimatedMinutes
+    track {
+      id
+      slug
+      title
+    }
+    module {
+      id
+      slug
+      title
+    }
+    tags {
+      id
+      slug
+      label
+    }
+    prerequisites {
+      id
+      slug
+      title
+    }
+    contentBlocks {
+      id
+      order
+      type
+      data
+    }
+  }
+}
+
+query AdminTags {
+  adminTags {
+    id
+    slug
+    label
+  }
+}
+
+mutation CreateTrack($slug: String!, $title: String!, $order: Int!) {
+  createTrack(slug: $slug, title: $title, order: $order) {
+    id
+    slug
+    title
+    order
+  }
+}
+
+mutation UpdateTrack($id: ID!, $slug: String, $title: String, $order: Int) {
+  updateTrack(id: $id, slug: $slug, title: $title, order: $order) {
+    id
+    slug
+    title
+    order
+  }
+}
+
+mutation CreateModule($trackId: ID!, $slug: String!, $title: String!, $order: Int!) {
+  createModule(trackId: $trackId, slug: $slug, title: $title, order: $order) {
+    id
+    slug
+    title
+    order
+  }
+}
+
+mutation UpdateModule($id: ID!, $slug: String, $title: String, $order: Int) {
+  updateModule(id: $id, slug: $slug, title: $title, order: $order) {
+    id
+    slug
+    title
+    order
+  }
+}
+
+mutation DeleteModule($id: ID!) {
+  deleteModule(id: $id)
+}
+
+mutation CreateLesson(
+  $trackId: ID!
+  $moduleId: ID
+  $slug: String!
+  $title: String!
+  $summary: String!
+  $layout: String!
+  $difficulty: LessonDifficulty!
+  $order: Int!
+  $estimatedMinutes: Int!
+) {
+  createLesson(
+    trackId: $trackId
+    moduleId: $moduleId
+    slug: $slug
+    title: $title
+    summary: $summary
+    layout: $layout
+    difficulty: $difficulty
+    order: $order
+    estimatedMinutes: $estimatedMinutes
+  ) {
+    id
+    slug
+  }
+}
+
+mutation UpdateLesson(
+  $id: ID!
+  $trackId: ID
+  $moduleId: ID
+  $slug: String
+  $title: String
+  $summary: String
+  $layout: String
+  $difficulty: LessonDifficulty
+  $order: Int
+  $estimatedMinutes: Int
+) {
+  updateLesson(
+    id: $id
+    trackId: $trackId
+    moduleId: $moduleId
+    slug: $slug
+    title: $title
+    summary: $summary
+    layout: $layout
+    difficulty: $difficulty
+    order: $order
+    estimatedMinutes: $estimatedMinutes
+  ) {
+    id
+    slug
+    title
+    summary
+    layout
+    difficulty
+    order
+    estimatedMinutes
+  }
+}
+
+mutation DeleteLesson($id: ID!) {
+  deleteLesson(id: $id)
+}
+
+mutation UpdateLessonPrerequisites($lessonId: ID!, $prerequisiteLessonIds: [ID!]!) {
+  updateLessonPrerequisites(lessonId: $lessonId, prerequisiteLessonIds: $prerequisiteLessonIds) {
+    id
+    prerequisites {
+      id
+      title
+    }
+  }
+}
+
+mutation CreateTag($slug: String!, $label: String!) {
+  createTag(slug: $slug, label: $label) {
+    id
+    slug
+    label
+  }
+}
+
+mutation UpdateLessonTags($lessonId: ID!, $tagIds: [ID!]!) {
+  updateLessonTags(lessonId: $lessonId, tagIds: $tagIds) {
+    id
+    tags {
+      id
+      slug
+      label
+    }
+  }
+}
+
+mutation CreateContentBlock($lessonId: ID!, $order: Int!, $type: String!, $data: JSON!) {
+  createContentBlock(lessonId: $lessonId, order: $order, type: $type, data: $data) {
+    id
+    order
+    type
+    data
+  }
+}
+
+mutation UpdateContentBlock($id: ID!, $order: Int, $type: String, $data: JSON) {
+  updateContentBlock(id: $id, order: $order, type: $type, data: $data) {
+    id
+    order
+    type
+    data
+  }
+}
+
+mutation DeleteContentBlock($id: ID!) {
+  deleteContentBlock(id: $id)
+}

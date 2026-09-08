@@ -30,6 +30,9 @@ export const apiEnvSchema = z.object({
   DATABASE_URL: z.url(),
   BETTER_AUTH_SECRET: z.string().min(1),
   BETTER_AUTH_URL: z.url().default("http://localhost:4000"),
+  // Browser origin allowed to call this API with credentials (CORS) — the
+  // web dev server's origin, not its container-internal hostname.
+  WEB_URL: z.url().default("http://localhost:5173"),
   ...openfgaEnvSchema.shape,
   OPENFGA_STORE_ID: z.string().min(1),
   OPENFGA_MODEL_ID: z.string().min(1),

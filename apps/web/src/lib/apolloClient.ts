@@ -20,7 +20,10 @@ const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000/graphql";
  */
 export function createApolloClient(): ApolloClient<NormalizedCacheObject> {
   return new ApolloClient({
-    link: new HttpLink({ uri: API_URL }),
+    // `credentials: "include"` sends the better-auth session cookie on
+    // every request — needed since apps/api is a different origin/port in
+    // dev (see apps/api/src/index.ts's matching CORS config).
+    link: new HttpLink({ uri: API_URL, credentials: "include" }),
     cache: new InMemoryCache(),
   });
 }

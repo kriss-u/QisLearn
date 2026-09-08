@@ -1,7 +1,7 @@
-import { Box, Button, CloseButton, Container, Dialog, HStack, Portal, Text } from "@chakra-ui/react";
+import { Alert, Box, Button, CloseButton, Container, Dialog, HStack, Link as ChakraLink, Portal, Text } from "@chakra-ui/react";
 import { useState } from "react";
 import { LuArrowRight } from "react-icons/lu";
-import { Navigate, useLoaderData, useNavigate, type LoaderFunctionArgs, type MetaFunction } from "react-router";
+import { Link, Navigate, useLoaderData, useNavigate, type LoaderFunctionArgs, type MetaFunction } from "react-router";
 import { getLesson, getNextLesson, type LessonSummary } from "../../content";
 import type { LessonFrontmatter } from "../../content/schema";
 import { ContentBlockList } from "../../components/lesson/ContentBlockList";
@@ -9,8 +9,31 @@ import { LessonLayout, getLessonMaxWidth } from "../../components/lesson/LessonL
 import { LessonProvider } from "../../components/lesson/LessonContext";
 import { PrerequisitesList } from "../../components/lesson/PrerequisitesList";
 import { LessonProgressProvider, useLessonProgress } from "../../components/lesson/LessonProgressContext";
-import { useProgressStore } from "../../store/progressStore";
+import { useSession } from "../../lib/authClient";
+import { useProgressSync } from "../../store/useProgressSync";
 import { SITE_URL, buildPageMeta } from "../../lib/seo";
+
+function LoggedOutBanner() {
+  const { data: session, isPending } = useSession();
+  const [dismissed, setDismissed] = useState(false);
+  if (isPending || session || dismissed) return null;
+  return (
+    <Alert.Root status="info" rounded="l2" mb="6" className="no-print">
+      <Alert.Indicator />
+      <Alert.Content>
+        <Alert.Description>
+          <ChakraLink asChild textDecoration="underline">
+            <Link to={`/login?redirect=${typeof window !== "undefined" ? window.location.pathname : "/"}`}>
+              Log in
+            </Link>
+          </ChakraLink>{" "}
+          to save your progress, code, and quiz answers.
+        </Alert.Description>
+      </Alert.Content>
+      <CloseButton size="sm" onClick={() => setDismissed(true)} />
+    </Alert.Root>
+  );
+}
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const lessonId = params.lessonId ?? "";
@@ -44,7 +67,7 @@ export const meta: MetaFunction<typeof loader> = ({ loaderData }) => {
 
 function LessonNextAction({ lessonId, next }: { lessonId: string; next: LessonSummary | undefined }) {
   const navigate = useNavigate();
-  const setStatus = useProgressStore((s) => s.setStatus);
+  const { setStatus } = useProgressSync();
   const { allExercisesCorrect, contentReady } = useLessonProgress();
   const [warnOpen, setWarnOpen] = useState(false);
 
@@ -136,6 +159,9 @@ export default function LessonPage() {
     <Box py={{ base: "6", md: "10" }}>
       <LessonProvider value={{ lessonId: lesson.id }}>
         <LessonProgressProvider lessonId={lesson.id}>
+          <Container className="no-print" maxW={getLessonMaxWidth(lesson.layout)} px="0">
+            <LoggedOutBanner />
+          </Container>
           <LessonLayout lesson={lessonFrontmatter}>
             <PrerequisitesList prerequisites={lesson.prerequisites.map((p) => ({ id: p.id, title: p.title }))} />
             <ContentBlockList blocks={lesson.contentBlocks} />

@@ -10,6 +10,11 @@ const config: CodegenConfig = {
         withHooks: true,
         withComponent: false,
         withHOC: false,
+        // Real TS `enum` output trips the repo's `erasableSyntaxOnly`
+        // tsconfig setting (TS7): enums compile to runtime code, which that
+        // flag disallows. String-literal union types are erasable and work
+        // identically at every GraphQL enum call site used here.
+        enumsAsTypes: true,
         scalars: {
           JSON: "Record<string, unknown>",
         },

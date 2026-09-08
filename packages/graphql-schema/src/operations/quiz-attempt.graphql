@@ -1,0 +1,28 @@
+query MyQuizAttempt($lessonSlug: String!, $quizId: String!) {
+  myQuizAttempt(lessonSlug: $lessonSlug, quizId: $quizId) {
+    lessonSlug
+    quizId
+    selectedChoiceId
+    submitted
+    updatedAt
+  }
+}
+
+mutation SaveQuizAttempt($lessonSlug: String!, $quizId: String!, $selectedChoiceId: String!, $submitted: Boolean!) {
+  saveQuizAttempt(
+    lessonSlug: $lessonSlug
+    quizId: $quizId
+    selectedChoiceId: $selectedChoiceId
+    submitted: $submitted
+  ) {
+    lessonSlug
+    quizId
+    selectedChoiceId
+    submitted
+    updatedAt
+  }
+}
+
+mutation DeleteQuizAttempt($lessonSlug: String!, $quizId: String!) {
+  deleteQuizAttempt(lessonSlug: $lessonSlug, quizId: $quizId)
+}

@@ -1,0 +1,19 @@
+query MyLessonProgress {
+  myLessonProgress {
+    lessonSlug
+    status
+    updatedAt
+  }
+}
+
+mutation SetLessonProgress($lessonSlug: String!, $status: LessonStatus!) {
+  setLessonProgress(lessonSlug: $lessonSlug, status: $status) {
+    lessonSlug
+    status
+    updatedAt
+  }
+}
+
+mutation ResetMyProgress {
+  resetMyProgress
+}

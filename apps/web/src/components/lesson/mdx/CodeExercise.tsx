@@ -1,9 +1,10 @@
 import { Accordion, Alert, Box, Button, HStack, Skeleton, Text, VStack } from "@chakra-ui/react";
+import { useMyCodeSnapshotQuery, useSaveCodeSnapshotMutation } from "@qislearn/graphql-schema";
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { LuCode } from "react-icons/lu";
 import { ClientOnly } from "../../ClientOnly";
 import type { Circuit } from "../../../content/schema";
-import { getCodeSnapshot, saveCodeSnapshot } from "../../../db/repository";
+import { useSession } from "../../../lib/authClient";
 import { compareCircuits } from "../../../features/python/compareCircuit";
 import { extractCircuit } from "../../../features/python/extractCircuit";
 import { copyPngToClipboard, downloadBlob } from "../../../features/export/clipboard";
@@ -35,10 +36,18 @@ interface CheckResult {
 export function CodeExercise({ id: exerciseId, prompt, starterCode, expectedCircuit, hints = [] }: CodeExerciseProps) {
   const lessonId = useLessonId();
   const { registerExercise, reportResult } = useLessonProgress();
+  const { data: session } = useSession();
   const [code, setCode] = useState(starterCode);
   const [result, setResult] = useState<CheckResult | null>(null);
   const [loaded, setLoaded] = useState(false);
   const previewSvgRef = useRef<SVGSVGElement>(null);
+
+  const { data: snapshotData, loading: snapshotLoading } = useMyCodeSnapshotQuery({
+    variables: { lessonSlug: lessonId, exerciseId },
+    skip: !session,
+    fetchPolicy: "network-only",
+  });
+  const [saveCodeSnapshot] = useSaveCodeSnapshotMutation();
 
   useEffect(() => registerExercise(exerciseId), [exerciseId, registerExercise]);
 
@@ -46,27 +55,45 @@ export function CodeExercise({ id: exerciseId, prompt, starterCode, expectedCirc
     reportResult(exerciseId, result?.ok ?? false);
   }, [exerciseId, result?.ok, reportResult]);
 
+  // Logged-out visitors get no persistence at all (no query, no mutation) —
+  // the editor still works as a scratch pad for the current page view.
   useEffect(() => {
-    let cancelled = false;
-    getCodeSnapshot(lessonId, exerciseId).then((snapshot) => {
-      if (!cancelled && snapshot) {
-        setCode(snapshot.code);
-        setResult(snapshot.result);
-      }
-      if (!cancelled) setLoaded(true);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [lessonId, exerciseId]);
+    if (!session) {
+      setLoaded(true);
+      return;
+    }
+    if (snapshotLoading) return;
+    const snapshot = snapshotData?.myCodeSnapshot;
+    if (snapshot) {
+      setCode(snapshot.code);
+      setResult(
+        snapshot.resultOk === null || snapshot.resultOk === undefined
+          ? null
+          : { ok: snapshot.resultOk, messages: snapshot.resultMessages ?? [] },
+      );
+    }
+    setLoaded(true);
+    // Deliberately keyed on `snapshotLoading` (and `session`) only, not
+    // `snapshotData` — this is a one-time "load the initial value" effect;
+    // re-running it on every Apollo result-object identity change would
+    // clobber whatever the learner has typed since.
+  }, [snapshotLoading, session]);
 
   useEffect(() => {
-    if (!loaded) return;
+    if (!loaded || !session) return;
     const timeout = setTimeout(() => {
-      saveCodeSnapshot(lessonId, exerciseId, code, result);
+      saveCodeSnapshot({
+        variables: {
+          lessonSlug: lessonId,
+          exerciseId,
+          code,
+          resultOk: result?.ok ?? null,
+          resultMessages: result?.messages ?? null,
+        },
+      });
     }, 500);
     return () => clearTimeout(timeout);
-  }, [code, result, lessonId, exerciseId, loaded]);
+  }, [code, result, lessonId, exerciseId, loaded, session, saveCodeSnapshot]);
 
   const extracted = extractCircuit(code);
 

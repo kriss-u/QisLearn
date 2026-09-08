@@ -12,7 +12,8 @@
   "scripts": {
     "build": "tsc -b",
     "typecheck": "tsc -b --noEmit",
-    "authz:setup": "tsx src/setup.ts"
+    "authz:setup": "tsx src/setup.ts",
+    "authz:test": "fga model test --tests .fga.yaml"
   },
   "dependencies": {
     "@openfga/sdk": "^0.9.5",

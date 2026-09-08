@@ -1,8 +1,9 @@
 import { Alert, Box, Button, HStack, RadioCard, VStack } from "@chakra-ui/react";
+import { useDeleteQuizAttemptMutation, useMyQuizAttemptQuery, useSaveQuizAttemptMutation } from "@qislearn/graphql-schema";
 import { useEffect, useState } from "react";
 import { LuCircleHelp } from "react-icons/lu";
 import type { QuizChoice } from "../../../content/schema";
-import { deleteQuizAnswer, getQuizAnswer, saveQuizAnswer } from "../../../db/repository";
+import { useSession } from "../../../lib/authClient";
 import { useLessonId } from "../LessonContext";
 import { useLessonProgress } from "../LessonProgressContext";
 import { Markdown } from "../Markdown";
@@ -18,22 +19,30 @@ export interface QuizProps {
 export function Quiz({ id: quizId, question, choices, explanation }: QuizProps) {
   const lessonId = useLessonId();
   const { registerExercise, reportResult } = useLessonProgress();
+  const { data: session } = useSession();
   const [selected, setSelected] = useState<string | null>(null);
   const [checked, setChecked] = useState(false);
+
+  const { data: attemptData, loading: attemptLoading } = useMyQuizAttemptQuery({
+    variables: { lessonSlug: lessonId, quizId },
+    skip: !session,
+    fetchPolicy: "network-only",
+  });
+  const [saveQuizAttempt] = useSaveQuizAttemptMutation();
+  const [deleteQuizAttempt] = useDeleteQuizAttemptMutation();
 
   useEffect(() => registerExercise(quizId), [quizId, registerExercise]);
 
   useEffect(() => {
-    let cancelled = false;
-    getQuizAnswer(lessonId, quizId).then((answer) => {
-      if (cancelled || !answer) return;
-      setSelected(answer.selectedChoiceId);
-      setChecked(answer.checked);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [lessonId, quizId]);
+    if (!session || attemptLoading) return;
+    const attempt = attemptData?.myQuizAttempt;
+    if (attempt) {
+      setSelected(attempt.selectedChoiceId);
+      setChecked(attempt.submitted);
+    }
+    // One-time "load the initial value" effect — see CodeExercise.tsx for
+    // the same pattern and why `attemptData` is deliberately not a dep.
+  }, [attemptLoading, session]);
 
   const choice = choices.find((c) => c.id === selected);
 
@@ -43,19 +52,22 @@ export function Quiz({ id: quizId, question, choices, explanation }: QuizProps) 
 
   function handleSelect(value: string) {
     setSelected(value);
-    saveQuizAnswer(lessonId, quizId, value, false);
+    if (!session) return;
+    saveQuizAttempt({ variables: { lessonSlug: lessonId, quizId, selectedChoiceId: value, submitted: false } });
   }
 
   function handleSubmit() {
     if (!selected) return;
     setChecked(true);
-    saveQuizAnswer(lessonId, quizId, selected, true);
+    if (!session) return;
+    saveQuizAttempt({ variables: { lessonSlug: lessonId, quizId, selectedChoiceId: selected, submitted: true } });
   }
 
   function handleReset() {
     setSelected(null);
     setChecked(false);
-    deleteQuizAnswer(lessonId, quizId);
+    if (!session) return;
+    deleteQuizAttempt({ variables: { lessonSlug: lessonId, quizId } });
   }
 
   return (

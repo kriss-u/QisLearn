@@ -8,10 +8,11 @@
   },
   "scripts": {
     "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
-    "build": "tsc -b",
+    "build": "tsc -b tsconfig.build.json",
     "start": "node --env-file-if-exists=.env dist/index.js",
     "lint": "oxlint",
-    "typecheck": "tsc -b --noEmit"
+    "typecheck": "tsc -b --noEmit",
+    "admin:create": "tsx --env-file-if-exists=.env scripts/create-admin.ts"
   },
   "dependencies": {
     "@qislearn/config": "workspace:*",

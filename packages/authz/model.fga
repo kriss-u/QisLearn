@@ -9,3 +9,15 @@ type organization
     define admin: [user]
     define can_view_org: member or admin
     define can_manage_org: admin
+
+# Content is currently global/public (no org-scoping decision yet, see
+# docs/BACKEND_PLAN.md §10) — can_view_lesson is intentionally unconditional
+# for now. can_edit_lesson currently reduces to the `admin` role, checked
+# directly in apps/api (see requireAdmin in apps/api/src/authz-guards.ts)
+# rather than via a live .check() call against this model; the model is
+# checked in now so the roadmap shape exists once org-scoped editing lands.
+type lesson
+  relations
+    define admin: [user]
+    define can_view_lesson: [user:*] or admin
+    define can_edit_lesson: admin

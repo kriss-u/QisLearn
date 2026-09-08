@@ -1,12 +1,17 @@
 import { Button, CloseButton, Dialog, Portal, Text } from "@chakra-ui/react";
 import { useState } from "react";
 import { LuTrash2 } from "react-icons/lu";
-import { useProgressStore } from "../../store/progressStore";
+import { useSession } from "../../lib/authClient";
+import { useProgressSync } from "../../store/useProgressSync";
 
 export function ResetDataButton() {
+  const { data: session } = useSession();
   const [open, setOpen] = useState(false);
   const [resetting, setResetting] = useState(false);
-  const resetProgress = useProgressStore((s) => s.resetProgress);
+  const { resetProgress } = useProgressSync();
+
+  // Nothing server-side to reset for a logged-out visitor.
+  if (!session) return null;
 
   async function handleReset() {
     setResetting(true);
@@ -30,9 +35,9 @@ export function ResetDataButton() {
             </Dialog.Header>
             <Dialog.Body>
               <Text color="fg.muted">
-                This permanently deletes everything stored in this browser: lesson progress, completion
-                status, and any code you've written in exercises. Lesson content itself isn't affected.
-                This can't be undone.
+                This permanently deletes everything stored on your account: lesson progress, completion
+                status, and any code you've written in exercises — across every device you're logged in on.
+                Lesson content itself isn't affected. This can't be undone.
               </Text>
             </Dialog.Body>
             <Dialog.Footer>

@@ -16,10 +16,15 @@ The backend (`apps/api`, `packages/db`, `packages/authz`,
 `packages/graphql-schema`) is wired into `apps/web` as of the SSR/GraphQL
 cutover: lesson content lives in Postgres (`track`/`lesson`/`content_block`
 tables) and is served over GraphQL from `apps/api`, which `apps/web`
-server-renders through. Auth (better-auth) and authorization (OpenFGA) exist
-on the backend from an earlier phase but have no UI in `apps/web` yet, and
-user progress/code snapshots are still Dexie-only (not yet migrated to the
-backend). `apps/llm-service` is still an unwired stub. See
+server-renders through. Auth (better-auth) has a minimal UI now (`/login`,
+`/signup`, `/profile`) and lesson progress/code snapshots/quiz attempts are
+Postgres-backed (`lesson_progress`/`code_snapshot`/`quiz_attempt` tables,
+gated by session — logged-out visitors get a working-but-unsaved editor, no
+login wall); Dexie is gone entirely from `apps/web`. OpenFGA's authorization
+model is checked in (`packages/authz/model.fga`, including a `lesson` type)
+but not yet wired into `apps/api` resolvers — admin-only mutations
+(content authoring under `/admin`) are gated by better-auth's `admin` plugin
+role instead. `apps/llm-service` is still an unwired stub. See
 **[docs/BACKEND_PLAN.md](./docs/BACKEND_PLAN.md)** for the architecture
 decision record and phased roadmap before adding to the backend; don't
 introduce backend conventions that contradict it without updating that doc
@@ -41,9 +46,9 @@ There's still no real Python execution: code the learner writes is
 *statically parsed* (via `py-ast`) to check their circuit, not executed.
 Lesson content (the old MDX bodies) has been migrated to Postgres and is
 served over GraphQL, server-rendered by `apps/web` (`ssr: true`); user
-progress and saved code are still browser-only (Dexie/IndexedDB) pending a
-later migration to the backend — see `docs/BACKEND_PLAN.md` for what's
-already landed vs. still planned.
+progress, saved code, and quiz attempts are Postgres-backed too, scoped to
+a better-auth session — see `docs/BACKEND_PLAN.md` for what's already
+landed vs. still planned.
 
 Read `README.md` first for the product framing. This file is about how the
 `apps/web` codebase is put together and the conventions to follow when
@@ -85,9 +90,21 @@ changing it.
   `start` go through the `react-router` CLI / `react-router-serve` rather than raw
   `vite dev` / a static file server.
 - **State**:
-  - `zustand` for in-memory UI/app state (`src/store`)
-  - `Dexie` for persisted state in IndexedDB (`src/db`): lesson progress and saved
-    code per exercise
+  - `zustand` for in-memory app state (`src/store`) — `progressStore` holds
+    `statusByLesson` synchronously (read directly by e.g. `AppShell`'s
+    sidebar); its async read/write side lives separately in
+    `useProgressSync()` (`src/store/useProgressSync.ts`), a hook that pulls
+    `useApolloClient()` from React context and calls the `myLessonProgress`/
+    `setLessonProgress`/`resetMyProgress` GraphQL operations. `settingsStore`
+    (the LaTeX-rendering toggle) is the one genuinely local-only preference
+    and persists to plain `localStorage`, not the backend.
+  - No IndexedDB/Dexie anywhere — removed once lesson progress, code
+    snapshots (`code_snapshot`), and quiz attempts (`quiz_attempt`) all
+    moved server-side, keyed by `(userId, lessonSlug, ...)` and scoped to
+    the caller's own rows (`apps/api/src/authz-guards.ts`'s `requireUser`).
+    A logged-out visitor gets a fully working page with no persistence —
+    reads/writes are skipped client-side (`useSession()` from
+    `src/lib/authClient.ts`), not blocked behind a login wall.
   - `zod` for all data validation/schemas (lesson frontmatter, DB records); do not
     hand-roll validation or use raw untyped objects
 - **Editor**: CodeMirror 6 via `@uiw/react-codemirror`, Python mode from
@@ -221,12 +238,15 @@ src/
                              exports, which React Router tree-shakes out of
                              the client bundle (verified: grep the built
                              `build/client/assets/*.js` for the var name).
-    apolloClient.ts           createApolloClient(): for future client-initiated
+    apolloClient.ts           createApolloClient(): for client-initiated
                              hooks/mutations (wired via ApolloProvider in
                              root.tsx) — NOT used for page data; loaders/
-                             graphqlClient.ts own that. Reads
-                             `import.meta.env.VITE_API_URL`, NOT
-                             `process.env` — this file is called from
+                             graphqlClient.ts own that. Used by
+                             useProgressSync.ts and the generated hooks in
+                             CodeExercise.tsx/Quiz.tsx/the admin pages for
+                             all progress/snapshot/quiz-attempt/content
+                             mutations. Reads `import.meta.env.VITE_API_URL`,
+                             NOT `process.env` — this file is called from
                              `Root`, an actually-rendered component (not a
                              loader), so it ships to the browser, where
                              `process` doesn't exist
@@ -235,9 +255,9 @@ src/
                              Any new module reached from a rendered
                              component (not just a `loader`) needs this same
                              `import.meta.env` treatment for env vars, never
-                             `process.env`.
-  db/                     Dexie database, zod models, repository helpers
-                           (still the only progress/code-snapshot store)
+                             `process.env`. `authClient.ts` (better-auth
+                             React client) follows the same rule, deriving
+                             its origin from the same `VITE_API_URL`.
   features/
     quantum/                Complex numbers, gate matrices, statevector simulate,
                              Bloch vector, sampleShots (client-side shot sampling)
@@ -282,18 +302,22 @@ generic ones:
 - `<CodeExercise id="..." prompt="..." starterCode={\`...\`} expectedCircuit={{...}}
   hints={[...]} />`: starter code, optional `expectedCircuit` checked via
   `extractCircuit` + `compareCircuits`. `id` must be unique within the lesson (it's
-  part of the Dexie code-snapshot key, alongside the lessonId read from
-  `LessonContext`); the learner's code is persisted (debounced) as they type and
-  restored on revisit.
+  part of the `code_snapshot` table's composite key alongside the lessonId read
+  from `LessonContext` — see `saveCodeSnapshot`/`myCodeSnapshot` in
+  `apps/api/src/schema.ts`); the learner's code is persisted (debounced) as they
+  type and restored on revisit, but only while logged in — logged out, it's a
+  scratch pad for the current page view only, no error, no save prompt per
+  keystroke (see State above).
 - `<Visualization title="..." circuit={{...}} views={["circuit","bloch",...]} />`:
   a fixed `Circuit` rendered as circuit diagram + gate-by-gate `GateTimeline`
   scrubber + any of `bloch | statevector | probabilities` panels.
 - `<Quiz id="..." question="..." choices={[{id,text,correct},...]}
   explanation="..." />`: multiple choice with an explanation. Like
-  `CodeExercise`, `id` must be unique within the lesson; it's part of the Dexie
-  answer key (`db.answers`, `lessonId::quizId`). The selected choice is saved as
+  `CodeExercise`, `id` must be unique within the lesson; it's part of the
+  `quiz_attempt` table's composite key. The selected choice is saved as
   soon as it's picked (before "Submit"), and whether it was submitted; both restore
-  on revisit.
+  on revisit (while logged in — same logged-out scratch-pad behavior as
+  `CodeExercise`).
 - `<Measurement title="..." circuit={{...}} shotsOptions={[10,100,1000,10000]} />`:
   no persisted state (there's nothing to grade or restore). Simulates
   `AerSimulator`-style sampling client-side: computes the circuit's exact final
@@ -379,8 +403,8 @@ only surfaces at render time in `apps/web`, not at migration time.
 
 **`id` vs. `order`, and why neither is a sequential integer suffix**: `id` is a
 stable, purely descriptive slug (e.g. `algorithms-oracles`, not
-`algorithms-08-oracles`). It's the Dexie key for saved code snapshots and quiz
-answers (`lessonId::exerciseId` / `lessonId::quizId`) and the target of other
+`algorithms-08-oracles`). It's the `lessonSlug` half of the
+`code_snapshot`/`quiz_attempt` tables' composite keys and the target of other
 lessons' `prerequisites` arrays, so it must never be renumbered once a lesson has
 shipped, for the same reason `CodeExercise`/`Quiz` ids must stay stable (see
 above). `order` is the only field that encodes position, is a plain `number`
@@ -432,8 +456,8 @@ Qiskit behavior for that gate/feature, not generic textbook convention.
 
 ## Conventions
 
-- **Validation**: use `zod` for anything crossing a boundary: lesson JSON, IndexedDB
-  records. Don't write manual `if` chains for shape-checking.
+- **Validation**: use `zod` for anything crossing a boundary: lesson JSON, GraphQL
+  arguments. Don't write manual `if` chains for shape-checking.
 - **No inline/change-tracking comments.** Comments are reserved for genuinely
   non-obvious invariants (e.g. the little-endian note above). Don't describe what a
   line does or annotate what changed.
@@ -451,13 +475,12 @@ Qiskit behavior for that gate/feature, not generic textbook convention.
   code) and rewrite any hit. A plain, unhyphenated `-` still reads fine
   inside identifiers or Python code, this rule is about prose punctuation
   only.
-- **Dexie schema changes go in a new `.version(n)` block** (`src/db/db.ts`), not by
-  editing the existing version's `.stores()` in place. Dexie only re-runs the
-  upgrade/schema step when the version number increases; editing an existing
-  version silently no-ops for anyone with an already-created IndexedDB database
-  (i.e., yourself, mid-development, in whatever browser you've been testing in).
-  Tables you don't mention in a new version carry over unchanged; you only need
-  to list what's new/changed.
+- **Postgres schema changes go through Drizzle migrations, not hand-edited SQL.**
+  Edit the Drizzle schema files (`packages/db/src/*.ts`), then run
+  `pnpm --filter @qislearn/db db:generate` to produce a new numbered migration
+  under `packages/db/migrations/`, review the generated SQL, then
+  `pnpm --filter @qislearn/db db:migrate` to apply it. Don't edit an already-applied
+  migration file in place.
 - **Chakra v3 API**: components are compound/namespaced (`Alert.Root`,
   `Alert.Indicator`, `Slider.Root`, `RadioCard.Root`, `Accordion.Root`, ...), not the
   flat `<Alert status="success">` API from Chakra v2. Check

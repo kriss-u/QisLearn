@@ -1,38 +1,28 @@
 import { create } from "zustand";
-import { db } from "../db/db";
-import { markLessonStatus, resetAllData } from "../db/repository";
-import type { LessonStatus } from "../db/models";
+
+export type LessonStatus = "not-started" | "in-progress" | "completed";
 
 interface ProgressState {
   statusByLesson: Record<string, LessonStatus>;
   hydrated: boolean;
-  hydrate: () => Promise<void>;
-  setStatus: (lessonId: string, status: LessonStatus) => Promise<void>;
-  resetProgress: () => Promise<void>;
+  setStatusByLesson: (statusByLesson: Record<string, LessonStatus>) => void;
+  setHydrated: (hydrated: boolean) => void;
+  setLessonStatus: (lessonSlug: string, status: LessonStatus) => void;
 }
 
-export const useProgressStore = create<ProgressState>((set, get) => ({
+// Pure state only — no Dexie or GraphQL calls in here. Apollo Client in
+// this codebase isn't a safe module-level singleton (root.tsx creates a
+// fresh instance per SSR request via useMemo, see lib/apolloClient.ts), so
+// the async read/write logic that used to live in this store's actions
+// (hydrate/setStatus/resetProgress) now lives in the useProgressSync() hook
+// instead, which can pull useApolloClient() from React context. Components
+// read this store directly for the synchronous statusByLesson value (e.g.
+// AppShell's sidebar badges) and call useProgressSync()'s actions to change it.
+export const useProgressStore = create<ProgressState>((set) => ({
   statusByLesson: {},
   hydrated: false,
-
-  hydrate: async () => {
-    if (get().hydrated) return;
-    const rows = await db.progress.toArray();
-    const statusByLesson: Record<string, LessonStatus> = {};
-    for (const row of rows) {
-      statusByLesson[row.lessonId] = row.status;
-    }
-    set({ statusByLesson, hydrated: true });
-  },
-
-  setStatus: async (lessonId, status) => {
-    if (get().statusByLesson[lessonId] === "completed" && status === "in-progress") return;
-    await markLessonStatus(lessonId, status);
-    set((state) => ({ statusByLesson: { ...state.statusByLesson, [lessonId]: status } }));
-  },
-
-  resetProgress: async () => {
-    await resetAllData();
-    set({ statusByLesson: {} });
-  },
+  setStatusByLesson: (statusByLesson) => set({ statusByLesson }),
+  setHydrated: (hydrated) => set({ hydrated }),
+  setLessonStatus: (lessonSlug, status) =>
+    set((state) => ({ statusByLesson: { ...state.statusByLesson, [lessonSlug]: status } })),
 }));

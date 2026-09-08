@@ -11,7 +11,7 @@ import { AppShell } from "../components/layout/AppShell";
 import { Provider } from "../components/ui/provider";
 import { getTracks } from "../content";
 import { createApolloClient } from "../lib/apolloClient";
-import { useProgressStore } from "../store/progressStore";
+import { useProgressSync } from "../store/useProgressSync";
 import { useSettingsStore } from "../store/settingsStore";
 import { buildPageMeta } from "../lib/seo";
 import "../index.css";
@@ -57,9 +57,19 @@ export function Layout({ children }: PropsWithChildren) {
   );
 }
 
+// useProgressSync() needs useApolloClient() from context, so its hydrate()
+// call has to happen from a component rendered *inside* <ApolloProvider>,
+// not from Root itself (Root creates that provider, it isn't wrapped by it).
+function ProgressHydrator() {
+  const { hydrate } = useProgressSync();
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
+  return null;
+}
+
 export default function Root(): ReactNode {
   const { tracks } = useLoaderData<typeof loader>();
-  const hydrate = useProgressStore((s) => s.hydrate);
   const hydrateSettings = useSettingsStore((s) => s.hydrate);
   // Fresh per request on the server, stable for the session in the browser
   // — see apolloClient.ts. This provider is for client-initiated hooks
@@ -68,12 +78,12 @@ export default function Root(): ReactNode {
   const apolloClient = useMemo(() => createApolloClient(), []);
 
   useEffect(() => {
-    hydrate();
     hydrateSettings();
-  }, [hydrate, hydrateSettings]);
+  }, [hydrateSettings]);
 
   return (
     <ApolloProvider client={apolloClient}>
+      <ProgressHydrator />
       <Provider>
         <AppShell tracks={tracks}>
           <Outlet />

@@ -1,0 +1,33 @@
+query MyCodeSnapshot($lessonSlug: String!, $exerciseId: String!) {
+  myCodeSnapshot(lessonSlug: $lessonSlug, exerciseId: $exerciseId) {
+    lessonSlug
+    exerciseId
+    code
+    resultOk
+    resultMessages
+    updatedAt
+  }
+}
+
+mutation SaveCodeSnapshot(
+  $lessonSlug: String!
+  $exerciseId: String!
+  $code: String!
+  $resultOk: Boolean
+  $resultMessages: [String!]
+) {
+  saveCodeSnapshot(
+    lessonSlug: $lessonSlug
+    exerciseId: $exerciseId
+    code: $code
+    resultOk: $resultOk
+    resultMessages: $resultMessages
+  ) {
+    lessonSlug
+    exerciseId
+    code
+    resultOk
+    resultMessages
+    updatedAt
+  }
+}

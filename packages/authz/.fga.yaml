@@ -1,0 +1,40 @@
+name: qislearn
+model_file: model.fga
+tuples:
+  - user: user:alice
+    relation: member
+    object: organization:qislearn
+  - user: user:bob
+    relation: admin
+    object: organization:qislearn
+  - user: user:*
+    relation: can_view_lesson
+    object: lesson:bell-state
+  - user: user:carol
+    relation: admin
+    object: lesson:bell-state
+tests:
+  - name: organization relations
+    check:
+      - user: user:alice
+        object: organization:qislearn
+        assertions:
+          can_view_org: true
+          can_manage_org: false
+      - user: user:bob
+        object: organization:qislearn
+        assertions:
+          can_view_org: true
+          can_manage_org: true
+  - name: lesson relations
+    check:
+      - user: user:dave
+        object: lesson:bell-state
+        assertions:
+          can_view_lesson: true
+          can_edit_lesson: false
+      - user: user:carol
+        object: lesson:bell-state
+        assertions:
+          can_view_lesson: true
+          can_edit_lesson: true
