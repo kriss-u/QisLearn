@@ -12,16 +12,26 @@
     "typecheck": "tsc -b --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "migrate:mdx": "tsx scripts/migrate-mdx.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.44.0",
-    "postgres": "^3.4.5"
+    "postgres": "^3.4.5",
+    "yaml": "^2.8.1"
   },
   "devDependencies": {
-    "drizzle-kit": "^0.31.0",
     "@qislearn/config": "workspace:*",
     "@types/node": "^24.13.3",
-    "typescript": "^7.0.2"
+    "@types/unist": "^3.0.3",
+    "drizzle-kit": "^0.31.0",
+    "remark-frontmatter": "^5.0.0",
+    "remark-gfm": "^4.0.0",
+    "remark-math": "^6.0.0",
+    "remark-mdx": "^3.1.1",
+    "remark-parse": "^11.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^7.0.2",
+    "unified": "^11.0.5"
   }
 }

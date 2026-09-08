@@ -96,15 +96,26 @@ implementation; this is the shape.
   summary, layout, estimatedMinutes, orgId (nullable = global/public content)
 - `lesson_prerequisite`: lessonId, prerequisiteLessonId (replaces the
   frontmatter `prerequisites` array as a proper edge table)
-- `content_block`: id, lessonId, order, type (`markdown` | `code_exercise` |
-  `quiz` | `visualization` | `measurement`), data (jsonb). This is the
+- `content_block`: id, lessonId, order, type, data (jsonb). This is the
   direct DB equivalent of today's MDX body: a lesson is an ordered list of
   blocks instead of one compiled MDX file. `markdown` blocks hold the prose
-  (LaTeX-in-`$...$` conventions unchanged); the other three block types hold
-  exactly the same prop shapes `<CodeExercise>`/`<Quiz>`/`<Visualization>`/
-  `<Measurement>` take today (`Circuit`, `GateSchema`, `QuizChoice`, etc, all
-  already zod schemas in `content/schema.ts`, reused directly as the jsonb
-  validation shape via drizzle-zod).
+  (LaTeX-in-`$...$` conventions unchanged); every other block type holds
+  exactly the props the matching JSX component takes today. `type` is free
+  text — the JSX tag name (`CodeExercise`, `Quiz`, `Visualization`,
+  `Measurement`, plus one-off lesson widgets like `OracleFigure`,
+  `ComplexPlaneExplorer`, `TensorProductBuilder`, `GroverRotationPlayground`,
+  `QFTPhaseWheel`, `PhaseEstimationPlayground`,
+  `ModularExponentiationExplorer` — the real lesson set uses 11 distinct
+  interactive components, not a small fixed set), not a Postgres enum: a
+  fixed enum would need a migration every time a lesson author adds a new
+  one-off widget, which happens often enough (each algorithm lesson tends to
+  bring its own bespoke visualization) that it isn't worth constraining.
+  `data`'s shape per type is validated against `content/schema.ts`'s
+  existing zod schemas (`Circuit`, `GateSchema`, `QuizChoice`, etc, for the
+  four original components) or the interactive component's own prop
+  interface for the others; not yet enforced at the DB layer via
+  drizzle-zod, since `data` is a single jsonb column shared across all
+  types rather than one column per type.
 
 **Progress / grading**
 - `lesson_progress`: userId, lessonId, status, updatedAt (replaces Dexie's

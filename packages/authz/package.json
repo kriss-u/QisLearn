@@ -1,0 +1,27 @@
+{
+  "name": "@qislearn/authz",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.22.0"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --noEmit",
+    "authz:setup": "tsx src/setup.ts"
+  },
+  "dependencies": {
+    "@openfga/sdk": "^0.9.5",
+    "@openfga/syntax-transformer": "^0.2.0",
+    "@qislearn/config": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "tsx": "^4.20.0",
+    "typescript": "^7.0.2"
+  }
+}

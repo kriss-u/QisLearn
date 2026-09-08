@@ -6,12 +6,46 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-qislearn}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-qislearn}
       POSTGRES_DB: ${POSTGRES_DB:-qislearn}
+      OPENFGA_POSTGRES_DB: ${OPENFGA_POSTGRES_DB:-openfga}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
+      - ./infra/docker/postgres-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-qislearn}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  openfga-migrate:
+    image: openfga/openfga:latest
+    command: migrate
+    environment:
+      OPENFGA_DATASTORE_ENGINE: postgres
+      OPENFGA_DATASTORE_URI: postgres://${POSTGRES_USER:-qislearn}:${POSTGRES_PASSWORD:-qislearn}@postgres:5432/${OPENFGA_POSTGRES_DB:-openfga}?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  openfga:
+    image: openfga/openfga:latest
+    restart: unless-stopped
+    command: run
+    environment:
+      OPENFGA_DATASTORE_ENGINE: postgres
+      OPENFGA_DATASTORE_URI: postgres://${POSTGRES_USER:-qislearn}:${POSTGRES_PASSWORD:-qislearn}@postgres:5432/${OPENFGA_POSTGRES_DB:-openfga}?sslmode=disable
+      OPENFGA_PLAYGROUND_ENABLED: "true"
+    ports:
+      - "${OPENFGA_API_PORT:-8080}:8080"
+      - "${OPENFGA_PLAYGROUND_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      openfga-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/healthz"]
       interval: 5s
       timeout: 5s
       retries: 10

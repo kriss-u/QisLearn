@@ -1,23 +1,23 @@
 import { createServer } from "node:http";
-import { createSchema, createYoga } from "graphql-yoga";
+import { createYoga } from "graphql-yoga";
+import { toNodeHandler } from "better-auth/node";
+import { auth } from "./auth.js";
+import { createContext } from "./context.js";
+import { env } from "./env.js";
+import { schema } from "./schema.js";
 
-const schema = createSchema({
-  typeDefs: /* GraphQL */ `
-    type Query {
-      health: String!
-    }
-  `,
-  resolvers: {
-    Query: {
-      health: () => "ok",
-    },
-  },
+const authHandler = toNodeHandler(auth);
+const yoga = createYoga({ schema, context: createContext, graphqlEndpoint: "/graphql" });
+
+const server = createServer((req, res) => {
+  if (req.url?.startsWith("/api/auth")) {
+    authHandler(req, res);
+    return;
+  }
+  yoga(req, res);
 });
 
-const yoga = createYoga({ schema });
-const server = createServer(yoga);
-
-const port = Number(process.env.PORT ?? 4000);
-server.listen(port, () => {
-  console.log(`api listening on http://localhost:${port}/graphql`);
+server.listen(env.PORT, () => {
+  console.log(`api listening on http://localhost:${env.PORT}/graphql`);
+  console.log(`better-auth mounted at http://localhost:${env.PORT}/api/auth`);
 });
