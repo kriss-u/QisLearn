@@ -1,7 +1,6 @@
 import { HStack, SimpleGrid, Slider, Text, useToken, VStack } from "@chakra-ui/react";
 import { useState, type ReactNode } from "react";
 import { LuOrbit } from "react-icons/lu";
-import { resolveCssVar } from "../../../features/export/resolveCssVar";
 import { KatexSpan, useVizLatex, VizLatexToggle } from "../../viz/latexLabels";
 import { PlaneArrow, PlanePanel, usePlaneGeometry } from "../../viz/PlanePanel";
 import { VizSection } from "../../viz/VizSection";
@@ -38,7 +37,8 @@ interface BodyProps {
 
 function ComplexPlaneBody({ r, setR, thetaDeg, setThetaDeg, action }: BodyProps) {
   const latex = useVizLatex();
-  const [pointColor] = useToken("colors", ["quantum.500"]).map(resolveCssVar);
+  // Raw var(--chakra-...) ref — see PlanePanel.tsx for why this isn't resolveCssVar'd.
+  const [pointColor] = useToken("colors", ["quantum.500"]);
   const geometry = usePlaneGeometry(SIZE, RANGE);
 
   const theta = (thetaDeg * Math.PI) / 180;

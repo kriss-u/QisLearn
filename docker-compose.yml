@@ -59,15 +59,23 @@ services:
     image: node:22
     restart: unless-stopped
     working_dir: /workspace
-    command: sh -c "corepack enable && pnpm install && pnpm --filter @qislearn/api dev"
+    # Runs as root (simplest inside node:22 — an arbitrary non-root UID has
+    # no passwd entry, breaking corepack/HOME-dependent tooling), so `pnpm
+    # install` leaves root-owned files in the bind-mounted repo. chown back
+    # to the host user on every start (set HOST_UID/HOST_GID in .env if
+    # they're not 1001:1001 — `id -u`/`id -g` on the host), or `pnpm
+    # typecheck` etc. on the host fail with EACCES after the container has
+    # run even once — this bit us for real.
+    command: sh -c "corepack enable && pnpm install && chown -R ${HOST_UID:-1001}:${HOST_GID:-1001} /workspace && pnpm --filter @qislearn/api dev"
+    # Base config comes from apps/api/.env (copy from apps/api/.env.example).
+    # The environment: block below overrides only the values that must
+    # differ inside the docker network vs. host-based dev (env_file values
+    # win unless also listed in environment:, which then takes precedence).
+    env_file:
+      - apps/api/.env
     environment:
-      PORT: 4000
       DATABASE_URL: postgres://${POSTGRES_USER:-qislearn}:${POSTGRES_PASSWORD:-qislearn}@postgres:5432/${POSTGRES_DB:-qislearn}
-      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-change-me-32-chars-minimum-please}
-      BETTER_AUTH_URL: http://localhost:${PORT:-4000}
       OPENFGA_API_URL: http://openfga:8080
-      OPENFGA_STORE_ID: ${OPENFGA_STORE_ID:?set OPENFGA_STORE_ID in .env, see \`pnpm --filter @qislearn/authz authz:setup\`}
-      OPENFGA_MODEL_ID: ${OPENFGA_MODEL_ID:?set OPENFGA_MODEL_ID in .env, see \`pnpm --filter @qislearn/authz authz:setup\`}
     ports:
       - "4000:4000"
     volumes:
@@ -83,7 +91,15 @@ services:
     image: node:22
     restart: unless-stopped
     working_dir: /workspace
-    command: sh -c "corepack enable && pnpm install && pnpm --filter @qislearn/web exec react-router dev --host 0.0.0.0"
+    # See api's command above for why the chown is here.
+    command: sh -c "corepack enable && pnpm install && chown -R ${HOST_UID:-1001}:${HOST_GID:-1001} /workspace && pnpm --filter @qislearn/web exec react-router dev --host 0.0.0.0"
+    # Base config from apps/web/.env (copy from apps/web/.env.example).
+    # QISLEARN_API_URL (server-side/loaders) is overridden below to the
+    # docker-internal hostname; VITE_API_URL (browser-side) is NOT
+    # overridden — it must stay a host-resolvable URL in every case, which
+    # is exactly what apps/web/.env already has by default.
+    env_file:
+      - apps/web/.env
     environment:
       QISLEARN_API_URL: http://api:4000/graphql
     ports:

@@ -1,6 +1,5 @@
 import { Box, useToken } from "@chakra-ui/react";
 import type { HTMLAttributes, ReactNode } from "react";
-import { resolveCssVar } from "../../features/export/resolveCssVar";
 import { renderKatex, useVizLatex } from "./latexLabels";
 
 const MONO_FONT = "'Fira Code', ui-monospace, monospace";
@@ -83,9 +82,13 @@ export interface PlanePanelProps {
 export function PlanePanel({ geometry, unitCircle = true, xLabel, yLabel, maxW = "220px", children }: PlanePanelProps) {
   const latex = useVizLatex();
   const { size, toX } = geometry;
-  const [axisColor, mutedColor, panelBg] = useToken("colors", ["border", "fg.muted", "bg.panel"]).map(
-    resolveCssVar,
-  );
+  // Raw `var(--chakra-colors-...)` refs, deliberately not resolved to a
+  // concrete color: SVG fill/stroke/color natively support var(), and this
+  // renders both server- and client-side (SSR), so resolving eagerly here
+  // (getComputedStyle needs a live document) would make the two disagree
+  // and break hydration. resolveCssVar exists for canvas-export contexts
+  // (a detached canvas can't resolve var() at all), not live SVG output.
+  const [axisColor, mutedColor, panelBg] = useToken("colors", ["border", "fg.muted", "bg.panel"]);
   const origin = toX(0);
   const unitR = toX(1) - toX(0);
 

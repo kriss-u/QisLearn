@@ -1,7 +1,6 @@
 import { Button, HStack, Progress, SimpleGrid, Slider, Text, useToken, VStack } from "@chakra-ui/react";
 import { useMemo, useState, type ReactNode } from "react";
 import { LuTarget } from "react-icons/lu";
-import { resolveCssVar } from "../../../features/export/resolveCssVar";
 import { KatexSpan, useVizLatex, VizLatexToggle } from "../../viz/latexLabels";
 import { PlaneArrow, PlanePanel, usePlaneGeometry } from "../../viz/PlanePanel";
 import { VizSection } from "../../viz/VizSection";
@@ -31,7 +30,8 @@ interface BodyProps {
 
 function GroverRotationBody({ n, k, setK, kOpt, kMax, action }: BodyProps) {
   const latex = useVizLatex();
-  const [stateColor, startColor] = useToken("colors", ["quantum.500", "fg.muted"]).map(resolveCssVar);
+  // Raw var(--chakra-...) refs — see PlanePanel.tsx for why this isn't resolveCssVar'd.
+  const [stateColor, startColor] = useToken("colors", ["quantum.500", "fg.muted"]);
   const geometry = usePlaneGeometry(SIZE, RANGE);
 
   const theta = Math.asin(1 / Math.sqrt(n));

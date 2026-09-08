@@ -1,7 +1,6 @@
 import { HStack, SimpleGrid, Slider, Text, useToken, VStack } from "@chakra-ui/react";
 import { useMemo, useState, type ReactNode } from "react";
 import { LuWaves } from "react-icons/lu";
-import { resolveCssVar } from "../../../features/export/resolveCssVar";
 import { KatexSpan, useVizLatex, VizLatexToggle } from "../../viz/latexLabels";
 import { PlaneArrow, PlanePanel, PlanePoint, usePlaneGeometry } from "../../viz/PlanePanel";
 import { VizSection } from "../../viz/VizSection";
@@ -28,7 +27,8 @@ interface BodyProps {
 
 function QFTPhaseBody({ N, k, setK, action }: BodyProps) {
   const latex = useVizLatex();
-  const [dotColor, highlightColor, mutedColor] = useToken("colors", ["fg.muted", "quantum.500", "border"]).map(resolveCssVar);
+  // Raw var(--chakra-...) refs — see PlanePanel.tsx for why this isn't resolveCssVar'd.
+  const [dotColor, highlightColor, mutedColor] = useToken("colors", ["fg.muted", "quantum.500", "border"]);
   const geometry = usePlaneGeometry(SIZE, RANGE);
 
   const points = useMemo(

@@ -1,7 +1,6 @@
 import { Badge, Button, HStack, SimpleGrid, Slider, Text, useToken, VStack } from "@chakra-ui/react";
 import { useMemo, useState, type ReactNode } from "react";
 import { LuGrid2X2 } from "react-icons/lu";
-import { resolveCssVar } from "../../../features/export/resolveCssVar";
 import { KatexSpan, useVizLatex, VizLatexToggle } from "../../viz/latexLabels";
 import { PlaneArrow, PlanePanel, usePlaneGeometry } from "../../viz/PlanePanel";
 import { VizSection } from "../../viz/VizSection";
@@ -44,11 +43,12 @@ interface BodyProps {
 
 function MatrixTransformBody({ preset, angleDeg, setAngleDeg, showTrace, showEigenReadout, action }: BodyProps) {
   const latex = useVizLatex();
+  // Raw var(--chakra-...) refs — see PlanePanel.tsx for why this isn't resolveCssVar'd.
   const [inputColor, outputColor, traceColor] = useToken("colors", [
     "fg.muted",
     "quantum.500",
     "violetAccent.500",
-  ]).map(resolveCssVar);
+  ]);
   const geometry = usePlaneGeometry(SIZE, RANGE);
 
   const angle = (angleDeg * Math.PI) / 180;

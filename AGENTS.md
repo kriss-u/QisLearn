@@ -215,11 +215,27 @@ src/
                              Content model below. No caching (see Stack: SSR)
   lib/
     graphqlClient.ts         plain fetch-based GraphQL POST, used by loaders
-                             (content/index.ts) and build-time scripts alike
+                             (content/index.ts) and build-time scripts alike.
+                             Reads `process.env.QISLEARN_API_URL` — safe
+                             because it's only ever reached from `loader`
+                             exports, which React Router tree-shakes out of
+                             the client bundle (verified: grep the built
+                             `build/client/assets/*.js` for the var name).
     apolloClient.ts           createApolloClient(): for future client-initiated
                              hooks/mutations (wired via ApolloProvider in
                              root.tsx) — NOT used for page data; loaders/
-                             graphqlClient.ts own that
+                             graphqlClient.ts own that. Reads
+                             `import.meta.env.VITE_API_URL`, NOT
+                             `process.env` — this file is called from
+                             `Root`, an actually-rendered component (not a
+                             loader), so it ships to the browser, where
+                             `process` doesn't exist
+                             (`ReferenceError: process is not defined` if
+                             you get this wrong — happened once already).
+                             Any new module reached from a rendered
+                             component (not just a `loader`) needs this same
+                             `import.meta.env` treatment for env vars, never
+                             `process.env`.
   db/                     Dexie database, zod models, repository helpers
                            (still the only progress/code-snapshot store)
   features/

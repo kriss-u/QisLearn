@@ -34,7 +34,12 @@ export async function loader() {
 
 export function Layout({ children }: PropsWithChildren) {
   return (
-    <html lang="en">
+    // next-themes sets class/style on <html> client-side (before paint, via
+    // an injected script) to avoid a flash of the wrong theme — that's
+    // expected to differ from the server-rendered markup, which doesn't
+    // know the visitor's preference yet. suppressHydrationWarning tells
+    // React that's intentional for this one element, not a real bug.
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta charSet="UTF-8" />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
