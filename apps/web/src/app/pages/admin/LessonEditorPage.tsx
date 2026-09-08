@@ -78,8 +78,8 @@ function LessonMetaEditor({
   allLessons: Array<{ id: string; slug: string; title: string }>;
   onSaved: () => void;
   onDraftChange: (draft: LessonMetaDraft) => void;
-  /** Preview/delete triggers — rendered alongside the Save button at the top of the sidebar. */
-  actions: ReactNode;
+  /** Preview/delete triggers — rendered either side of the Save button, in that order, at the top of the sidebar. */
+  actions: { preview: ReactNode; delete: ReactNode };
   children: ReactNode;
 }) {
   const { data: layoutsData } = useAdminLessonLayoutsQuery();
@@ -187,7 +187,7 @@ function LessonMetaEditor({
         p="4"
       >
         <HStack wrap="wrap">
-          {actions}
+          {actions.preview}
           <Button
             size="sm"
             colorPalette="quantum"
@@ -196,6 +196,7 @@ function LessonMetaEditor({
           >
             Save
           </Button>
+          {actions.delete}
         </HStack>
         <Separator />
 
@@ -826,15 +827,17 @@ export default function LessonEditorPage() {
     previewBlocks.push({ id: "__new__", order: nextOrder, ...newBlockDraft });
   }
 
-  // Rendered inside the sidebar (LessonMetaEditor's `actions` prop),
-  // alongside its own Save button, so all three lesson-level actions sit
-  // together — save owns lesson-meta state so it stays local to that
-  // component, these two don't so they're built here instead.
-  const actions = (
-    <>
+  // Rendered either side of LessonMetaEditor's own Save button (in that
+  // order — preview, save, delete) so all three lesson-level actions sit
+  // together on one row — save owns lesson-meta state so it stays local to
+  // that component, these two don't so they're built here instead.
+  const actions = {
+    preview: (
       <Button size="sm" variant="outline" onClick={() => setPreviewOpen(true)}>
         Preview
       </Button>
+    ),
+    delete: (
       <Dialog.Root
         open={confirmDeleteOpen}
         onOpenChange={(d) => setConfirmDeleteOpen(d.open)}
@@ -886,8 +889,8 @@ export default function LessonEditorPage() {
           </Dialog.Positioner>
         </Portal>
       </Dialog.Root>
-    </>
-  );
+    ),
+  };
 
   return (
     <VStack align="stretch" gap="6">
