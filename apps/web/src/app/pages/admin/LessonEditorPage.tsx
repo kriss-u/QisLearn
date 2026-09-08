@@ -20,7 +20,7 @@ import {
   VStack,
   Wrap,
 } from "@chakra-ui/react";
-import { LuChevronDown } from "react-icons/lu";
+import { LuChevronDown, LuTrash2 } from "react-icons/lu";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useParams } from "react-router";
 import {
@@ -69,12 +69,17 @@ function LessonMetaEditor({
   allLessons,
   onSaved,
   onDraftChange,
+  actions,
   children,
 }: {
-  lesson: NonNullable<NonNullable<ReturnType<typeof useAdminLessonQuery>["data"]>["adminLesson"]>;
+  lesson: NonNullable<
+    NonNullable<ReturnType<typeof useAdminLessonQuery>["data"]>["adminLesson"]
+  >;
   allLessons: Array<{ id: string; slug: string; title: string }>;
   onSaved: () => void;
   onDraftChange: (draft: LessonMetaDraft) => void;
+  /** Preview/delete triggers — rendered alongside the Save button at the top of the sidebar. */
+  actions: ReactNode;
   children: ReactNode;
 }) {
   const { data: layoutsData } = useAdminLessonLayoutsQuery();
@@ -82,26 +87,53 @@ function LessonMetaEditor({
   const [title, setTitle] = useState(lesson.title);
   const [summary, setSummary] = useState(lesson.summary);
   const [layout, setLayout] = useState(lesson.layout);
-  const [difficulty, setDifficulty] = useState<LessonDifficulty>(lesson.difficulty);
-  const [estimatedMinutes, setEstimatedMinutes] = useState(lesson.estimatedMinutes);
-  const [prerequisiteIds, setPrerequisiteIds] = useState(lesson.prerequisites.map((p) => p.id));
+  const [difficulty, setDifficulty] = useState<LessonDifficulty>(
+    lesson.difficulty,
+  );
+  const [estimatedMinutes, setEstimatedMinutes] = useState(
+    lesson.estimatedMinutes,
+  );
+  const [prerequisiteIds, setPrerequisiteIds] = useState(
+    lesson.prerequisites.map((p) => p.id),
+  );
 
   const onDraftChangeRef = useRef(onDraftChange);
   useEffect(() => {
     onDraftChangeRef.current = onDraftChange;
   });
   useEffect(() => {
-    onDraftChangeRef.current({ title, summary, layout, difficulty, estimatedMinutes });
+    onDraftChangeRef.current({
+      title,
+      summary,
+      layout,
+      difficulty,
+      estimatedMinutes,
+    });
   }, [title, summary, layout, difficulty, estimatedMinutes]);
 
   const [updateLesson, { loading: savingLesson }] = useUpdateLessonMutation();
-  const [updatePrerequisites, { loading: savingPrereqs }] = useUpdateLessonPrerequisitesMutation();
+  const [updatePrerequisites, { loading: savingPrereqs }] =
+    useUpdateLessonPrerequisitesMutation();
 
   async function handleSave() {
     // `order` isn't edited here — a lesson's position within its track is
     // set by dragging it in the admin content list (AdminHome.tsx).
-    await updateLesson({ variables: { id: lesson.id, title, summary, layout, difficulty, estimatedMinutes } });
-    await updatePrerequisites({ variables: { lessonId: lesson.id, prerequisiteLessonIds: prerequisiteIds } });
+    await updateLesson({
+      variables: {
+        id: lesson.id,
+        title,
+        summary,
+        layout,
+        difficulty,
+        estimatedMinutes,
+      },
+    });
+    await updatePrerequisites({
+      variables: {
+        lessonId: lesson.id,
+        prerequisiteLessonIds: prerequisiteIds,
+      },
+    });
     onSaved();
   }
 
@@ -140,16 +172,40 @@ function LessonMetaEditor({
         w={{ base: "full", lg: "clamp(280px, 22vw, 420px)" }}
         flexShrink={0}
         position={{ lg: "sticky" }}
-        top={{ lg: "4" }}
+        // Matches the app header (h="16" = 4rem) plus the admin shell's
+        // top padding (py="10" at md+ = 2.5rem) so the panel's sticky
+        // offset lines up with where it already sits in normal flow —
+        // no catch-up scroll needed before it "locks" in place. maxH is
+        // sized off that same offset so it scrolls internally instead of
+        // ever pushing past the bottom of the viewport.
+        top={{ lg: "6.5rem" }}
+        maxH={{ lg: "calc(100dvh - 6.5rem - 1rem)" }}
+        overflowY={{ lg: "auto" }}
         borderWidth="1px"
         borderColor="border"
         rounded="l3"
         p="4"
       >
+        <HStack wrap="wrap">
+          {actions}
+          <Button
+            size="sm"
+            colorPalette="quantum"
+            onClick={handleSave}
+            loading={savingLesson || savingPrereqs}
+          >
+            Save
+          </Button>
+        </HStack>
+        <Separator />
+
         <Field.Root>
           <Field.Label fontSize="xs">Layout</Field.Label>
           <NativeSelect.Root size="sm">
-            <NativeSelect.Field value={layout} onChange={(e) => setLayout(e.target.value)}>
+            <NativeSelect.Field
+              value={layout}
+              onChange={(e) => setLayout(e.target.value)}
+            >
               {layouts.map((l) => (
                 <option key={l.value} value={l.value}>
                   {l.label}
@@ -164,7 +220,9 @@ function LessonMetaEditor({
           <NativeSelect.Root size="sm">
             <NativeSelect.Field
               value={difficulty}
-              onChange={(e) => setDifficulty(e.target.value as LessonDifficulty)}
+              onChange={(e) =>
+                setDifficulty(e.target.value as LessonDifficulty)
+              }
             >
               <option value="BEGINNER">Beginner</option>
               <option value="INTERMEDIATE">Intermediate</option>
@@ -200,7 +258,9 @@ function LessonMetaEditor({
                     colorPalette={checked ? "quantum" : "gray"}
                     onClick={() =>
                       setPrerequisiteIds((prev) =>
-                        checked ? prev.filter((id) => id !== l.id) : [...prev, l.id],
+                        checked
+                          ? prev.filter((id) => id !== l.id)
+                          : [...prev, l.id],
                       )
                     }
                   >
@@ -213,17 +273,22 @@ function LessonMetaEditor({
 
         <Separator />
 
-        <TagPicker lessonId={lesson.id} currentTagIds={lesson.tags.map((t) => t.id)} />
-
-        <Button size="sm" colorPalette="quantum" onClick={handleSave} loading={savingLesson || savingPrereqs}>
-          Save lesson
-        </Button>
+        <TagPicker
+          lessonId={lesson.id}
+          currentTagIds={lesson.tags.map((t) => t.id)}
+        />
       </VStack>
     </Flex>
   );
 }
 
-function TagPicker({ lessonId, currentTagIds }: { lessonId: string; currentTagIds: string[] }) {
+function TagPicker({
+  lessonId,
+  currentTagIds,
+}: {
+  lessonId: string;
+  currentTagIds: string[];
+}) {
   const { data, refetch: refetchTags } = useAdminTagsQuery();
   const [newTag, setNewTag] = useState("");
   const [createTag] = useCreateTagMutation();
@@ -233,7 +298,9 @@ function TagPicker({ lessonId, currentTagIds }: { lessonId: string; currentTagId
   const tags = data?.adminTags ?? [];
 
   async function toggle(tagId: string) {
-    const next = selected.includes(tagId) ? selected.filter((id) => id !== tagId) : [...selected, tagId];
+    const next = selected.includes(tagId)
+      ? selected.filter((id) => id !== tagId)
+      : [...selected, tagId];
     setSelected(next);
     await updateLessonTags({ variables: { lessonId, tagIds: next } });
   }
@@ -241,7 +308,9 @@ function TagPicker({ lessonId, currentTagIds }: { lessonId: string; currentTagId
   async function handleAddTag() {
     if (!newTag.trim()) return;
     const slug = newTag.trim().toLowerCase().replace(/\s+/g, "-");
-    const { data: created } = await createTag({ variables: { slug, label: newTag.trim() } });
+    const { data: created } = await createTag({
+      variables: { slug, label: newTag.trim() },
+    });
     setNewTag("");
     await refetchTags();
     if (created?.createTag) await toggle(created.createTag.id);
@@ -269,7 +338,12 @@ function TagPicker({ lessonId, currentTagIds }: { lessonId: string; currentTagId
         })}
       </Wrap>
       <HStack maxW="sm">
-        <Input size="sm" placeholder="New tag label" value={newTag} onChange={(e) => setNewTag(e.target.value)} />
+        <Input
+          size="sm"
+          placeholder="New tag label"
+          value={newTag}
+          onChange={(e) => setNewTag(e.target.value)}
+        />
         <Button size="sm" onClick={handleAddTag} disabled={!newTag.trim()}>
           Add tag
         </Button>
@@ -281,24 +355,44 @@ function TagPicker({ lessonId, currentTagIds }: { lessonId: string; currentTagId
 // A one-line hint for the collapsed header — whichever text-ish field a
 // block actually has, truncated. Falls back to the type name alone.
 function summarizeBlockData(data: Record<string, unknown>): string | null {
-  const candidate = data.title ?? data.text ?? data.question ?? data.prompt ?? data.description;
+  const candidate =
+    data.title ?? data.text ?? data.question ?? data.prompt ?? data.description;
   if (typeof candidate !== "string" || !candidate.trim()) return null;
   const oneLine = candidate.trim().replace(/\s+/g, " ");
   return oneLine.length > 80 ? `${oneLine.slice(0, 80)}…` : oneLine;
 }
 
 interface BlockRowProps {
-  block: { id: string; order: number; type: string; data: Record<string, unknown> };
+  block: {
+    id: string;
+    order: number;
+    type: string;
+    data: Record<string, unknown>;
+  };
   blockTypes: BlockTypeSpec[];
   onSaved: () => void;
   onDragStart: () => void;
   onDragEnd: () => void;
   onDrop: () => void;
   /** Reports every in-progress edit (not just saved ones) so the "Preview lesson" dialog can reflect it. */
-  onDraftChange: (patch: { type: string; data: Record<string, unknown> }) => void;
+  onDraftChange: (patch: {
+    type: string;
+    data: Record<string, unknown>;
+  }) => void;
+  /** Bumped by the "Expand all"/"Collapse all" toggle to force this row's open state. */
+  expandSignal: { open: boolean; token: number } | null;
 }
 
-function ContentBlockRow({ block, blockTypes, onSaved, onDragStart, onDragEnd, onDrop, onDraftChange }: BlockRowProps) {
+function ContentBlockRow({
+  block,
+  blockTypes,
+  onSaved,
+  onDragStart,
+  onDragEnd,
+  onDrop,
+  onDraftChange,
+  expandSignal,
+}: BlockRowProps) {
   const [type, setType] = useState(block.type);
   const [data, setData] = useState<Record<string, unknown>>(block.data);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -307,6 +401,11 @@ function ContentBlockRow({ block, blockTypes, onSaved, onDragStart, onDragEnd, o
   const [updateBlock, { loading: saving }] = useUpdateContentBlockMutation();
   const [deleteBlock, { loading: deleting }] = useDeleteContentBlockMutation();
   const rowRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (expandSignal) setOpen(expandSignal.open);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandSignal?.token]);
 
   // Kept in a ref (rather than a useEffect dependency) since onDraftChange
   // is a fresh closure from the parent every render — only the actual edit
@@ -325,7 +424,11 @@ function ContentBlockRow({ block, blockTypes, onSaved, onDragStart, onDragEnd, o
     setSaveError(null);
     updateBlock({ variables: { id: block.id, type, data } })
       .then(() => onSaved())
-      .catch((err) => setSaveError(err instanceof Error ? err.message : "Failed to save block."));
+      .catch((err) =>
+        setSaveError(
+          err instanceof Error ? err.message : "Failed to save block.",
+        ),
+      );
   }
 
   const summary = summarizeBlockData(data);
@@ -349,9 +452,16 @@ function ContentBlockRow({ block, blockTypes, onSaved, onDragStart, onDragEnd, o
         bg={open ? "colorPalette.subtle" : undefined}
         colorPalette={open ? "quantum" : undefined}
       >
-        <DragHandle onDragStart={onDragStart} onDragEnd={onDragEnd} rowRef={rowRef} />
+        <DragHandle
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          rowRef={rowRef}
+        />
         <NativeSelect.Root size="sm" maxW="44" flexShrink={0}>
-          <NativeSelect.Field value={type} onChange={(e) => setType(e.target.value)}>
+          <NativeSelect.Field
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+          >
             {blockTypes.map((t) => (
               <option key={t.type} value={t.type}>
                 {t.label}
@@ -361,14 +471,29 @@ function ContentBlockRow({ block, blockTypes, onSaved, onDragStart, onDragEnd, o
           <NativeSelect.Indicator />
         </NativeSelect.Root>
         {summary && !open && (
-          <Text fontSize="xs" color="fg.muted" flex="1" minW="0" overflow="hidden" whiteSpace="nowrap" textOverflow="ellipsis">
+          <Text
+            fontSize="xs"
+            color="fg.muted"
+            flex="1"
+            minW="0"
+            overflow="hidden"
+            whiteSpace="nowrap"
+            textOverflow="ellipsis"
+          >
             {summary}
           </Text>
         )}
         <Box flex="1" />
         <Collapsible.Trigger asChild>
-          <IconButton aria-label={open ? "Collapse block" : "Expand block"} size="sm" variant="ghost">
-            <Box transform={open ? "rotate(180deg)" : undefined} transition="transform 0.15s ease">
+          <IconButton
+            aria-label={open ? "Collapse block" : "Expand block"}
+            size="sm"
+            variant="ghost"
+          >
+            <Box
+              transform={open ? "rotate(180deg)" : undefined}
+              transition="transform 0.15s ease"
+            >
               <LuChevronDown />
             </Box>
           </IconButton>
@@ -376,69 +501,97 @@ function ContentBlockRow({ block, blockTypes, onSaved, onDragStart, onDragEnd, o
       </HStack>
 
       <Collapsible.Content>
-          <VStack align="stretch" gap="2" px="3" pb="3" pt="1" borderTopWidth="1px" borderColor="border">
-            {spec ? (
-              <DynamicBlockForm fields={spec.fields} data={data} onChange={setData} />
-            ) : (
-              <Text fontSize="xs" color="fg.muted">
-                Unknown block type "{type}" — no editor form registered for it.
-              </Text>
-            )}
-            {saveError && (
-              <Alert.Root status="error" size="sm">
-                <Alert.Indicator />
-                <Alert.Description>{saveError}</Alert.Description>
-              </Alert.Root>
-            )}
-            <HStack>
-              <Button size="sm" colorPalette="quantum" onClick={handleSave} loading={saving}>
-                Save block
-              </Button>
-              <Dialog.Root open={confirmOpen} onOpenChange={(d) => setConfirmOpen(d.open)} role="alertdialog">
-                <Dialog.Trigger asChild>
-                  <Button size="sm" variant="outline" colorPalette="red">
-                    Delete
-                  </Button>
-                </Dialog.Trigger>
-                <Portal>
-                  <Dialog.Backdrop />
-                  <Dialog.Positioner>
-                    <Dialog.Content>
-                      <Dialog.Header>
-                        <Dialog.Title>Delete this block?</Dialog.Title>
-                      </Dialog.Header>
-                      <Dialog.Body>
-                        <Text color="fg.muted">
-                          This removes it from the live lesson immediately. This can't be undone.
-                        </Text>
-                      </Dialog.Body>
-                      <Dialog.Footer>
-                        <Dialog.ActionTrigger asChild>
-                          <Button variant="ghost">Cancel</Button>
-                        </Dialog.ActionTrigger>
-                        <Button
-                          colorPalette="red"
-                          loading={deleting}
-                          onClick={() => deleteBlock({ variables: { id: block.id } }).then(() => onSaved())}
-                        >
-                          Delete
-                        </Button>
-                      </Dialog.Footer>
-                      <Dialog.CloseTrigger asChild>
-                        <CloseButton size="sm" />
-                      </Dialog.CloseTrigger>
-                    </Dialog.Content>
-                  </Dialog.Positioner>
-                </Portal>
-              </Dialog.Root>
-            </HStack>
-          </VStack>
+        <VStack
+          align="stretch"
+          gap="2"
+          px="3"
+          pb="3"
+          pt="1"
+          borderTopWidth="1px"
+          borderColor="border"
+        >
+          {spec ? (
+            <DynamicBlockForm
+              fields={spec.fields}
+              data={data}
+              onChange={setData}
+            />
+          ) : (
+            <Text fontSize="xs" color="fg.muted">
+              Unknown block type "{type}" — no editor form registered for it.
+            </Text>
+          )}
+          {saveError && (
+            <Alert.Root status="error" size="sm">
+              <Alert.Indicator />
+              <Alert.Description>{saveError}</Alert.Description>
+            </Alert.Root>
+          )}
+          <HStack>
+            <Button
+              size="sm"
+              colorPalette="quantum"
+              onClick={handleSave}
+              loading={saving}
+            >
+              Save block
+            </Button>
+            <Dialog.Root
+              open={confirmOpen}
+              onOpenChange={(d) => setConfirmOpen(d.open)}
+              role="alertdialog"
+            >
+              <Dialog.Trigger asChild>
+                <Button size="sm" variant="outline" colorPalette="red">
+                  Delete
+                </Button>
+              </Dialog.Trigger>
+              <Portal>
+                <Dialog.Backdrop />
+                <Dialog.Positioner>
+                  <Dialog.Content>
+                    <Dialog.Header>
+                      <Dialog.Title>Delete this block?</Dialog.Title>
+                    </Dialog.Header>
+                    <Dialog.Body>
+                      <Text color="fg.muted">
+                        This removes it from the live lesson immediately. This
+                        can't be undone.
+                      </Text>
+                    </Dialog.Body>
+                    <Dialog.Footer>
+                      <Dialog.ActionTrigger asChild>
+                        <Button variant="ghost">Cancel</Button>
+                      </Dialog.ActionTrigger>
+                      <Button
+                        colorPalette="red"
+                        loading={deleting}
+                        onClick={() =>
+                          deleteBlock({ variables: { id: block.id } }).then(
+                            () => onSaved(),
+                          )
+                        }
+                      >
+                        Delete
+                      </Button>
+                    </Dialog.Footer>
+                    <Dialog.CloseTrigger asChild>
+                      <CloseButton size="sm" />
+                    </Dialog.CloseTrigger>
+                  </Dialog.Content>
+                </Dialog.Positioner>
+              </Portal>
+            </Dialog.Root>
+          </HStack>
+        </VStack>
       </Collapsible.Content>
     </Collapsible.Root>
   );
 }
 
-function defaultDataFor(spec: BlockTypeSpec | undefined): Record<string, unknown> {
+function defaultDataFor(
+  spec: BlockTypeSpec | undefined,
+): Record<string, unknown> {
   if (!spec) return {};
   const data: Record<string, unknown> = {};
   for (const field of spec.fields) {
@@ -481,11 +634,15 @@ function NewBlockRow({
   blockTypes: BlockTypeSpec[];
   onCreated: () => void;
   /** null while the "add block" form is closed — nothing to preview yet. */
-  onDraftChange: (patch: { type: string; data: Record<string, unknown> } | null) => void;
+  onDraftChange: (
+    patch: { type: string; data: Record<string, unknown> } | null,
+  ) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState(blockTypes[0]?.type ?? "markdown");
-  const [data, setData] = useState<Record<string, unknown>>(() => defaultDataFor(blockTypes[0]));
+  const [data, setData] = useState<Record<string, unknown>>(() =>
+    defaultDataFor(blockTypes[0]),
+  );
   const [saveError, setSaveError] = useState<string | null>(null);
   const [createBlock, { loading }] = useCreateContentBlockMutation();
 
@@ -519,15 +676,29 @@ function NewBlockRow({
         setOpen(false);
         onCreated();
       })
-      .catch((err) => setSaveError(err instanceof Error ? err.message : "Failed to create block."));
+      .catch((err) =>
+        setSaveError(
+          err instanceof Error ? err.message : "Failed to create block.",
+        ),
+      );
   }
 
   return (
-    <VStack align="stretch" gap="2" borderWidth="1px" borderColor="border" rounded="l2" p="3">
+    <VStack
+      align="stretch"
+      gap="2"
+      borderWidth="1px"
+      borderColor="border"
+      rounded="l2"
+      p="3"
+    >
       <Field.Root maxW="56">
         <Field.Label fontSize="xs">Type</Field.Label>
         <NativeSelect.Root size="sm">
-          <NativeSelect.Field value={type} onChange={(e) => handleTypeChange(e.target.value)}>
+          <NativeSelect.Field
+            value={type}
+            onChange={(e) => handleTypeChange(e.target.value)}
+          >
             {blockTypes.map((t) => (
               <option key={t.type} value={t.type}>
                 {t.label}
@@ -537,7 +708,9 @@ function NewBlockRow({
           <NativeSelect.Indicator />
         </NativeSelect.Root>
       </Field.Root>
-      {spec && <DynamicBlockForm fields={spec.fields} data={data} onChange={setData} />}
+      {spec && (
+        <DynamicBlockForm fields={spec.fields} data={data} onChange={setData} />
+      )}
       {saveError && (
         <Alert.Root status="error" size="sm">
           <Alert.Indicator />
@@ -545,7 +718,12 @@ function NewBlockRow({
         </Alert.Root>
       )}
       <HStack>
-        <Button size="sm" colorPalette="quantum" onClick={handleCreate} loading={loading}>
+        <Button
+          size="sm"
+          colorPalette="quantum"
+          onClick={handleCreate}
+          loading={loading}
+        >
           Create block
         </Button>
         <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>
@@ -558,7 +736,10 @@ function NewBlockRow({
 
 export default function LessonEditorPage() {
   const { lessonId } = useParams();
-  const { data, loading, refetch } = useAdminLessonQuery({ variables: { id: lessonId ?? "" }, skip: !lessonId });
+  const { data, loading, refetch } = useAdminLessonQuery({
+    variables: { id: lessonId ?? "" },
+    skip: !lessonId,
+  });
   const { data: tracksData } = useAdminTracksQuery();
   const { data: blockTypesData } = useAdminBlockTypesQuery();
   const blockTypes = blockTypesData?.adminBlockTypes ?? [];
@@ -566,18 +747,27 @@ export default function LessonEditorPage() {
   const [updateBlockOrder] = useUpdateContentBlockMutation();
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [expandSignal, setExpandSignal] = useState<{
+    open: boolean;
+    token: number;
+  } | null>(null);
   const [metaDraft, setMetaDraft] = useState<LessonMetaDraft | null>(null);
-  const [blockDrafts, setBlockDrafts] = useState<Record<string, { type: string; data: Record<string, unknown> }>>(
-    {},
-  );
-  const [newBlockDraft, setNewBlockDraft] = useState<{ type: string; data: Record<string, unknown> } | null>(null);
+  const [blockDrafts, setBlockDrafts] = useState<
+    Record<string, { type: string; data: Record<string, unknown> }>
+  >({});
+  const [newBlockDraft, setNewBlockDraft] = useState<{
+    type: string;
+    data: Record<string, unknown>;
+  } | null>(null);
 
   useEffect(() => {
     if (lessonId) refetch({ id: lessonId });
   }, [lessonId, refetch]);
 
   const lesson = data?.adminLesson;
-  const sortedBlocks = lesson ? [...lesson.contentBlocks].sort((a, b) => a.order - b.order) : [];
+  const sortedBlocks = lesson
+    ? [...lesson.contentBlocks].sort((a, b) => a.order - b.order)
+    : [];
 
   // Hooks must run unconditionally on every render, so this is declared
   // before the loading/not-found early returns below even though its
@@ -589,10 +779,15 @@ export default function LessonEditorPage() {
       const newOrders = spacedOrders(orderedIds.length);
       const updates = orderedIds
         .map((id, i) => ({ id, order: newOrders[i]! }))
-        .filter(({ id, order }) => sortedBlocks.find((b) => b.id === id)?.order !== order);
-      return Promise.all(updates.map(({ id, order }) => updateBlockOrder({ variables: { id, order } }))).then(() =>
-        refetch(),
-      );
+        .filter(
+          ({ id, order }) =>
+            sortedBlocks.find((b) => b.id === id)?.order !== order,
+        );
+      return Promise.all(
+        updates.map(({ id, order }) =>
+          updateBlockOrder({ variables: { id, order } }),
+        ),
+      ).then(() => refetch());
     },
   );
 
@@ -600,7 +795,10 @@ export default function LessonEditorPage() {
   if (!lesson) return <Text>Lesson not found.</Text>;
 
   const allLessons = (tracksData?.tracks ?? []).flatMap((t) => t.lessons);
-  const nextOrder = sortedBlocks.length > 0 ? Math.max(...sortedBlocks.map((b) => b.order)) + 100 : 100;
+  const nextOrder =
+    sortedBlocks.length > 0
+      ? Math.max(...sortedBlocks.map((b) => b.order)) + 100
+      : 100;
 
   // The preview reflects whatever's currently in the editor, not just what's
   // saved: each row/field reports its live value via onDraftChange, and this
@@ -616,66 +814,106 @@ export default function LessonEditorPage() {
     prerequisites: lesson.prerequisites.map((p) => p.id),
     estimatedMinutes: metaDraft?.estimatedMinutes ?? lesson.estimatedMinutes,
   };
-  const previewBlocks: ContentBlockData[] = blockReorder.displayItems.map((block) => ({
-    id: block.id,
-    order: block.order,
-    type: blockDrafts[block.id]?.type ?? block.type,
-    data: blockDrafts[block.id]?.data ?? block.data,
-  }));
+  const previewBlocks: ContentBlockData[] = blockReorder.displayItems.map(
+    (block) => ({
+      id: block.id,
+      order: block.order,
+      type: blockDrafts[block.id]?.type ?? block.type,
+      data: blockDrafts[block.id]?.data ?? block.data,
+    }),
+  );
   if (newBlockDraft) {
     previewBlocks.push({ id: "__new__", order: nextOrder, ...newBlockDraft });
   }
 
+  // Rendered inside the sidebar (LessonMetaEditor's `actions` prop),
+  // alongside its own Save button, so all three lesson-level actions sit
+  // together — save owns lesson-meta state so it stays local to that
+  // component, these two don't so they're built here instead.
+  const actions = (
+    <>
+      <Button size="sm" variant="outline" onClick={() => setPreviewOpen(true)}>
+        Preview
+      </Button>
+      <Dialog.Root
+        open={confirmDeleteOpen}
+        onOpenChange={(d) => setConfirmDeleteOpen(d.open)}
+        role="alertdialog"
+      >
+        <Dialog.Trigger asChild>
+          <IconButton
+            aria-label="Delete lesson"
+            size="sm"
+            variant="outline"
+            colorPalette="red"
+          >
+            <LuTrash2 />
+          </IconButton>
+        </Dialog.Trigger>
+        <Portal>
+          <Dialog.Backdrop />
+          <Dialog.Positioner>
+            <Dialog.Content>
+              <Dialog.Header>
+                <Dialog.Title>Delete "{lesson.title}"?</Dialog.Title>
+              </Dialog.Header>
+              <Dialog.Body>
+                <Text color="fg.muted">
+                  This deletes the lesson and all its content blocks
+                  permanently. This can't be undone.
+                </Text>
+              </Dialog.Body>
+              <Dialog.Footer>
+                <Dialog.ActionTrigger asChild>
+                  <Button variant="ghost">Cancel</Button>
+                </Dialog.ActionTrigger>
+                <Button
+                  colorPalette="red"
+                  loading={deletingLesson}
+                  onClick={() =>
+                    deleteLesson({ variables: { id: lesson.id } }).then(() =>
+                      history.back(),
+                    )
+                  }
+                >
+                  Delete
+                </Button>
+              </Dialog.Footer>
+              <Dialog.CloseTrigger asChild>
+                <CloseButton size="sm" />
+              </Dialog.CloseTrigger>
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
+      </Dialog.Root>
+    </>
+  );
+
   return (
     <VStack align="stretch" gap="6">
-      <HStack justify="end">
-        <Button size="sm" variant="outline" onClick={() => setPreviewOpen(true)}>
-          Preview lesson
-        </Button>
-        <Dialog.Root open={confirmDeleteOpen} onOpenChange={(d) => setConfirmDeleteOpen(d.open)} role="alertdialog">
-          <Dialog.Trigger asChild>
-            <Button size="sm" variant="outline" colorPalette="red">
-              Delete lesson
-            </Button>
-          </Dialog.Trigger>
-          <Portal>
-            <Dialog.Backdrop />
-            <Dialog.Positioner>
-              <Dialog.Content>
-                <Dialog.Header>
-                  <Dialog.Title>Delete "{lesson.title}"?</Dialog.Title>
-                </Dialog.Header>
-                <Dialog.Body>
-                  <Text color="fg.muted">
-                    This deletes the lesson and all its content blocks permanently. This can't be undone.
-                  </Text>
-                </Dialog.Body>
-                <Dialog.Footer>
-                  <Dialog.ActionTrigger asChild>
-                    <Button variant="ghost">Cancel</Button>
-                  </Dialog.ActionTrigger>
-                  <Button
-                    colorPalette="red"
-                    loading={deletingLesson}
-                    onClick={() => deleteLesson({ variables: { id: lesson.id } }).then(() => history.back())}
-                  >
-                    Delete
-                  </Button>
-                </Dialog.Footer>
-                <Dialog.CloseTrigger asChild>
-                  <CloseButton size="sm" />
-                </Dialog.CloseTrigger>
-              </Dialog.Content>
-            </Dialog.Positioner>
-          </Portal>
-        </Dialog.Root>
-      </HStack>
-
-      <LessonMetaEditor lesson={lesson} allLessons={allLessons} onSaved={() => refetch()} onDraftChange={setMetaDraft}>
+      <LessonMetaEditor
+        lesson={lesson}
+        allLessons={allLessons}
+        onSaved={() => refetch()}
+        onDraftChange={setMetaDraft}
+        actions={actions}
+      >
         <Separator mb="5" />
-        <Heading size="sm" mb="3">
-          Content blocks
-        </Heading>
+        <HStack justify="space-between" mb="3">
+          <Heading size="sm">Content blocks</Heading>
+          <Button
+            size="xs"
+            variant="ghost"
+            onClick={() =>
+              setExpandSignal((prev) => ({
+                open: !(prev?.open ?? false),
+                token: (prev?.token ?? 0) + 1,
+              }))
+            }
+          >
+            {expandSignal?.open ? "Collapse all" : "Expand all"}
+          </Button>
+        </HStack>
         <VStack align="stretch" gap="3">
           {blockReorder.displayItems.map((block) => (
             <ContentBlockRow
@@ -686,7 +924,10 @@ export default function LessonEditorPage() {
               onDragStart={() => blockReorder.startDrag(block.id)}
               onDragEnd={blockReorder.endDrag}
               onDrop={() => blockReorder.onDropTarget(block.id)}
-              onDraftChange={(patch) => setBlockDrafts((prev) => ({ ...prev, [block.id]: patch }))}
+              onDraftChange={(patch) =>
+                setBlockDrafts((prev) => ({ ...prev, [block.id]: patch }))
+              }
+              expandSignal={expandSignal}
             />
           ))}
           <NewBlockRow
