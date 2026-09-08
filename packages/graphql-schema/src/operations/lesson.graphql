@@ -1,0 +1,30 @@
+query Lesson($slug: String!) {
+  lesson(slug: $slug) {
+    slug
+    title
+    summary
+    layout
+    order
+    estimatedMinutes
+    track {
+      slug
+    }
+    prerequisites {
+      slug
+      title
+      summary
+      layout
+      order
+      estimatedMinutes
+      track {
+        slug
+      }
+    }
+    contentBlocks {
+      id
+      order
+      type
+      data
+    }
+  }
+}

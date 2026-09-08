@@ -1,0 +1,15 @@
+query Tracks {
+  tracks {
+    slug
+    title
+    order
+    lessons {
+      slug
+      title
+      summary
+      layout
+      order
+      estimatedMinutes
+    }
+  }
+}

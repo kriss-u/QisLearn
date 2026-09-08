@@ -7,33 +7,43 @@ Guidance for AI coding agents (and human contributors) working in this repositor
 This repo is a pnpm + Turborepo monorepo (`apps/web`, `apps/api`,
 `apps/llm-service`, `packages/*`, see the root `pnpm-workspace.yaml` /
 `turbo.json`). **Everything below this point describes `apps/web`**, the
-frontend, which is still the only functional part of the system: every
-relative path in this file (`src/...`, `vite.config.ts`, etc.) is relative to
-`apps/web/`, not the repo root. Run frontend commands via
-`pnpm --filter @qislearn/web <script>` from the repo root, or `cd apps/web`
-and use `npm run <script>` directly (see `apps/web/package.json`, unchanged
-from before the monorepo move).
+frontend: every relative path in this file (`src/...`, `vite.config.ts`,
+etc.) is relative to `apps/web/`, not the repo root. Run frontend commands
+via `pnpm --filter @qislearn/web <script>` from the repo root, or
+`cd apps/web` and use `npm run <script>` directly.
 
-The backend (`apps/api`, `apps/llm-service`, `packages/db`, `packages/config`,
-`packages/graphql-schema`) is at an early scaffolding stage: stub servers
-exist and typecheck/build/lint through Turborepo, but no real GraphQL schema,
-auth, or content migration has landed. It is not wired into `apps/web` yet.
-See **[docs/BACKEND_PLAN.md](./docs/BACKEND_PLAN.md)** for the architecture
+The backend (`apps/api`, `packages/db`, `packages/authz`,
+`packages/graphql-schema`) is wired into `apps/web` as of the SSR/GraphQL
+cutover: lesson content lives in Postgres (`track`/`lesson`/`content_block`
+tables) and is served over GraphQL from `apps/api`, which `apps/web`
+server-renders through. Auth (better-auth) and authorization (OpenFGA) exist
+on the backend from an earlier phase but have no UI in `apps/web` yet, and
+user progress/code snapshots are still Dexie-only (not yet migrated to the
+backend). `apps/llm-service` is still an unwired stub. See
+**[docs/BACKEND_PLAN.md](./docs/BACKEND_PLAN.md)** for the architecture
 decision record and phased roadmap before adding to the backend; don't
 introduce backend conventions that contradict it without updating that doc
 first.
+
+**Local dev needs the whole stack, not just `apps/web`**, since lesson
+content is now fetched from `apps/api`/Postgres at request time (SSR) —
+`cd` to the repo root and see `README.md`'s Getting Started for the
+one-command `docker compose up -d` flow (or run `apps/api`/`apps/web` on
+the host against `docker compose up -d postgres openfga`). A blank/erroring
+`apps/web` almost always means `apps/api` or Postgres isn't reachable, not
+a frontend bug — check that first.
 
 ## What this is
 
 QisLearn is an interactive course for learning quantum computing with Qiskit,
 covering everything from "what is a qubit" through entanglement and beyond.
-Today (within `apps/web`) it is still browser-only with no Python execution:
-lesson content, progress, and code snapshots all live in the browser (MDX
-content compiled at build time, user state in IndexedDB via Dexie). Python
-code the learner writes is *statically parsed* (via `py-ast`) to check their
-circuit, not executed. `docs/BACKEND_PLAN.md` describes the in-progress move
-of lesson content and user data to a Postgres backend; until that migration
-lands, the description below is accurate.
+There's still no real Python execution: code the learner writes is
+*statically parsed* (via `py-ast`) to check their circuit, not executed.
+Lesson content (the old MDX bodies) has been migrated to Postgres and is
+served over GraphQL, server-rendered by `apps/web` (`ssr: true`); user
+progress and saved code are still browser-only (Dexie/IndexedDB) pending a
+later migration to the backend — see `docs/BACKEND_PLAN.md` for what's
+already landed vs. still planned.
 
 Read `README.md` first for the product framing. This file is about how the
 `apps/web` codebase is put together and the conventions to follow when
@@ -42,13 +52,21 @@ changing it.
 ## Stack
 
 - **Build**: Vite 8 via React Router's framework-mode plugin (`@react-router/dev/vite`),
-  in SPA mode (`ssr: false` in `react-router.config.ts`, `appDirectory: "src/app"`) — no
-  server, still a purely static site. `npm run build` runs `react-router build` (which
-  writes `build/client` + a throwaway `build/server` used only to prerender the shell),
-  then flattens `build/client` into `dist/` and deletes `build/`, since Cloudflare Pages'
-  configured output directory is `dist`. Don't add `@vitejs/plugin-react` back alongside
-  `reactRouter()` — both inject a Fast Refresh runtime and collide in dev
+  real SSR (`ssr: true` in `react-router.config.ts`, `appDirectory: "src/app"`) — no
+  more build-time prerendering/static-path enumeration; every route renders
+  per-request on a Node server that needs `apps/api` reachable at runtime, not
+  just at build. `npm run build` runs `react-router build`, producing
+  `build/client` (static assets) and `build/server` (the SSR handler, run via
+  `npm run start` → `react-router-serve ./build/server/index.js`). Don't add
+  `@vitejs/plugin-react` back alongside `reactRouter()` — both inject a Fast
+  Refresh runtime and collide in dev
   (`Identifier 'RefreshRuntime' has already been declared`).
+  `vite.config.ts` also force-bundles `@apollo/client` for the SSR build
+  (`ssr.noExternal`): that package ships no `package.json` "exports" map, so
+  Vite's default SSR externalization leaves a bare `import {...} from
+  "@apollo/client"` for Node to resolve, and Node's CJS interop can't
+  statically detect its named exports, crashing at server startup. Don't
+  remove that `noExternal` entry without re-testing `pnpm build && pnpm start`.
 - **Language**: TypeScript 7, React 19
 - **UI**: Chakra UI v3 (Ark UI + Panda CSS under the hood: compound component API,
   e.g. `Slider.Root` / `Slider.Track` / `Slider.Thumb`, not the old v2 monolithic
@@ -56,16 +74,16 @@ changing it.
   (this is Chakra's official snippet, keep it as-is rather than refactoring).
 - **Routing**: `react-router` v8, framework mode (single package, no `react-router-dom`).
   Routes are declared in `src/app/routes.ts`; `src/app/root.tsx` is the root layout
-  (HTML document `Layout` export + the default-exported `App` component that wraps
-  `<Outlet/>` in `AppShell`/`Provider` and runs the store-hydration effects). Route
-  modules (`src/app/pages/HomePage.tsx`, `LessonPage.tsx`) use a default export, per
-  framework-mode convention — framework mode code-splits each route automatically, so
-  there's no manual top-level `lazy()`/`Suspense` for routes. `LessonPage`'s *own*
-  per-lesson MDX content (`loadLessonContent`) is a separate, still-manual lazy-load
-  keyed on `lesson.id`, since switching `:lessonId` doesn't change which route matched.
-  `npm run dev` / `preview` now go through the `react-router` CLI / `serve -s dist`
-  rather than raw `vite dev` / `vite preview` (the latter doesn't resolve this project's
-  flattened `dist` output correctly once the framework-mode plugin is in the mix).
+  (HTML document `Layout` export + the default-exported `Root` component that wraps
+  `<Outlet/>` in `ApolloProvider`/`AppShell`/`Provider` and runs the store-hydration
+  effects). Route modules (`src/app/pages/HomePage.tsx`, `LessonPage.tsx`) export a
+  `loader` (async, fetches GraphQL data server-side — see Content model below),
+  `meta: MetaFunction<typeof loader>` (reads `loaderData`, not a `data` param), and
+  a default-exported component reading `useLoaderData<typeof loader>()`. `root.tsx`
+  has its own `loader` for sitewide nav data (`AppShell`'s sidebar), threaded down
+  as a `tracks` prop rather than read from a shared module import. `npm run dev` /
+  `start` go through the `react-router` CLI / `react-router-serve` rather than raw
+  `vite dev` / a static file server.
 - **State**:
   - `zustand` for in-memory UI/app state (`src/store`)
   - `Dexie` for persisted state in IndexedDB (`src/db`): lesson progress and saved
@@ -140,43 +158,70 @@ changing it.
   - `three.js` / `@react-three/fiber` / `@react-three/drei` for the Bloch sphere
   - `plotly.js` / `react-plotly.js` for amplitude bar charts
   - Chakra `Progress` for measurement probability bars
-- **Content**: `@mdx-js/rollup` compiles lesson `.mdx` files to React components at
-  build/dev time, with `remark-frontmatter` (strips the YAML metadata block),
-  `remark-gfm`, `remark-math`, and `rehype-katex` in its pipeline (see
-  `vite.config.ts`). `react-markdown` + the same `remark-gfm`/`remark-math`/
-  `rehype-katex` plugins power the separate `Markdown` component, used to render
-  short prop-string content (quiz question/choices, exercise prompt/hints) that
-  arrives as plain strings rather than as an MDX file.
+- **Content**: lesson bodies are `content_block` rows fetched from `apps/api` over
+  GraphQL (see Content model below), rendered by `ContentBlockList.tsx` via
+  `react-markdown` (`remark-gfm`, `remark-math`, `rehype-katex`) for `markdown`
+  blocks and `mdxComponents.ts`'s component map (keyed by block `type`) for
+  everything else. The same `Markdown` component also renders short
+  prop-string content (quiz question/choices, exercise prompt/hints).
+  `apps/web` no longer compiles or imports `.mdx` files at all (`@mdx-js/rollup`
+  was removed from `vite.config.ts`); the `.mdx` files under
+  `src/content/lessons/` are now purely the **authoring source for the
+  migration script** (`packages/db/scripts/migrate-mdx.ts`), not something the
+  app reads directly. See Content model below for the authoring workflow.
 
 ## Directory map
 
 ```
 src/
   app/                    App shell wiring: router, page components
-    pages/                  HomePage, LessonPage (continuous-scroll lesson view)
+    pages/                  HomePage, LessonPage (continuous-scroll lesson view),
+                             both export loader/meta/default — see Routing above
   components/
+    ClientOnly.tsx          defers children to after first client effect; wrap
+                             any SSR-unsafe/browser-only widget in this
     ui/                   Chakra provider + color-mode snippets (framework glue)
-    layout/                AppShell (sidebar nav + header), ResetDataButton
+    layout/                AppShell (sidebar nav + header, takes tracks as a
+                             prop now, not a module import), ResetDataButton
     editor/                 PyEditor (CodeMirror wrapper)
     viz/                    CircuitDiagram, BlochSphere, StateVectorChart,
                              ProbabilityBars, ShotsHistogram, GateTimeline,
                              VizSection, gateStyles
     lesson/
-      mdx/                   CodeExercise, Quiz, Visualization, Measurement: the
-                             tags authors drop into lesson .mdx bodies, plus
-                             MdxCard (shared card chrome)
-      mdxComponents.ts        the `components` map passed to every compiled lesson
+      ContentBlockList.tsx    renders a lesson's content_block[] (from GraphQL):
+                             markdown blocks through Markdown, everything else
+                             looked up by type in mdxComponents
+      mdx/                   CodeExercise, Quiz, Visualization, Measurement, plus
+                             several one-off lesson widgets (OracleFigure,
+                             ComplexPlaneExplorer, etc) and MdxCard (shared
+                             card chrome) — same components, now driven by
+                             content_block.data instead of compiled MDX props
+      mdxComponents.ts        the block-type -> component map (was the MDX
+                             `components` prop; same map, new consumer)
       markdownElements.tsx    h1/p/code/... overrides shared by mdxComponents.ts
                              and the standalone Markdown.tsx
-      Markdown.tsx            renders short prop-string content (quiz text,
-                             exercise prompt/hints), NOT the lesson body itself
+      Markdown.tsx            renders markdown-string content: both a
+                             `markdown` content_block's text and short
+                             prop strings (quiz text, exercise prompt/hints)
       LessonContext.tsx       supplies lessonId to <CodeExercise/> for snapshot keys
-      LessonLayout.tsx        header (title/badges) wrapping the MDX body
-  content/                Lesson .mdx files + zod frontmatter schema + registry
-    lessons/<nn-slug>.mdx
-    schema.ts               LessonFrontmatterSchema, Circuit/Gate, QuizChoice, etc.
-    index.ts                 lesson registry; see Content model below
+      LessonLayout.tsx        header (title/badges) wrapping the lesson body
+  content/                Content types + GraphQL-backed data fetching
+    lessons/<nn-slug>.mdx   legacy authoring source, see Content model below
+    schema.ts               LessonFrontmatter, Circuit/Gate, QuizChoice, etc
+                             (still the prop-shape types content_block.data
+                             conforms to; unrelated to fetching now)
+    index.ts                 getTracks/getAllLessons/getLesson/getNextLesson:
+                             async, fetch apps/api's GraphQL endpoint; see
+                             Content model below. No caching (see Stack: SSR)
+  lib/
+    graphqlClient.ts         plain fetch-based GraphQL POST, used by loaders
+                             (content/index.ts) and build-time scripts alike
+    apolloClient.ts           createApolloClient(): for future client-initiated
+                             hooks/mutations (wired via ApolloProvider in
+                             root.tsx) — NOT used for page data; loaders/
+                             graphqlClient.ts own that
   db/                     Dexie database, zod models, repository helpers
+                           (still the only progress/code-snapshot store)
   features/
     quantum/                Complex numbers, gate matrices, statevector simulate,
                              Bloch vector, sampleShots (client-side shot sampling)
@@ -187,6 +232,21 @@ src/
 
 ## Content model (how a lesson is built)
 
+**Two-stage pipeline, since the GraphQL cutover:** author a lesson as a
+`.mdx` file (as described in this whole section, unchanged), then run
+`pnpm --filter @qislearn/db migrate:mdx` (`packages/db/scripts/migrate-mdx.ts`)
+to parse every `.mdx` file under `src/content/lessons/` and load it into
+Postgres (`track`/`lesson`/`lesson_prerequisite`/`content_block` tables,
+truncated and fully re-inserted each run — it's a one-shot batch load, not
+an incremental sync). `apps/web` reads from Postgres via `apps/api`'s
+GraphQL API at request time (`content/index.ts`); it never reads `.mdx`
+files itself. **So: editing a `.mdx` file has no visible effect until you
+re-run the migration script.** This is the authoring format, not the
+runtime format — everything below about frontmatter, tags, LaTeX
+conventions, and stable ids describes the `.mdx` source, which is exactly
+what the migration script expects and what a learner will eventually see
+once it's re-migrated.
+
 Each lesson is a single `.mdx` file under `src/content/lessons/`. A YAML
 frontmatter block gives its metadata (validated against `LessonFrontmatterSchema`
 in `src/content/schema.ts`): `id`, `track`, `order`, `title`, `summary`, `layout`
@@ -194,7 +254,14 @@ in `src/content/schema.ts`): `id`, `track`, `order`, `title`, `summary`, `layout
 width/framing in `LessonLayout.tsx`), `estimatedMinutes`, `prerequisites`. The body
 below the frontmatter is free-form MDX: normal Markdown prose (LaTeX via `$...$` /
 `$$...$$`, fenced ` ```python ` blocks get real syntax highlighting via
-`MarkdownCodeBlock`), interspersed with three custom tags:
+`MarkdownCodeBlock`), interspersed with custom tags — four generic ones used
+across many lessons, plus one-off bespoke widgets particular lessons bring in
+(`OracleFigure`, `ComplexPlaneExplorer`, `TensorProductBuilder`,
+`GroverRotationPlayground`, `QFTPhaseWheel`, `PhaseEstimationPlayground`,
+`ModularExponentiationExplorer` — see `mdxComponents.ts` for the full list).
+Each becomes its own `content_block` row after migration, `type` set to the
+tag's exact name (`"markdown"` for plain prose between tags). The four
+generic ones:
 
 - `<CodeExercise id="..." prompt="..." starterCode={\`...\`} expectedCircuit={{...}}
   hints={[...]} />`: starter code, optional `expectedCircuit` checked via
@@ -274,22 +341,25 @@ shift if the surrounding MDX content is edited, which would orphan a learner's
 saved answer/code under a stale key. Pick a stable, lesson-unique slug and don't
 rename it once a lesson has shipped.
 
-Lessons render **continuously** (no per-step pager): `LessonPage.tsx` lazily loads
-the compiled MDX component for the current route and renders the whole thing at
-once, with `mdxComponents.ts` supplying both the markdown element overrides and the
-three tags above. Progress is per-lesson, not per-step: visiting a lesson marks it
-`in-progress`; an `IntersectionObserver` on a sentinel at the end of the content
-marks it `completed` once the learner scrolls there (see `store/progressStore.ts`;
-`setStatus` also refuses to downgrade a `completed` lesson back to `in-progress`).
+Lessons render **continuously** (no per-step pager): `LessonPage`'s `loader`
+fetches the lesson's full `content_block` list in one GraphQL request, and
+`ContentBlockList` renders it all at once (`mdxComponents.ts` supplying the
+tag components, `Markdown` the markdown blocks). Progress is per-lesson, not
+per-step: visiting a lesson marks it `in-progress`; an `IntersectionObserver`
+on a sentinel at the end of the content marks it `completed` once the
+learner scrolls there (see `store/progressStore.ts`; `setStatus` also
+refuses to downgrade a `completed` lesson back to `in-progress`).
 
 To add a lesson: create `src/content/lessons/<order-slug>.mdx` with frontmatter
 (unique `id`, `order`, `prerequisites` naming other lessons' `id`s if applicable),
-then write the body. The registry (`src/content/index.ts`) picks it up
-automatically via `import.meta.glob`; no manual registration needed. If the
-frontmatter doesn't match `LessonFrontmatterSchema`, it fails loudly (zod throws)
-rather than silently rendering something broken; the MDX body itself isn't
-schema-validated (it's compiled JSX, not data), so a broken `<CodeExercise .../>`
-prop shape only fails at render/type-check time, not at content-load time.
+write the body, then run `pnpm --filter @qislearn/db migrate:mdx` to load it
+(and every other lesson) into Postgres — nothing picks it up automatically
+otherwise. The migration script fails loudly on invalid frontmatter or an
+unresolvable `prerequisites` slug, but does **not** schema-validate each
+tag's props the way `LessonFrontmatterSchema` validates frontmatter (it
+evaluates whatever JS expression each JSX attribute contains and stores it
+as-is in `content_block.data`); a malformed `<CodeExercise .../>` prop shape
+only surfaces at render time in `apps/web`, not at migration time.
 
 **`id` vs. `order`, and why neither is a sequential integer suffix**: `id` is a
 stable, purely descriptive slug (e.g. `algorithms-oracles`, not
@@ -298,7 +368,7 @@ answers (`lessonId::exerciseId` / `lessonId::quizId`) and the target of other
 lessons' `prerequisites` arrays, so it must never be renumbered once a lesson has
 shipped, for the same reason `CodeExercise`/`Quiz` ids must stay stable (see
 above). `order` is the only field that encodes position, is a plain `number`
-compared **globally across all tracks** (`content/index.ts`'s `loadLessonEntries`
+compared **globally across all tracks** (`content/index.ts`'s `getAllLessons`
 sorts the full lesson list by `order`, and `getNextLesson` walks that same flat
 list for the lesson-to-lesson "next" link, so `order` values must be globally
 distinct and monotonic across tracks, not just unique within one track), and uses
@@ -309,18 +379,17 @@ and if that gap fills too, bisect again (125 or 175). The `.mdx` filename mirror
 superposition.mdx`); unlike `id`, nothing in code reads the filename, so renaming
 one when inserting a lesson is just a `git mv`, not a data-migration concern.
 
-**Why frontmatter is read from raw text, not the compiled MDX export**: an earlier
-version read frontmatter via `remark-mdx-frontmatter`'s generated `frontmatter`
-export, eagerly imported for the lesson list/sidebar. That pulled every lesson's
-*entire compiled body* (including whichever of `CodeExercise`/`Visualization` it
-uses) into the same eagerly-loaded chunk, and Rollup logged
-`INEFFECTIVE_DYNAMIC_IMPORT` because the same module was then also dynamically
-imported for lazy per-lesson loading, defeating per-lesson code-splitting as the
-course grows. `content/index.ts` now eagerly imports each `.mdx` file's raw source
-text (`query: "?raw"`) and parses just the frontmatter block itself with the `yaml`
-package, keeping that eager read cheap and letting `loadLessonContent()`'s dynamic
-`import()` actually split each lesson's body into its own chunk. Don't revert this
-to reading the compiled export's `frontmatter`; reintroduces the bundling bug.
+**How the migration script parses a `.mdx` file** (`packages/db/scripts/migrate-mdx.ts`):
+frontmatter via a `remark-frontmatter`-augmented `unified`/`remark-parse`
+pipeline (matching `apps/web/vite.config.ts`'s old plugin set, so parsing
+stays consistent with what the source was originally authored/previewed
+against), walking the resulting mdast tree's top-level nodes in order —
+consecutive non-JSX nodes get merged into one `markdown` block (original
+source text preserved byte-for-byte via each node's position offsets), each
+top-level JSX tag becomes its own block. JSX expression attributes
+(`circuit={{...}}`) are evaluated via `new Function(...)`, safe only because
+lesson `.mdx` files are repo-controlled content, not user input; don't reuse
+that evaluation approach anywhere that touches untrusted strings.
 
 ## Qiskit conventions: read this before touching simulation or diagram code
 
@@ -378,44 +447,62 @@ Qiskit behavior for that gate/feature, not generic textbook convention.
   flat `<Alert status="success">` API from Chakra v2. Check
   `node_modules/@chakra-ui/react/dist/types/components/<name>/namespace.d.ts` when
   unsure of a component's shape rather than guessing from v2 memory.
-- **Heavy viz/editor libraries are lazy-loaded.** `three`/`@react-three/*`,
-  `plotly.js`/`react-plotly.js`, and CodeMirror are large; they're pulled in via
-  `React.lazy` + `Suspense` at their point of use (see `mdx/Visualization.tsx` for
-  Bloch/Plotly, `mdx/CodeExercise.tsx` and `MarkdownCodeBlock.tsx` for PyEditor) and
-  split into separate chunks (`vite.config.ts` `manualChunks`). `mdxComponents.ts`
-  itself is imported eagerly by every lesson page, so it must only ever hold
-  lightweight component *definitions*; keep new heavy deps behind a local
-  `React.lazy` inside the component that needs them, not at that module's top level.
+- **Heavy viz/editor libraries are lazy-loaded, and gated client-side-only under SSR.**
+  `three`/`@react-three/*`, `plotly.js`/`react-plotly.js`, and CodeMirror are large;
+  they're pulled in via `React.lazy` + `Suspense` at their point of use (see
+  `mdx/Visualization.tsx` for Bloch/Plotly, `mdx/CodeExercise.tsx` for PyEditor) and
+  split into separate chunks (`vite.config.ts` `manualChunks`). Since `ssr: true`,
+  each of those `Suspense` boundaries is additionally wrapped in
+  `<ClientOnly fallback={<Skeleton .../>}>` (`src/components/ClientOnly.tsx`): none
+  of the three libraries resolve correctly under Node's SSR render (plotly.js's ESM
+  build does an extensionless import Node's loader rejects; three.js/CodeMirror
+  assume browser globals), so `ClientOnly` defers rendering them until after the
+  first client-side effect, matching the server-rendered fallback exactly (no
+  hydration mismatch). Follow this pattern for any new heavy/browser-only widget:
+  `Suspense` alone is not enough once SSR is on, wrap it in `ClientOnly` too.
+  `mdxComponents.ts` itself is imported eagerly by every lesson page, so it must
+  only ever hold lightweight component *definitions*; keep new heavy deps behind a
+  local `React.lazy` inside the component that needs them, not at that module's
+  top level.
 
 ## Commands
 
-Run from `apps/web/` directly, or from the repo root via
+Needs the backend reachable first (`docker compose up -d postgres openfga`
+from the repo root, plus `apps/api` running — see the repo root `README.md`
+for the one-command `docker compose up -d` full-stack option). Run from
+`apps/web/` directly, or from the repo root via
 `pnpm --filter @qislearn/web <script>`:
 
 ```
-npm run dev       # Vite dev server
-npm run build     # tsc -b && vite build
+npm run dev       # react-router dev (Vite dev server, SSR)
+npm run build     # tsc -b && react-router build -> build/client + build/server
+npm run start     # react-router-serve ./build/server/index.js (run the production build)
 npm run lint       # oxlint
-npm run preview    # preview the production build
 ```
 
 `pnpm dev` / `pnpm build` / `pnpm lint` / `pnpm typecheck` from the repo root
-run the same scripts across every app/package via Turborepo (currently just
-`apps/web` plus the trivial `apps/api`/`apps/llm-service` stubs).
+run the same scripts across every app/package via Turborepo (`apps/web`,
+`apps/api`, `packages/db`, `packages/graphql-schema`, `packages/authz`;
+`apps/llm-service` is still a trivial stub).
 
 ## Verifying changes
 
 - `tsc -b`, `npm run build`, and `npm run lint` (oxlint), run from `apps/web/`,
-  are the baseline checks; run them after any non-trivial change.
+  are the baseline checks; run them after any non-trivial change. `npm run
+  build` needs `apps/api`/Postgres reachable now (it's an SSR build, not a
+  static prerender) — a build failure with a GraphQL-shaped stack trace
+  usually means the backend isn't up, not a real bug.
 - Don't verify in a real browser (chromium-cli, Playwright, or similar) unless the
-  user explicitly asks for it. It's fine to start a dev server (`npx vite --port
-  <port>`) purely to `curl` module paths and confirm they transform without error
-  (compile/syntax-error smoke test); that's not the same as browser verification
-  and doesn't need permission.
-- If you start a dev server yourself, kill only the exact PID you started. Never
-  pattern-kill (`pkill -f vite`, etc.); another session or the user may already
-  have a dev server running (they may be watching it live), and a pattern kill has
-  no way to distinguish "mine" from "theirs."
+  user explicitly asks for it. It's fine to start the dev/production server
+  yourself purely to `curl` routes and confirm they respond without error
+  (e.g. check a lesson page's HTTP status and rendered `<title>`); that's not
+  the same as browser verification and doesn't need permission.
+- If you start a dev/production server or `docker compose up` yourself, stop
+  only what you started (the exact PID, or `docker compose stop <service>`
+  for just the services you brought up). Never pattern-kill (`pkill -f vite`,
+  etc.) or `docker compose down` the whole stack; another session or the user
+  may already have something running (they may be watching it live), and a
+  broad kill/down has no way to distinguish "mine" from "theirs."
 
 ## Known limitations / natural next steps
 

@@ -4,10 +4,13 @@ import "@fontsource/ibm-plex-sans/600.css";
 import "@fontsource/ibm-plex-sans/700.css";
 import "@fontsource/fira-code/400.css";
 import "@fontsource/fira-code/500.css";
-import { useEffect, type PropsWithChildren, type ReactNode } from "react";
-import { Links, Meta, Outlet, Scripts, ScrollRestoration, type MetaFunction } from "react-router";
+import { ApolloProvider } from "@apollo/client";
+import { useEffect, useMemo, type PropsWithChildren, type ReactNode } from "react";
+import { Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData, type MetaFunction } from "react-router";
 import { AppShell } from "../components/layout/AppShell";
 import { Provider } from "../components/ui/provider";
+import { getTracks } from "../content";
+import { createApolloClient } from "../lib/apolloClient";
 import { useProgressStore } from "../store/progressStore";
 import { useSettingsStore } from "../store/settingsStore";
 import { buildPageMeta } from "../lib/seo";
@@ -22,6 +25,12 @@ export const meta: MetaFunction = () =>
       "Interactive, browser-based lessons for learning quantum computing with Qiskit — circuits, the Bloch sphere, statevectors, and hands-on code exercises. No backend, no install, runs entirely in your browser.",
     path: "/",
   });
+
+// Sitewide nav data (AppShell's sidebar) needed on every route, fetched once
+// per request here rather than duplicated in each page's own loader.
+export async function loader() {
+  return { tracks: await getTracks() };
+}
 
 export function Layout({ children }: PropsWithChildren) {
   return (
@@ -44,8 +53,14 @@ export function Layout({ children }: PropsWithChildren) {
 }
 
 export default function Root(): ReactNode {
+  const { tracks } = useLoaderData<typeof loader>();
   const hydrate = useProgressStore((s) => s.hydrate);
   const hydrateSettings = useSettingsStore((s) => s.hydrate);
+  // Fresh per request on the server, stable for the session in the browser
+  // — see apolloClient.ts. This provider is for client-initiated hooks
+  // (mutations, future interactive queries); page data still comes from
+  // route loaders via useLoaderData, not from this client.
+  const apolloClient = useMemo(() => createApolloClient(), []);
 
   useEffect(() => {
     hydrate();
@@ -53,10 +68,12 @@ export default function Root(): ReactNode {
   }, [hydrate, hydrateSettings]);
 
   return (
-    <Provider>
-      <AppShell>
-        <Outlet />
-      </AppShell>
-    </Provider>
+    <ApolloProvider client={apolloClient}>
+      <Provider>
+        <AppShell tracks={tracks}>
+          <Outlet />
+        </AppShell>
+      </Provider>
+    </ApolloProvider>
   );
 }

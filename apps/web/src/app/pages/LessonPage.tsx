@@ -1,19 +1,25 @@
-import { Box, Button, CloseButton, Container, Dialog, HStack, Portal, Skeleton, Text } from "@chakra-ui/react";
-import { Suspense, lazy, useMemo, useState } from "react";
+import { Box, Button, CloseButton, Container, Dialog, HStack, Portal, Text } from "@chakra-ui/react";
+import { useState } from "react";
 import { LuArrowRight } from "react-icons/lu";
-import { Navigate, useNavigate, useParams, type MetaFunction } from "react-router";
-import { getLesson, getNextLesson, loadLessonContent } from "../../content";
+import { Navigate, useLoaderData, useNavigate, type LoaderFunctionArgs, type MetaFunction } from "react-router";
+import { getLesson, getNextLesson, type LessonSummary } from "../../content";
 import type { LessonFrontmatter } from "../../content/schema";
+import { ContentBlockList } from "../../components/lesson/ContentBlockList";
 import { LessonLayout, getLessonMaxWidth } from "../../components/lesson/LessonLayout";
 import { LessonProvider } from "../../components/lesson/LessonContext";
 import { PrerequisitesList } from "../../components/lesson/PrerequisitesList";
 import { LessonProgressProvider, useLessonProgress } from "../../components/lesson/LessonProgressContext";
-import { mdxComponents } from "../../components/lesson/mdxComponents";
 import { useProgressStore } from "../../store/progressStore";
 import { SITE_URL, buildPageMeta } from "../../lib/seo";
 
-export const meta: MetaFunction = ({ params }) => {
-  const lesson = getLesson(params.lessonId ?? "");
+export async function loader({ params }: LoaderFunctionArgs) {
+  const lessonId = params.lessonId ?? "";
+  const [lesson, next] = await Promise.all([getLesson(lessonId), getNextLesson(lessonId)]);
+  return { lesson, next };
+}
+
+export const meta: MetaFunction<typeof loader> = ({ loaderData }) => {
+  const lesson = loaderData?.lesson;
   if (!lesson) return buildPageMeta({ title: "QisLearn", description: "QisLearn lesson.", path: "/" });
 
   const path = `/lesson/${lesson.id}`;
@@ -36,7 +42,7 @@ export const meta: MetaFunction = ({ params }) => {
   });
 };
 
-function LessonNextAction({ lessonId, next }: { lessonId: string; next: LessonFrontmatter | undefined }) {
+function LessonNextAction({ lessonId, next }: { lessonId: string; next: LessonSummary | undefined }) {
   const navigate = useNavigate();
   const setStatus = useProgressStore((s) => s.setStatus);
   const { allExercisesCorrect, contentReady } = useLessonProgress();
@@ -109,26 +115,30 @@ function LessonNextAction({ lessonId, next }: { lessonId: string; next: LessonFr
 }
 
 export default function LessonPage() {
-  const { lessonId = "" } = useParams();
-  const lesson = getLesson(lessonId);
-
-  const LessonContent = useMemo(() => lazy(() => loadLessonContent(lessonId)), [lessonId]);
+  const { lesson, next } = useLoaderData<typeof loader>();
 
   if (!lesson) {
     return <Navigate to="/" replace />;
   }
 
-  const next = getNextLesson(lesson.id);
+  const lessonFrontmatter: LessonFrontmatter = {
+    id: lesson.id,
+    track: lesson.track,
+    order: lesson.order,
+    title: lesson.title,
+    summary: lesson.summary,
+    layout: lesson.layout,
+    prerequisites: lesson.prerequisites.map((p) => p.id),
+    estimatedMinutes: lesson.estimatedMinutes,
+  };
 
   return (
     <Box py={{ base: "6", md: "10" }}>
       <LessonProvider value={{ lessonId: lesson.id }}>
         <LessonProgressProvider lessonId={lesson.id}>
-          <LessonLayout lesson={lesson}>
-            <PrerequisitesList prerequisiteIds={lesson.prerequisites} />
-            <Suspense key={lesson.id} fallback={<Skeleton h="50vh" rounded="l3" />}>
-              <LessonContent components={mdxComponents} />
-            </Suspense>
+          <LessonLayout lesson={lessonFrontmatter}>
+            <PrerequisitesList prerequisites={lesson.prerequisites.map((p) => ({ id: p.id, title: p.title }))} />
+            <ContentBlockList blocks={lesson.contentBlocks} />
           </LessonLayout>
 
           <Container className="no-print" maxW={getLessonMaxWidth(lesson.layout)} px="0">

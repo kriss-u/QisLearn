@@ -66,7 +66,7 @@ export const schema = createSchema<GraphQLContext>({
           with: {
             track: true,
             contentBlocks: { orderBy: (cb, { asc }) => asc(cb.order) },
-            prerequisites: { with: { prerequisite: true } },
+            prerequisites: { with: { prerequisite: { with: { track: true } } } },
           },
         }),
     },

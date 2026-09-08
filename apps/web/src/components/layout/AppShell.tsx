@@ -16,7 +16,7 @@ import type { PropsWithChildren } from "react";
 import { useState } from "react";
 import { LuGithub, LuMenu } from "react-icons/lu";
 import { Link, useParams } from "react-router";
-import { lessonsByTrack } from "../../content";
+import type { TrackGroup } from "../../content";
 import { useProgressStore } from "../../store/progressStore";
 import { STATUS_COLOR_PALETTE } from "../../store/statusColor";
 import { Logo } from "../ui/Logo";
@@ -30,7 +30,7 @@ const STATUS_LABEL: Record<string, string> = {
   completed: "Done",
 };
 
-function NavContent({ onNavigate }: { onNavigate?: () => void }) {
+function NavContent({ tracks, onNavigate }: { tracks: TrackGroup[]; onNavigate?: () => void }) {
   const { lessonId } = useParams();
   const statusByLesson = useProgressStore((s) => s.statusByLesson);
 
@@ -53,8 +53,8 @@ function NavContent({ onNavigate }: { onNavigate?: () => void }) {
       <Separator borderColor="border.muted" />
 
       <Box flex="1" minH="0" overflowY="auto" px="4" py="5">
-        {Object.entries(lessonsByTrack).map(([track, lessons]) => (
-          <Box key={track} mb="7">
+        {tracks.map((track) => (
+          <Box key={track.slug} mb="7">
             <Text
               fontSize="xs"
               fontWeight="bold"
@@ -64,10 +64,10 @@ function NavContent({ onNavigate }: { onNavigate?: () => void }) {
               mb="2.5"
               px="2"
             >
-              {track}
+              {track.title}
             </Text>
             <VStack align="stretch" gap="1">
-              {lessons.map((lesson) => {
+              {track.lessons.map((lesson) => {
                 const status = statusByLesson[lesson.id];
                 const active = lesson.id === lessonId;
                 return (
@@ -124,7 +124,7 @@ function NavContent({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export function AppShell({ children }: PropsWithChildren) {
+export function AppShell({ tracks, children }: PropsWithChildren<{ tracks: TrackGroup[] }>) {
   const [navOpen, setNavOpen] = useState(false);
 
   return (
@@ -142,7 +142,7 @@ export function AppShell({ children }: PropsWithChildren) {
         bg="bg.panel"
         display={{ base: "none", md: "block" }}
       >
-        <NavContent />
+        <NavContent tracks={tracks} />
       </Box>
 
       <Drawer.Root open={navOpen} onOpenChange={(details) => setNavOpen(details.open)} placement="start" size="xs">
@@ -153,7 +153,7 @@ export function AppShell({ children }: PropsWithChildren) {
               <Drawer.CloseTrigger asChild position="absolute" top="4" right="4" zIndex="1">
                 <CloseButton size="sm" />
               </Drawer.CloseTrigger>
-              <NavContent onNavigate={() => setNavOpen(false)} />
+              <NavContent tracks={tracks} onNavigate={() => setNavOpen(false)} />
             </Drawer.Content>
           </Drawer.Positioner>
         </Portal>

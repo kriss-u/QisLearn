@@ -6,7 +6,21 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "scripts": {
+    "codegen": "graphql-codegen --config codegen.ts",
+    "typecheck": "tsc -b --noEmit"
+  },
+  "dependencies": {
+    "@apollo/client": "^3.13.2",
+    "graphql": "^16.11.0"
+  },
   "devDependencies": {
+    "@graphql-codegen/cli": "^6.1.0",
+    "@graphql-codegen/typescript": "^5.0.1",
+    "@graphql-codegen/typescript-operations": "^5.0.1",
+    "@graphql-codegen/typescript-react-apollo": "^4.4.0",
+    "@qislearn/config": "workspace:*",
+    "@types/node": "^24.13.3",
     "typescript": "^7.0.2"
   }
 }

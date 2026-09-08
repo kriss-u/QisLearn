@@ -1,118 +1,154 @@
-import type { ComponentType } from "react";
-import { parse as parseYaml } from "yaml";
-import { type LessonFrontmatter, LessonFrontmatterSchema } from "./schema";
+import { graphqlRequest } from "../lib/graphqlClient";
+import type { LessonLayout } from "./schema";
 
-interface MdxModule {
-  default: ComponentType<{ components?: Record<string, unknown> }>;
+export interface LessonSummary {
+  id: string;
+  title: string;
+  summary: string;
+  layout: LessonLayout;
+  order: number;
+  estimatedMinutes: number;
+  track: string;
 }
 
-// Eager but raw-text: reading just the source string (not the compiled
-// component) keeps each lesson's heavy body/component code out of the
-// bundle that builds the lesson list/sidebar, so `loadLessonContent` below
-// can still code-split it per lesson. See vite.config.ts for why frontmatter
-// isn't read via the MDX compiler's own export instead.
-const rawModules = import.meta.glob("./lessons/*.mdx", {
-  eager: true,
-  query: "?raw",
-  import: "default",
-}) as Record<string, string>;
-
-const componentLoaders = import.meta.glob("./lessons/*.mdx") as Record<
-  string,
-  () => Promise<MdxModule>
->;
-
-const FRONTMATTER_PATTERN = /^---\n([\s\S]*?)\n---/;
-
-const PROSE_WPM = 200;
-// Code (fenced blocks, JSX props, inline code) reads slower word-for-word
-// than prose, but it's still time a learner spends on the page — earlier
-// versions dropped it entirely, which under-counted code-heavy lessons.
-const CODE_WPM = 50;
-
-function countWords(text: string): number {
-  return text.split(/\s+/).filter(Boolean).length;
+export interface TrackGroup {
+  slug: string;
+  title: string;
+  order: number;
+  lessons: LessonSummary[];
 }
 
-/**
- * Reading time is derived from the lesson's own body rather than a hand-typed
- * frontmatter number, which tended to drift from the actual content length.
- * Code fences, JSX tags/props, and inline code are counted separately from
- * prose at a slower words-per-minute rate rather than being excluded.
- */
-function estimateReadingMinutes(bodySource: string): number {
-  const codeSegments: string[] = [];
-  const withoutCode = bodySource
-    .replace(/```[\s\S]*?```/g, (match) => {
-      codeSegments.push(match);
-      return " ";
-    })
-    .replace(/<[^>]*>/g, (match) => {
-      codeSegments.push(match);
-      return " ";
-    })
-    .replace(/`[^`]*`/g, (match) => {
-      codeSegments.push(match);
-      return " ";
-    });
-
-  const proseWords = countWords(withoutCode.replace(/[#*_>[\]()~-]/g, " "));
-  const codeWords = countWords(codeSegments.join(" "));
-
-  const minutes = proseWords / PROSE_WPM + codeWords / CODE_WPM;
-  return Math.max(1, Math.round(minutes));
+export interface ContentBlockData {
+  id: string;
+  order: number;
+  type: string;
+  data: Record<string, unknown>;
 }
 
-function parseFrontmatter(path: string, source: string): LessonFrontmatter {
-  const match = FRONTMATTER_PATTERN.exec(source);
-  if (!match) {
-    throw new Error(`${path}: missing YAML frontmatter block (--- ... ---)`);
+export interface LessonDetail extends LessonSummary {
+  prerequisites: LessonSummary[];
+  contentBlocks: ContentBlockData[];
+}
+
+const TRACKS_QUERY = /* GraphQL */ `
+  query Tracks {
+    tracks {
+      slug
+      title
+      order
+      lessons {
+        slug
+        title
+        summary
+        layout
+        order
+        estimatedMinutes
+      }
+    }
   }
-  const frontmatter = LessonFrontmatterSchema.parse(parseYaml(match[1]));
-  const body = source.slice(match[0].length);
-  return { ...frontmatter, estimatedMinutes: estimateReadingMinutes(body) };
+`;
+
+const LESSON_QUERY = /* GraphQL */ `
+  query Lesson($slug: String!) {
+    lesson(slug: $slug) {
+      slug
+      title
+      summary
+      layout
+      order
+      estimatedMinutes
+      track {
+        slug
+      }
+      prerequisites {
+        slug
+        title
+        summary
+        layout
+        order
+        estimatedMinutes
+        track {
+          slug
+        }
+      }
+      contentBlocks {
+        id
+        order
+        type
+        data
+      }
+    }
+  }
+`;
+
+interface GraphQLLessonSummary {
+  slug: string;
+  title: string;
+  summary: string;
+  layout: LessonLayout;
+  order: number;
+  estimatedMinutes: number;
 }
 
-interface LessonEntry {
-  path: string;
-  frontmatter: LessonFrontmatter;
+interface GraphQLTrack {
+  slug: string;
+  title: string;
+  order: number;
+  lessons: GraphQLLessonSummary[];
 }
 
-function loadLessonEntries(): LessonEntry[] {
-  const entries = Object.entries(rawModules).map(([path, source]) => ({
-    path,
-    frontmatter: parseFrontmatter(path, source),
-  }));
-  return entries.sort((a, b) => a.frontmatter.order - b.frontmatter.order);
+interface GraphQLLessonDetail extends GraphQLLessonSummary {
+  track: { slug: string };
+  prerequisites: Array<GraphQLLessonSummary & { track: { slug: string } }>;
+  contentBlocks: ContentBlockData[];
 }
 
-const lessonEntries = loadLessonEntries();
-
-export const lessons: LessonFrontmatter[] = lessonEntries.map((entry) =>
-  entry.frontmatter
-);
-
-export const lessonsByTrack = lessons.reduce<
-  Record<string, LessonFrontmatter[]>
->((acc, lesson) => {
-  (acc[lesson.track] ??= []).push(lesson);
-  return acc;
-}, {});
-
-export function getLesson(id: string): LessonFrontmatter | undefined {
-  return lessons.find((lesson) => lesson.id === id);
+function toLessonSummary(trackSlug: string, lesson: GraphQLLessonSummary): LessonSummary {
+  return {
+    id: lesson.slug,
+    title: lesson.title,
+    summary: lesson.summary,
+    layout: lesson.layout,
+    order: lesson.order,
+    estimatedMinutes: lesson.estimatedMinutes,
+    track: trackSlug,
+  };
 }
 
-export function getNextLesson(id: string): LessonFrontmatter | undefined {
-  const index = lessons.findIndex((lesson) => lesson.id === id);
-  return index >= 0 ? lessons[index + 1] : undefined;
+export async function getTracks(): Promise<TrackGroup[]> {
+  const data = await graphqlRequest<{ tracks: GraphQLTrack[] }>(TRACKS_QUERY);
+  return data.tracks
+    .slice()
+    .sort((a, b) => a.order - b.order)
+    .map((track) => ({
+      slug: track.slug,
+      title: track.title,
+      order: track.order,
+      lessons: track.lessons.map((lesson) => toLessonSummary(track.slug, lesson)).sort((a, b) => a.order - b.order),
+    }));
 }
 
-/** Lazily imports the compiled MDX component for a lesson's body content. */
-export function loadLessonContent(id: string): Promise<MdxModule> {
-  const entry = lessonEntries.find((e) => e.frontmatter.id === id);
-  if (!entry) throw new Error(`Unknown lesson: ${id}`);
-  return componentLoaders[entry.path]();
+export async function getAllLessons(): Promise<LessonSummary[]> {
+  const tracks = await getTracks();
+  return tracks.flatMap((track) => track.lessons).sort((a, b) => a.order - b.order);
+}
+
+export async function getNextLesson(id: string): Promise<LessonSummary | undefined> {
+  const flat = await getAllLessons();
+  const index = flat.findIndex((lesson) => lesson.id === id);
+  return index >= 0 ? flat[index + 1] : undefined;
+}
+
+export async function getLesson(id: string): Promise<LessonDetail | undefined> {
+  const data = await graphqlRequest<{ lesson: GraphQLLessonDetail | null }>(LESSON_QUERY, { slug: id });
+  const lesson = data.lesson;
+  if (!lesson) return undefined;
+
+  return {
+    ...toLessonSummary(lesson.track.slug, lesson),
+    prerequisites: lesson.prerequisites.map((p) => toLessonSummary(p.track.slug, p)),
+    contentBlocks: lesson.contentBlocks,
+  };
 }
 
 export type {

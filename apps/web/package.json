@@ -8,12 +8,14 @@
   },
   "scripts": {
     "dev": "react-router dev",
-    "build": "react-router typegen && tsc -b && react-router build && rm -rf dist && mv build/client dist && rm -rf build && node scripts/generate-sitemap.mjs",
+    "build": "react-router typegen && tsc -b && react-router build && tsx scripts/generate-sitemap.ts",
     "lint": "oxlint",
     "typecheck": "tsc -b --noEmit",
-    "preview": "serve -s dist"
+    "start": "react-router-serve ./build/server/index.js",
+    "preview": "react-router-serve ./build/server/index.js"
   },
   "dependencies": {
+    "@apollo/client": "^3.13.2",
     "@chakra-ui/react": "^3.36.1",
     "@codemirror/lang-python": "^6.2.1",
     "@codemirror/theme-one-dark": "^6.1.3",
@@ -21,7 +23,7 @@
     "@emotion/react": "^11.14.0",
     "@fontsource/fira-code": "^5.3.0",
     "@fontsource/ibm-plex-sans": "^5.3.0",
-    "@mdx-js/rollup": "^3.1.1",
+    "@qislearn/graphql-schema": "workspace:*",
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
     "@types/d3": "^7.4.3",
@@ -33,6 +35,7 @@
     "d3": "^7.9.0",
     "dexie": "^4.4.5",
     "framer-motion": "^13.1.0",
+    "graphql": "^16.11.0",
     "isbot": "^5",
     "katex": "^0.18.4",
     "next-themes": "^0.4.6",
@@ -45,23 +48,22 @@
     "react-plotly.js": "^4.1.0",
     "react-router": "^8.3.0",
     "rehype-katex": "^7.0.1",
-    "remark-frontmatter": "^5.0.0",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
     "three": "^0.185.1",
-    "yaml": "^2.9.0",
     "zod": "^4.4.3",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@react-router/dev": "^8.3.0",
+    "@react-router/serve": "^8.3.0",
     "@types/node": "^24.13.3",
     "@types/plotly.js": "^3.0.13",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
     "oxlint": "^1.75.0",
-    "serve": "^14.2.6",
+    "tsx": "^4.20.0",
     "typescript": "^7.0.2",
     "vite": "^8.2.0"
   }

@@ -44,11 +44,56 @@ services:
         condition: service_healthy
       openfga-migrate:
         condition: service_completed_successfully
+    # The image is Chainguard's distroless "static" base — no shell, wget,
+    # or curl, so a CMD-SHELL/wget check fails immediately with "executable
+    # file not found" (confirmed via `docker inspect`/exec). It does bundle
+    # a grpc_health_probe binary though (checked via `docker history`),
+    # which needs no shell — use that against the gRPC port instead.
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/healthz"]
+      test: ["CMD", "/usr/local/bin/grpc_health_probe", "-addr=localhost:8081"]
       interval: 5s
       timeout: 5s
       retries: 10
 
+  api:
+    image: node:22
+    restart: unless-stopped
+    working_dir: /workspace
+    command: sh -c "corepack enable && pnpm install && pnpm --filter @qislearn/api dev"
+    environment:
+      PORT: 4000
+      DATABASE_URL: postgres://${POSTGRES_USER:-qislearn}:${POSTGRES_PASSWORD:-qislearn}@postgres:5432/${POSTGRES_DB:-qislearn}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-change-me-32-chars-minimum-please}
+      BETTER_AUTH_URL: http://localhost:${PORT:-4000}
+      OPENFGA_API_URL: http://openfga:8080
+      OPENFGA_STORE_ID: ${OPENFGA_STORE_ID:?set OPENFGA_STORE_ID in .env, see \`pnpm --filter @qislearn/authz authz:setup\`}
+      OPENFGA_MODEL_ID: ${OPENFGA_MODEL_ID:?set OPENFGA_MODEL_ID in .env, see \`pnpm --filter @qislearn/authz authz:setup\`}
+    ports:
+      - "4000:4000"
+    volumes:
+      - .:/workspace
+      - pnpm_store:/root/.local/share/pnpm/store
+    depends_on:
+      postgres:
+        condition: service_healthy
+      openfga:
+        condition: service_healthy
+
+  web:
+    image: node:22
+    restart: unless-stopped
+    working_dir: /workspace
+    command: sh -c "corepack enable && pnpm install && pnpm --filter @qislearn/web exec react-router dev --host 0.0.0.0"
+    environment:
+      QISLEARN_API_URL: http://api:4000/graphql
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/workspace
+      - pnpm_store:/root/.local/share/pnpm/store
+    depends_on:
+      - api
+
 volumes:
   postgres_data:
+  pnpm_store:

@@ -1,36 +1,22 @@
 import { reactRouter } from "@react-router/dev/vite";
-import mdx from "@mdx-js/rollup";
-import rehypeKatex from "rehype-katex";
-import remarkFrontmatter from "remark-frontmatter";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
 import { defineConfig } from "vite";
 
-function mdxPlugin() {
-  const plugin = mdx({
-    remarkPlugins: [remarkFrontmatter, remarkGfm, remarkMath],
-    rehypePlugins: [rehypeKatex],
-  });
-  const compile = plugin.transform as (code: string, id: string) => unknown;
-  return {
-    ...plugin,
-    enforce: "pre" as const,
-    // @mdx-js/rollup strips query strings before checking the .mdx extension,
-    // so it would otherwise also try to compile `foo.mdx?raw` (used in
-    // src/content/index.ts to read frontmatter as plain text) into JSX.
-    transform(code: string, id: string) {
-      if (id.includes("?")) return null;
-      return compile.call(this, code, id);
-    },
-  };
-}
-
 export default defineConfig({
-  plugins: [mdxPlugin(), reactRouter()],
+  plugins: [reactRouter()],
   // plotly.js references the Node-style `global` object at module scope; needed for the
   // standalone `import("plotly.js")` in pngExport.ts (react-plotly.js's own bundling already
   // works around this, but a bare dynamic import of the package does not).
   define: { global: "globalThis" },
+  ssr: {
+    // @apollo/client has no package.json "exports" map, so Vite's default
+    // SSR externalization leaves a bare `import {...} from "@apollo/client"`
+    // for Node to resolve at runtime — Node then falls back to its ".cjs"
+    // main entry, and cjs-module-lexer can't statically detect its named
+    // exports, breaking the import. Force it to be bundled instead, so Vite
+    // (which correctly resolves the ESM "module" entry) inlines real named
+    // exports into the server build.
+    noExternal: ["@apollo/client"],
+  },
   build: {
     chunkSizeWarningLimit: 1200,
     rollupOptions: {

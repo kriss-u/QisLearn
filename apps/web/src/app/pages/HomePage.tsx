@@ -1,6 +1,6 @@
 import { Badge, Box, Card, Container, HStack, Heading, SimpleGrid, Text, VStack } from "@chakra-ui/react";
-import { Link, type MetaFunction } from "react-router";
-import { lessons, lessonsByTrack } from "../../content";
+import { Link, useLoaderData, type MetaFunction } from "react-router";
+import { getTracks } from "../../content";
 import { useProgressStore } from "../../store/progressStore";
 import { STATUS_COLOR_PALETTE } from "../../store/statusColor";
 import { Logo } from "../../components/ui/Logo";
@@ -10,8 +10,15 @@ const TITLE = "QisLearn — Learn Quantum Computing with Qiskit";
 const DESCRIPTION =
   "Interactive, browser-based lessons for learning quantum computing with Qiskit — circuits, the Bloch sphere, statevectors, and hands-on code exercises. No backend, no install, runs entirely in your browser.";
 
-export const meta: MetaFunction = () =>
-  buildPageMeta({
+export async function loader() {
+  return { tracks: await getTracks() };
+}
+
+export const meta: MetaFunction<typeof loader> = ({ loaderData }) => {
+  const tracks = loaderData?.tracks ?? [];
+  const lessons = tracks.flatMap((track) => track.lessons);
+
+  return buildPageMeta({
     title: TITLE,
     description: DESCRIPTION,
     path: "/",
@@ -35,8 +42,10 @@ export const meta: MetaFunction = () =>
       })),
     },
   });
+};
 
 export default function HomePage() {
+  const { tracks } = useLoaderData<typeof loader>();
   const statusByLesson = useProgressStore((s) => s.statusByLesson);
 
   return (
@@ -60,13 +69,13 @@ export default function HomePage() {
         </Text>
       </Box>
 
-      {Object.entries(lessonsByTrack).map(([track, lessons]) => (
-        <Box key={track} mb="14">
-          <Heading size="lg" mb="5" textTransform="capitalize">
-            {track}
+      {tracks.map((track) => (
+        <Box key={track.slug} mb="14">
+          <Heading size="lg" mb="5">
+            {track.title}
           </Heading>
           <SimpleGrid columns={{ base: 1, sm: 2, lg: 3, "2xl": 4 }} gap="5">
-            {lessons.map((lesson) => {
+            {track.lessons.map((lesson) => {
               const status = statusByLesson[lesson.id] ?? "not-started";
               return (
                 <Link key={lesson.id} to={`/lesson/${lesson.id}`}>

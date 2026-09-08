@@ -36,19 +36,38 @@ and migration plan; neither is wired into the frontend yet.
 
 ## Getting started
 
+`apps/web` now server-renders lessons fetched over GraphQL from `apps/api`
+(Postgres-backed), so the full stack needs Postgres + OpenFGA + `apps/api`
+running, not just the frontend. `docker-compose.yml` brings all of it up
+with one command:
+
 ```bash
-corepack enable pnpm   # first time only, ships with Node
+cp .env.example .env
+docker compose up -d postgres openfga
 pnpm install
+pnpm --filter @qislearn/db db:migrate
+pnpm --filter @qislearn/authz authz:setup   # prints OPENFGA_STORE_ID / OPENFGA_MODEL_ID — put them in .env
+docker compose up -d                        # postgres, openfga, api, web — hot-reloading dev servers
+```
+
+Then open http://localhost:5173. `api`/`web` run inside containers with the
+repo bind-mounted in (edits on your machine hot-reload inside the
+container); `docker compose logs -f api web` follows their output.
+
+If you'd rather run `apps/web`/`apps/api` directly on your machine instead
+of in containers (faster iteration, no Docker overhead for the Node
+processes themselves — `postgres`/`openfga` still need Docker):
+
+```bash
+docker compose up -d postgres openfga
+set -a && source .env && set +a
+pnpm --filter @qislearn/api dev
 pnpm --filter @qislearn/web dev
 ```
 
-Then open the printed local URL. `pnpm --filter @qislearn/web build` produces a
-static production bundle (`apps/web/dist/`) that can be hosted anywhere, the
-frontend still has no server dependency today.
-
 ```bash
-pnpm --filter @qislearn/web build      # type-check + production build
-pnpm --filter @qislearn/web preview    # serve the production build locally
+pnpm --filter @qislearn/web build      # type-check + SSR production build
+pnpm --filter @qislearn/web start      # run the production build (react-router-serve)
 pnpm --filter @qislearn/web lint       # oxlint
 pnpm dev                               # turbo: run every app's dev task (web + api + llm-service stubs)
 pnpm build                             # turbo: build every app/package
@@ -56,9 +75,8 @@ pnpm lint                              # turbo: lint every app/package
 pnpm typecheck                         # turbo: typecheck every app/package
 ```
 
-`docker-compose.yml` at the repo root brings up Postgres for local backend
-development (`docker compose up -d postgres`); the API/LLM services aren't
-functional yet, see [docs/BACKEND_PLAN.md](./docs/BACKEND_PLAN.md).
+See [docs/BACKEND_PLAN.md](./docs/BACKEND_PLAN.md) for the backend
+architecture and migration phases.
 
 ## Tech stack
 

@@ -1,5 +1,4 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { loadLessonContent } from "../../content";
 
 interface LessonProgressValue {
   registerExercise: (id: string) => () => void;
@@ -12,18 +11,14 @@ const LessonProgressContext = createContext<LessonProgressValue | null>(null);
 
 export function LessonProgressProvider({ lessonId, children }: { lessonId: string; children: ReactNode }) {
   const [results, setResults] = useState<Record<string, boolean>>({});
-  const [contentReady, setContentReady] = useState(false);
+  // Content now arrives fully resolved via the route loader by render time,
+  // so there's no async load step left to gate on (unlike the old lazy MDX
+  // chunk import this used to await).
+  const [contentReady, setContentReady] = useState(true);
 
   useEffect(() => {
     setResults({});
-    setContentReady(false);
-    let cancelled = false;
-    loadLessonContent(lessonId).then(() => {
-      if (!cancelled) setContentReady(true);
-    });
-    return () => {
-      cancelled = true;
-    };
+    setContentReady(true);
   }, [lessonId]);
 
   const registerExercise = useCallback((id: string) => {

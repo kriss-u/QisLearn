@@ -4,7 +4,7 @@
     "target": "es2023",
     "lib": ["ES2023", "DOM"],
     "module": "esnext",
-    "types": ["vite/client"],
+    "types": ["vite/client", "node"],
     "allowArbitraryExtensions": true,
     "skipLibCheck": true,
 
@@ -22,8 +22,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "mdx": {
-    "plugins": ["remark-frontmatter", "remark-gfm", "remark-math"]
-  },
-  "include": ["src"]
+  "include": ["src", "scripts", "react-router.config.ts"]
 }

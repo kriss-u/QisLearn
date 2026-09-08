@@ -1,7 +1,6 @@
 import { Box, HStack, Text, VStack } from "@chakra-ui/react";
 import { LuCircle, LuCircleCheck, LuCircleDot } from "react-icons/lu";
 import { Link } from "react-router";
-import { getLesson } from "../../content";
 import { useProgressStore } from "../../store/progressStore";
 
 const STATUS_ICON = {
@@ -10,14 +9,19 @@ const STATUS_ICON = {
   "not-started": <LuCircle color="var(--chakra-colors-fg-subtle)" />,
 };
 
+export interface PrerequisiteLesson {
+  id: string;
+  title: string;
+}
+
 /**
  * Informational only — prerequisites are suggested reading order, not a gate.
  * A learner can jump straight into a lesson regardless of what's shown here.
  */
-export function PrerequisitesList({ prerequisiteIds }: { prerequisiteIds: string[] }) {
+export function PrerequisitesList({ prerequisites }: { prerequisites: PrerequisiteLesson[] }) {
   const statusByLesson = useProgressStore((s) => s.statusByLesson);
 
-  if (prerequisiteIds.length === 0) return null;
+  if (prerequisites.length === 0) return null;
 
   return (
     <Box className="no-print" mb="8" p="4" rounded="l3" borderWidth="1px" borderColor="border" bg="bg.subtle">
@@ -25,12 +29,10 @@ export function PrerequisitesList({ prerequisiteIds }: { prerequisiteIds: string
         Suggested before this lesson
       </Text>
       <VStack align="stretch" gap="1.5">
-        {prerequisiteIds.map((id) => {
-          const prereq = getLesson(id);
-          const status = statusByLesson[id] ?? "not-started";
-          if (!prereq) return null;
+        {prerequisites.map((prereq) => {
+          const status = statusByLesson[prereq.id] ?? "not-started";
           return (
-            <HStack key={id} gap="2">
+            <HStack key={prereq.id} gap="2">
               {STATUS_ICON[status]}
               <Text
                 asChild

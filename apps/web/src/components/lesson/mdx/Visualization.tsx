@@ -1,6 +1,7 @@
 import { Box, HStack, SimpleGrid, Skeleton, Text, useToken, VStack } from "@chakra-ui/react";
 import { Suspense, lazy, useMemo, useRef, useState } from "react";
 import { LuAtom } from "react-icons/lu";
+import { ClientOnly } from "../../ClientOnly";
 import type { Circuit, VisualizationView } from "../../../content/schema";
 import { copyPngToClipboard, copyTextToClipboard, downloadBlob } from "../../../features/export/clipboard";
 import { canvasToPngBlob, plotlyToPngBlob, svgElementToPngBlob } from "../../../features/export/pngExport";
@@ -187,15 +188,19 @@ export function Visualization({ title, description, circuit, views = DEFAULT_VIE
                       </HStack>
                     }
                   >
-                    <Suspense fallback={<Skeleton h="280px" rounded="l3" />}>
-                      <StateVectorChart
-                        amplitudes={snapshot.amplitudes}
-                        numQubits={circuit.numQubits}
-                        onGraphDivReady={(graphDiv) => {
-                          statevectorGraphDivRef.current = graphDiv;
-                        }}
-                      />
-                    </Suspense>
+                    <ClientOnly fallback={<Skeleton h="280px" rounded="l3" />}>
+                      {() => (
+                        <Suspense fallback={<Skeleton h="280px" rounded="l3" />}>
+                          <StateVectorChart
+                            amplitudes={snapshot.amplitudes}
+                            numQubits={circuit.numQubits}
+                            onGraphDivReady={(graphDiv) => {
+                              statevectorGraphDivRef.current = graphDiv;
+                            }}
+                          />
+                        </Suspense>
+                      )}
+                    </ClientOnly>
                   </VizSection>
                 )}
               </VizLatexToggle>
@@ -254,14 +259,18 @@ export function Visualization({ title, description, circuit, views = DEFAULT_VIE
                         <BlochQubitLabel index={q} numQubits={circuit.numQubits} label={circuit.qubitLabels?.[q]} />
                         <VizActions onCopy={() => handleBlochCopy(q)} onDownload={() => handleBlochDownload(q)} />
                       </HStack>
-                      <Suspense fallback={<Skeleton aspectRatio={1} rounded="l3" w="full" />}>
-                        <BlochSphere
-                          vector={blochVector(snapshot.amplitudes, q)}
-                          onCanvasReady={(canvas) => {
-                            blochCanvasRefs.current[q] = canvas;
-                          }}
-                        />
-                      </Suspense>
+                      <ClientOnly fallback={<Skeleton aspectRatio={1} rounded="l3" w="full" />}>
+                        {() => (
+                          <Suspense fallback={<Skeleton aspectRatio={1} rounded="l3" w="full" />}>
+                            <BlochSphere
+                              vector={blochVector(snapshot.amplitudes, q)}
+                              onCanvasReady={(canvas) => {
+                                blochCanvasRefs.current[q] = canvas;
+                              }}
+                            />
+                          </Suspense>
+                        )}
+                      </ClientOnly>
                     </VStack>
                   ))}
                 </SimpleGrid>

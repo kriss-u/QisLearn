@@ -1,6 +1,7 @@
 import { Accordion, Alert, Box, Button, HStack, Skeleton, Text, VStack } from "@chakra-ui/react";
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { LuCode } from "react-icons/lu";
+import { ClientOnly } from "../../ClientOnly";
 import type { Circuit } from "../../../content/schema";
 import { getCodeSnapshot, saveCodeSnapshot } from "../../../db/repository";
 import { compareCircuits } from "../../../features/python/compareCircuit";
@@ -112,9 +113,13 @@ export function CodeExercise({ id: exerciseId, prompt, starterCode, expectedCirc
       </Box>
 
       <Box className="no-print">
-        <Suspense fallback={<Skeleton h="220px" rounded="l3" />}>
-          <PyEditor value={code} onChange={handleCodeChange} readOnly={result?.ok === true} />
-        </Suspense>
+        <ClientOnly fallback={<Skeleton h="220px" rounded="l3" />}>
+          {() => (
+            <Suspense fallback={<Skeleton h="220px" rounded="l3" />}>
+              <PyEditor value={code} onChange={handleCodeChange} readOnly={result?.ok === true} />
+            </Suspense>
+          )}
+        </ClientOnly>
       </Box>
 
       <HStack className="no-print" gap="3">
