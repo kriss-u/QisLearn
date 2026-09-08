@@ -1,0 +1,28 @@
+{
+  "name": "@qislearn/api",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.22.0"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -b",
+    "start": "node dist/index.js",
+    "lint": "oxlint",
+    "typecheck": "tsc -b --noEmit"
+  },
+  "dependencies": {
+    "graphql": "^16.11.0",
+    "graphql-yoga": "^5.13.0",
+    "@qislearn/db": "workspace:*",
+    "@qislearn/config": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "oxlint": "^1.75.0",
+    "tsx": "^4.20.0",
+    "typescript": "^7.0.2"
+  }
+}

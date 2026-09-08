@@ -1,0 +1,8 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+allowBuilds:
+  es5-ext: true
+  esbuild: true
+overrides:
+  katex: ^0.18.4
