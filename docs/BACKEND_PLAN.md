@@ -144,6 +144,15 @@ implementation; this is the shape.
 
 ## 5. GraphQL API layer
 
+- **Status note (as of phases 2-3):** `apps/api` currently hand-writes SDL
+  + resolvers directly via `graphql-yoga`'s `createSchema`, using Drizzle's
+  relational query API (`db.query.*.findMany({ with: {...} })`) instead of
+  Pothos for the handful of queries that exist so far (`health`, `me`,
+  `tracks`, `lesson`). Pothos adoption below is deferred until the
+  schema/resolver count grows enough to justify the setup cost — revisit
+  before phase 4's mutations land, since scope-auth (OpenFGA-gated writes)
+  and validation are exactly where Pothos's plugins start earning their
+  keep.
 - Pothos schema builder with `@pothos/plugin-drizzle` for entity types,
   `@pothos/plugin-relay` if pagination needs cursors, `@pothos/plugin-scope-auth`
   for field/type-level authorization scopes (the scope-check function calls
@@ -217,32 +226,40 @@ implementation; this is the shape.
 
 ## 7. Content migration (MDX to Postgres)
 
-1. Write a one-time migration script (`packages/db/scripts/migrate-mdx.ts`)
-   that: reads every `src/content/lessons/*.mdx`, parses frontmatter (same
-   `yaml` parsing already used in `content/index.ts`) into `lesson` rows,
-   then parses the MDX body's AST (via the `@mdx-js/mdx` compiler's syntax
-   tree, not a regex) to walk top-level nodes: prose between custom tags
-   becomes `content_block` rows of type `markdown`, and each
-   `<CodeExercise>`/`<Quiz>`/`<Visualization>`/`<Measurement>` JSX node's
-   props become a `content_block` row of the matching type with `data` set
-   to exactly those props (already zod-validated shapes, no new schema
-   design needed).
-2. Run it once against every existing lesson, diff the resulting DB content
-   render against the current live site lesson-by-lesson before deleting any
-   `.mdx` file, so nothing is lost silently.
-3. Only after migration is verified, remove `@mdx-js/rollup`, the MDX
+1. **Done.** `packages/db/scripts/migrate-mdx.ts` reads every
+   `apps/web/src/content/lessons/*.mdx`, parses frontmatter (`yaml`) into
+   `lesson`/`track`/`lesson_prerequisite` rows, then parses the MDX body's
+   AST — via a standalone `unified().use(remarkParse, remarkFrontmatter,
+   remarkGfm, remarkMath, remarkMdx)` pipeline matching `apps/web/vite.config.ts`'s
+   plugin set, rather than the full `@mdx-js/mdx` compiler, since the script
+   only needs the parsed tree, not compiled JS — to walk top-level nodes:
+   prose between custom tags becomes `content_block` rows of type
+   `markdown` (original source text preserved byte-for-byte via each node's
+   position offsets), and each top-level JSX element's props become a
+   `content_block` row typed by the JSX tag name itself (see §4 — 11
+   distinct components in practice, not 4), built by evaluating each JSX
+   expression attribute's raw source.
+2. **Done.** Run against all 22 lessons (`pnpm --filter @qislearn/db
+   migrate:mdx`): 3 tracks, 22 lessons, 121 content blocks, 21 prerequisite
+   edges, spot-checked byte-for-byte against source `.mdx` files and via
+   live GraphQL queries (`tracks`, `lesson(slug)`) against `apps/api`.
+   `apps/web` was **not** touched in this pass — it still reads lessons
+   from the MDX registry exactly as before, and no `.mdx` file has been
+   deleted.
+3. **Not yet done.** `apps/web` cutover: remove `@mdx-js/rollup`, the MDX
    Vite plugin config, and `src/content/lessons/*.mdx` from the frontend
    build. `LessonPage` switches from `loadLessonContent()`'s dynamic MDX
    import to a GraphQL query for the lesson's ordered `content_block` list,
-   rendered by a small block-type switch (`markdown` block through the
-   existing `Markdown` component, the other three through the existing
-   `CodeExercise`/`Quiz`/`Visualization`/`Measurement` components, unchanged
-   except their props now come from a query result instead of MDX-compiled
-   JSX props).
-4. A minimal authoring path for v1: direct GraphQL mutations (or a Drizzle
-   Studio-style DB GUI) editing `content_block` rows. A real authoring UI
-   (drag-to-reorder blocks, live preview) is explicitly out of scope for the
-   first cut, tracked as a later phase.
+   rendered by a block-type switch (`markdown` through the existing
+   `Markdown` component, every other type through its matching existing
+   component from `mdxComponents.ts`, unchanged except props now come from
+   a query result instead of MDX-compiled JSX props). Needs a GraphQL
+   client in `apps/web` (urql, per §2) and visual verification across all
+   22 lessons before any `.mdx` file is deleted.
+4. **Not yet done.** A minimal authoring path for v1: direct GraphQL
+   mutations (or a Drizzle Studio-style DB GUI) editing `content_block`
+   rows. A real authoring UI (drag-to-reorder blocks, live preview) is
+   explicitly out of scope for the first cut, tracked as a later phase.
 
 ## 8. Docker Compose (dev) sketch
 
@@ -259,19 +276,20 @@ three requests in.
 
 ## 9. Phased roadmap
 
-1. **Scaffold**: pnpm workspace, Turborepo pipeline, move `apps/web` in
+1. **Done. Scaffold**: pnpm workspace, Turborepo pipeline, move `apps/web` in
    place (current repo content, working exactly as today, no behavior
    change yet), empty `apps/api` and `apps/llm-service` stubs, base
    `docker-compose.yml` with just `postgres` up and reachable.
-2. **Auth + org + authz skeleton**: better-auth wired into `apps/api` with
-   Drizzle adapter and the `organization` plugin, OpenFGA container running
-   with a minimal authorization model (user/org/member relations only, no
-   content relations yet), a "who am I" GraphQL query end to end.
-3. **Content schema + migration**: Drizzle schema for `track`/`lesson`/
-   `content_block`, the MDX-to-Postgres migration script, GraphQL queries to
-   read lessons/blocks, `apps/web` switched to read lessons from GraphQL
-   instead of the MDX registry, verified lesson-by-lesson against the
-   current site before deleting any `.mdx` file.
+2. **Done. Auth + org + authz skeleton**: better-auth wired into `apps/api`
+   with Drizzle adapter and the `organization` plugin, OpenFGA container
+   running with a minimal authorization model (user/org/member relations
+   only, no content relations yet), a "who am I" GraphQL query end to end.
+3. **Partly done. Content schema + migration**: Drizzle schema for
+   `track`/`lesson`/`content_block` and the MDX-to-Postgres migration
+   script are done and verified (see §7 steps 1-2). Still outstanding:
+   `apps/web` switched to read lessons from GraphQL instead of the MDX
+   registry, verified lesson-by-lesson against the current site before
+   deleting any `.mdx` file (§7 step 3).
 4. **User data cutover**: `lesson_progress`/`code_snapshot`/`quiz_attempt`
    tables and mutations, `apps/web` switched off Dexie entirely (delete
    `src/db/`), zustand stores trimmed to ephemeral-only state, OpenFGA
