@@ -10,10 +10,10 @@ import { InlineMath } from "../../../../components/lesson/InlineMath";
  */
 export function InlineMathFieldEditor({ value, onChange }: { value: string; onChange: (next: string) => void }) {
   return (
-    <Box>
-      <Input size="sm" fontFamily="mono" value={value} onChange={(e) => onChange(e.target.value)} />
+    <Box w="full">
+      <Input variant="flushed" size="sm" w="full" fontFamily="mono" value={value} onChange={(e) => onChange(e.target.value)} />
       {value && (
-        <Box mt="1.5" px="2.5" py="2" borderWidth="1px" borderColor="border" rounded="l2" bg="bg.muted">
+        <Box w="full" mt="1.5" px="2.5" py="2" borderWidth="1px" borderColor="border" rounded="l2" bg="bg.muted">
           <Text fontSize="2xs" color="fg.subtle" mb="1">
             Preview — only <code>$...$</code> math renders here, no bold/lists/links
           </Text>

@@ -29,13 +29,17 @@ export function MarkdownFieldEditor({
   const { colorMode } = useColorMode();
 
   return (
-    <ClientOnly fallback={<Skeleton h={`${height}px`} rounded="l2" />}>
+    <ClientOnly fallback={<Skeleton h={`${height}px`} w="full" rounded="l2" />}>
       {() => (
-        <Suspense fallback={<Skeleton h={`${height}px`} rounded="l2" />}>
-          <div className="qislearn-md-editor" data-color-mode={colorMode}>
+        <Suspense fallback={<Skeleton h={`${height}px`} w="full" rounded="l2" />}>
+          <div className="qislearn-md-editor" data-color-mode={colorMode} style={{ width: "100%" }}>
             {/* The source pane should read as code; the preview pane keeps the
                 site's normal prose font so it matches how learners see it. */}
             <style>{`
+              .qislearn-md-editor,
+              .qislearn-md-editor .w-md-editor {
+                width: 100%;
+              }
               .qislearn-md-editor .w-md-editor-text-input,
               .qislearn-md-editor .w-md-editor-text-pre > code {
                 font-family: 'Fira Code', ui-monospace, monospace !important;

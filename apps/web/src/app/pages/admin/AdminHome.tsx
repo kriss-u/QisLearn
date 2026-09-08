@@ -1,4 +1,4 @@
-import { Box, Button, Field, HStack, Heading, Input, Separator, Spinner, Text, VStack } from "@chakra-ui/react";
+import { Box, Button, Field, HStack, Heading, Input, Separator, Text, VStack } from "@chakra-ui/react";
 import { useRef, useState } from "react";
 import { Link } from "react-router";
 import {
@@ -9,6 +9,7 @@ import {
   useUpdateTrackMutation,
   type AdminTracksQuery,
 } from "@qislearn/graphql-schema";
+import { AdminLoading } from "./AdminLoading";
 import { DragHandle } from "./DragHandle";
 import { spacedOrders, useDragReorder } from "./useDragReorder";
 
@@ -241,7 +242,7 @@ export default function AdminHome() {
     },
   );
 
-  if (loading) return <Spinner />;
+  if (loading) return <AdminLoading label="Loading tracks…" />;
 
   const nextTrackOrder = tracks.length > 0 ? Math.max(...tracks.map((t) => t.order)) + 100 : 100;
 

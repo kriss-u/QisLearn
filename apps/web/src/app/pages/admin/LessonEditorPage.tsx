@@ -4,21 +4,23 @@ import {
   Box,
   Button,
   CloseButton,
+  Collapsible,
   Dialog,
   Field,
   Flex,
   HStack,
   Heading,
+  IconButton,
   Input,
   NativeSelect,
   Portal,
   Separator,
-  Spinner,
   Text,
   Textarea,
   VStack,
   Wrap,
 } from "@chakra-ui/react";
+import { LuChevronDown } from "react-icons/lu";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useParams } from "react-router";
 import {
@@ -41,6 +43,7 @@ import {
 import type { ContentBlockData } from "../../../content";
 import type { LessonFrontmatter } from "../../../content/schema";
 import { DynamicBlockForm } from "./blockEditors/DynamicBlockForm";
+import { AdminLoading } from "./AdminLoading";
 import { DragHandle } from "./DragHandle";
 import { LessonPreviewDialog } from "./LessonPreviewDialog";
 import { spacedOrders, useDragReorder } from "./useDragReorder";
@@ -130,7 +133,11 @@ function LessonMetaEditor({
         as="aside"
         align="stretch"
         gap="4"
-        w={{ base: "full", lg: "300px" }}
+        // Scales with the available width instead of a fixed px so the
+        // panel doesn't stay pinned to a phone-sized column now that the
+        // admin shell is full-bleed on wide screens, capped so it doesn't
+        // sprawl on ultrawide monitors either.
+        w={{ base: "full", lg: "clamp(280px, 22vw, 420px)" }}
         flexShrink={0}
         position={{ lg: "sticky" }}
         top={{ lg: "4" }}
@@ -149,6 +156,7 @@ function LessonMetaEditor({
                 </option>
               ))}
             </NativeSelect.Field>
+            <NativeSelect.Indicator />
           </NativeSelect.Root>
         </Field.Root>
         <Field.Root>
@@ -162,6 +170,7 @@ function LessonMetaEditor({
               <option value="INTERMEDIATE">Intermediate</option>
               <option value="ADVANCED">Advanced</option>
             </NativeSelect.Field>
+            <NativeSelect.Indicator />
           </NativeSelect.Root>
         </Field.Root>
         <Field.Root maxW="32">
@@ -269,6 +278,15 @@ function TagPicker({ lessonId, currentTagIds }: { lessonId: string; currentTagId
   );
 }
 
+// A one-line hint for the collapsed header — whichever text-ish field a
+// block actually has, truncated. Falls back to the type name alone.
+function summarizeBlockData(data: Record<string, unknown>): string | null {
+  const candidate = data.title ?? data.text ?? data.question ?? data.prompt ?? data.description;
+  if (typeof candidate !== "string" || !candidate.trim()) return null;
+  const oneLine = candidate.trim().replace(/\s+/g, " ");
+  return oneLine.length > 80 ? `${oneLine.slice(0, 80)}…` : oneLine;
+}
+
 interface BlockRowProps {
   block: { id: string; order: number; type: string; data: Record<string, unknown> };
   blockTypes: BlockTypeSpec[];
@@ -285,6 +303,7 @@ function ContentBlockRow({ block, blockTypes, onSaved, onDragStart, onDragEnd, o
   const [data, setData] = useState<Record<string, unknown>>(block.data);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const [updateBlock, { loading: saving }] = useUpdateContentBlockMutation();
   const [deleteBlock, { loading: deleting }] = useDeleteContentBlockMutation();
   const rowRef = useRef<HTMLDivElement>(null);
@@ -309,87 +328,113 @@ function ContentBlockRow({ block, blockTypes, onSaved, onDragStart, onDragEnd, o
       .catch((err) => setSaveError(err instanceof Error ? err.message : "Failed to save block."));
   }
 
+  const summary = summarizeBlockData(data);
+
   return (
-    <VStack
+    <Collapsible.Root
+      open={open}
+      onOpenChange={(d) => setOpen(d.open)}
       ref={rowRef}
-      align="stretch"
-      gap="2"
       borderWidth="1px"
       borderColor="border"
       rounded="l2"
-      p="3"
       onDragOver={(e) => e.preventDefault()}
       onDrop={onDrop}
     >
-      <HStack>
+      <HStack
+        px="3"
+        py="2"
+        gap="2"
+        roundedTop="l2"
+        bg={open ? "colorPalette.subtle" : undefined}
+        colorPalette={open ? "quantum" : undefined}
+      >
         <DragHandle onDragStart={onDragStart} onDragEnd={onDragEnd} rowRef={rowRef} />
-        <Field.Root maxW="56">
-          <Field.Label fontSize="xs">Type</Field.Label>
-          <NativeSelect.Root size="sm">
-            <NativeSelect.Field value={type} onChange={(e) => setType(e.target.value)}>
-              {blockTypes.map((t) => (
-                <option key={t.type} value={t.type}>
-                  {t.label}
-                </option>
-              ))}
-            </NativeSelect.Field>
-          </NativeSelect.Root>
-        </Field.Root>
+        <NativeSelect.Root size="sm" maxW="44" flexShrink={0}>
+          <NativeSelect.Field value={type} onChange={(e) => setType(e.target.value)}>
+            {blockTypes.map((t) => (
+              <option key={t.type} value={t.type}>
+                {t.label}
+              </option>
+            ))}
+          </NativeSelect.Field>
+          <NativeSelect.Indicator />
+        </NativeSelect.Root>
+        {summary && !open && (
+          <Text fontSize="xs" color="fg.muted" flex="1" minW="0" overflow="hidden" whiteSpace="nowrap" textOverflow="ellipsis">
+            {summary}
+          </Text>
+        )}
+        <Box flex="1" />
+        <Collapsible.Trigger asChild>
+          <IconButton aria-label={open ? "Collapse block" : "Expand block"} size="sm" variant="ghost">
+            <Box transform={open ? "rotate(180deg)" : undefined} transition="transform 0.15s ease">
+              <LuChevronDown />
+            </Box>
+          </IconButton>
+        </Collapsible.Trigger>
       </HStack>
-      {spec ? (
-        <DynamicBlockForm fields={spec.fields} data={data} onChange={setData} />
-      ) : (
-        <Text fontSize="xs" color="fg.muted">
-          Unknown block type "{type}" — no editor form registered for it.
-        </Text>
-      )}
-      {saveError && (
-        <Alert.Root status="error" size="sm">
-          <Alert.Indicator />
-          <Alert.Description>{saveError}</Alert.Description>
-        </Alert.Root>
-      )}
-      <HStack>
-        <Button size="sm" colorPalette="quantum" onClick={handleSave} loading={saving}>
-          Save block
-        </Button>
-        <Dialog.Root open={confirmOpen} onOpenChange={(d) => setConfirmOpen(d.open)} role="alertdialog">
-          <Dialog.Trigger asChild>
-            <Button size="sm" variant="outline" colorPalette="red">
-              Delete
-            </Button>
-          </Dialog.Trigger>
-          <Portal>
-            <Dialog.Backdrop />
-            <Dialog.Positioner>
-              <Dialog.Content>
-                <Dialog.Header>
-                  <Dialog.Title>Delete this block?</Dialog.Title>
-                </Dialog.Header>
-                <Dialog.Body>
-                  <Text color="fg.muted">This removes it from the live lesson immediately. This can't be undone.</Text>
-                </Dialog.Body>
-                <Dialog.Footer>
-                  <Dialog.ActionTrigger asChild>
-                    <Button variant="ghost">Cancel</Button>
-                  </Dialog.ActionTrigger>
-                  <Button
-                    colorPalette="red"
-                    loading={deleting}
-                    onClick={() => deleteBlock({ variables: { id: block.id } }).then(() => onSaved())}
-                  >
+
+      <Collapsible.Content>
+          <VStack align="stretch" gap="2" px="3" pb="3" pt="1" borderTopWidth="1px" borderColor="border">
+            {spec ? (
+              <DynamicBlockForm fields={spec.fields} data={data} onChange={setData} />
+            ) : (
+              <Text fontSize="xs" color="fg.muted">
+                Unknown block type "{type}" — no editor form registered for it.
+              </Text>
+            )}
+            {saveError && (
+              <Alert.Root status="error" size="sm">
+                <Alert.Indicator />
+                <Alert.Description>{saveError}</Alert.Description>
+              </Alert.Root>
+            )}
+            <HStack>
+              <Button size="sm" colorPalette="quantum" onClick={handleSave} loading={saving}>
+                Save block
+              </Button>
+              <Dialog.Root open={confirmOpen} onOpenChange={(d) => setConfirmOpen(d.open)} role="alertdialog">
+                <Dialog.Trigger asChild>
+                  <Button size="sm" variant="outline" colorPalette="red">
                     Delete
                   </Button>
-                </Dialog.Footer>
-                <Dialog.CloseTrigger asChild>
-                  <CloseButton size="sm" />
-                </Dialog.CloseTrigger>
-              </Dialog.Content>
-            </Dialog.Positioner>
-          </Portal>
-        </Dialog.Root>
-      </HStack>
-    </VStack>
+                </Dialog.Trigger>
+                <Portal>
+                  <Dialog.Backdrop />
+                  <Dialog.Positioner>
+                    <Dialog.Content>
+                      <Dialog.Header>
+                        <Dialog.Title>Delete this block?</Dialog.Title>
+                      </Dialog.Header>
+                      <Dialog.Body>
+                        <Text color="fg.muted">
+                          This removes it from the live lesson immediately. This can't be undone.
+                        </Text>
+                      </Dialog.Body>
+                      <Dialog.Footer>
+                        <Dialog.ActionTrigger asChild>
+                          <Button variant="ghost">Cancel</Button>
+                        </Dialog.ActionTrigger>
+                        <Button
+                          colorPalette="red"
+                          loading={deleting}
+                          onClick={() => deleteBlock({ variables: { id: block.id } }).then(() => onSaved())}
+                        >
+                          Delete
+                        </Button>
+                      </Dialog.Footer>
+                      <Dialog.CloseTrigger asChild>
+                        <CloseButton size="sm" />
+                      </Dialog.CloseTrigger>
+                    </Dialog.Content>
+                  </Dialog.Positioner>
+                </Portal>
+              </Dialog.Root>
+            </HStack>
+          </VStack>
+      </Collapsible.Content>
+    </Collapsible.Root>
   );
 }
 
@@ -489,6 +534,7 @@ function NewBlockRow({
               </option>
             ))}
           </NativeSelect.Field>
+          <NativeSelect.Indicator />
         </NativeSelect.Root>
       </Field.Root>
       {spec && <DynamicBlockForm fields={spec.fields} data={data} onChange={setData} />}
@@ -550,7 +596,7 @@ export default function LessonEditorPage() {
     },
   );
 
-  if (loading) return <Spinner />;
+  if (loading) return <AdminLoading label="Loading lesson…" />;
   if (!lesson) return <Text>Lesson not found.</Text>;
 
   const allLessons = (tracksData?.tracks ?? []).flatMap((t) => t.lessons);

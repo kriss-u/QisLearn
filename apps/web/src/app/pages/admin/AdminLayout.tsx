@@ -1,17 +1,13 @@
-import { Container, Spinner } from "@chakra-ui/react";
 import { Navigate, Outlet } from "react-router";
 import { useSession } from "../../../lib/authClient";
+import { AdminLoading } from "./AdminLoading";
 import { AdminShell } from "./AdminShell";
 
 export default function AdminLayout() {
   const { data: session, isPending } = useSession();
 
   if (isPending) {
-    return (
-      <Container py="16">
-        <Spinner />
-      </Container>
-    );
+    return <AdminLoading />;
   }
 
   // Redirect non-admins to "/" rather than "/login" — an unauthorized visitor

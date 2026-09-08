@@ -3,11 +3,13 @@ import { LuPlus, LuX } from "react-icons/lu";
 
 export function StringArrayEditor({ value, onChange }: { value: string[]; onChange: (next: string[]) => void }) {
   return (
-    <VStack align="stretch" gap="1.5">
+    <VStack align="stretch" gap="1.5" w="full">
       {value.map((item, i) => (
-        <HStack key={i}>
+        <HStack key={i} w="full">
           <Input
+            variant="flushed"
             size="sm"
+            flex="1"
             fontFamily="mono"
             value={item}
             onChange={(e) => onChange(value.map((v, j) => (j === i ? e.target.value : v)))}
@@ -31,12 +33,14 @@ export function StringArrayEditor({ value, onChange }: { value: string[]; onChan
 
 export function NumberArrayEditor({ value, onChange }: { value: number[]; onChange: (next: number[]) => void }) {
   return (
-    <VStack align="stretch" gap="1.5">
+    <VStack align="stretch" gap="1.5" w="full">
       {value.map((item, i) => (
-        <HStack key={i}>
+        <HStack key={i} w="full">
           <Input
+            variant="flushed"
             size="sm"
             type="number"
+            flex="1"
             fontFamily="mono"
             value={item}
             onChange={(e) => onChange(value.map((v, j) => (j === i ? Number(e.target.value) : v)))}

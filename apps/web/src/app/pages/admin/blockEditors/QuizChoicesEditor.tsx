@@ -25,6 +25,7 @@ export function QuizChoicesEditor({
         <VStack key={i} align="stretch" gap="1.5" borderWidth="1px" borderColor="border" rounded="l2" p="2">
           <HStack>
             <Input
+              variant="flushed"
               size="sm"
               fontFamily="mono"
               placeholder="Choice ID"

@@ -1,11 +1,14 @@
-import { Field, Input, NumberInput, Switch, Textarea, VStack } from "@chakra-ui/react";
+import { Field, Input, NumberInput, Switch, VStack } from "@chakra-ui/react";
 import type { FieldKind } from "@qislearn/graphql-schema";
-import { CircuitJsonFieldEditor } from "./CircuitJsonFieldEditor";
+import type { Circuit } from "../../../../content/schema";
+import { CircuitFieldEditor } from "./CircuitFieldEditor";
 import { InlineMathFieldEditor } from "./InlineMathFieldEditor";
 import { MarkdownFieldEditor } from "./MarkdownFieldEditor";
 import { MatrixPresetsEditor, type MatrixPresetValue } from "./MatrixPresetsEditor";
+import { PyCodeFieldEditor } from "./PyCodeFieldEditor";
 import { NumberArrayEditor, StringArrayEditor } from "./StringArrayEditor";
 import { QuizChoicesEditor, type QuizChoiceValue } from "./QuizChoicesEditor";
+import { VisualizationViewsEditor } from "./VisualizationViewsEditor";
 
 export interface BlockFieldSpec {
   name: string;
@@ -13,8 +16,6 @@ export interface BlockFieldSpec {
   kind: FieldKind;
   required: boolean;
 }
-
-const VISUALIZATION_VIEWS = ["circuit", "bloch", "statevector", "probabilities", "table"] as const;
 
 export function DynamicBlockForm({
   fields,
@@ -39,7 +40,7 @@ export function DynamicBlockForm({
               {field.label}
               {field.required && <Field.RequiredIndicator />}
             </Field.Label>
-            {renderInput(field, value, (next) => setField(field.name, next))}
+            {renderInput(field, value, (next) => setField(field.name, next), data)}
           </Field.Root>
         );
       })}
@@ -47,27 +48,24 @@ export function DynamicBlockForm({
   );
 }
 
-function renderInput(field: BlockFieldSpec, value: unknown, onChange: (next: unknown) => void) {
+function renderInput(field: BlockFieldSpec, value: unknown, onChange: (next: unknown) => void, data: Record<string, unknown>) {
   switch (field.kind) {
     case "STRING":
       return (
         <Input
+          variant="flushed"
           size="sm"
+          w="full"
           fontFamily="mono"
           value={typeof value === "string" ? value : ""}
           onChange={(e) => onChange(e.target.value)}
         />
       );
     case "LONG_TEXT":
-      return (
-        <Textarea
-          fontFamily="mono"
-          fontSize="sm"
-          rows={4}
-          value={typeof value === "string" ? value : ""}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      );
+      // Every remaining LONG_TEXT field is Python (CodeExercise's
+      // starterCode/solutionCode) — real syntax highlighting instead of a
+      // plain mono textarea, same editor learners get.
+      return <PyCodeFieldEditor value={typeof value === "string" ? value : ""} onChange={onChange} />;
     case "INLINE_MATH":
       return <InlineMathFieldEditor value={typeof value === "string" ? value : ""} onChange={onChange} />;
     case "MARKDOWN":
@@ -110,27 +108,14 @@ function renderInput(field: BlockFieldSpec, value: unknown, onChange: (next: unk
       );
     case "VISUALIZATION_VIEWS":
       return (
-        <VStack align="stretch" gap="1">
-          {VISUALIZATION_VIEWS.map((view) => {
-            const selected = Array.isArray(value) ? (value as string[]) : [];
-            const checked = selected.includes(view);
-            return (
-              <label key={view} style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem" }}>
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={(e) =>
-                    onChange(e.target.checked ? [...selected, view] : selected.filter((v) => v !== view))
-                  }
-                />
-                {view}
-              </label>
-            );
-          })}
-        </VStack>
+        <VisualizationViewsEditor
+          selected={Array.isArray(value) ? (value as string[]) : []}
+          circuit={data.circuit as Circuit | undefined}
+          onChange={onChange}
+        />
       );
     case "CIRCUIT":
-      return <CircuitJsonFieldEditor value={value} onChange={onChange} />;
+      return <CircuitFieldEditor value={value} onChange={onChange} />;
     default:
       return null;
   }
