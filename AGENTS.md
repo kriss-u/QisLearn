@@ -2,17 +2,42 @@
 
 Guidance for AI coding agents (and human contributors) working in this repository.
 
+## Monorepo note
+
+This repo is a pnpm + Turborepo monorepo (`apps/web`, `apps/api`,
+`apps/llm-service`, `packages/*`, see the root `pnpm-workspace.yaml` /
+`turbo.json`). **Everything below this point describes `apps/web`**, the
+frontend, which is still the only functional part of the system: every
+relative path in this file (`src/...`, `vite.config.ts`, etc.) is relative to
+`apps/web/`, not the repo root. Run frontend commands via
+`pnpm --filter @qislearn/web <script>` from the repo root, or `cd apps/web`
+and use `npm run <script>` directly (see `apps/web/package.json`, unchanged
+from before the monorepo move).
+
+The backend (`apps/api`, `apps/llm-service`, `packages/db`, `packages/config`,
+`packages/graphql-schema`) is at an early scaffolding stage: stub servers
+exist and typecheck/build/lint through Turborepo, but no real GraphQL schema,
+auth, or content migration has landed. It is not wired into `apps/web` yet.
+See **[docs/BACKEND_PLAN.md](./docs/BACKEND_PLAN.md)** for the architecture
+decision record and phased roadmap before adding to the backend; don't
+introduce backend conventions that contradict it without updating that doc
+first.
+
 ## What this is
 
-QisLearn is a browser-only, interactive course for learning quantum computing with
-Qiskit, covering everything from "what is a qubit" through entanglement and beyond. There is no backend
-and no Python execution: lesson content, progress, and code snapshots all live in the
-browser (MDX content compiled at build time, user state in IndexedDB via Dexie).
-Python code the learner writes is *statically parsed* (via `py-ast`) to check their
-circuit, not executed.
+QisLearn is an interactive course for learning quantum computing with Qiskit,
+covering everything from "what is a qubit" through entanglement and beyond.
+Today (within `apps/web`) it is still browser-only with no Python execution:
+lesson content, progress, and code snapshots all live in the browser (MDX
+content compiled at build time, user state in IndexedDB via Dexie). Python
+code the learner writes is *statically parsed* (via `py-ast`) to check their
+circuit, not executed. `docs/BACKEND_PLAN.md` describes the in-progress move
+of lesson content and user data to a Postgres backend; until that migration
+lands, the description below is accurate.
 
-Read `README.md` first for the product framing. This file is about how the codebase
-is put together and the conventions to follow when changing it.
+Read `README.md` first for the product framing. This file is about how the
+`apps/web` codebase is put together and the conventions to follow when
+changing it.
 
 ## Stack
 
@@ -364,6 +389,9 @@ Qiskit behavior for that gate/feature, not generic textbook convention.
 
 ## Commands
 
+Run from `apps/web/` directly, or from the repo root via
+`pnpm --filter @qislearn/web <script>`:
+
 ```
 npm run dev       # Vite dev server
 npm run build     # tsc -b && vite build
@@ -371,10 +399,14 @@ npm run lint       # oxlint
 npm run preview    # preview the production build
 ```
 
+`pnpm dev` / `pnpm build` / `pnpm lint` / `pnpm typecheck` from the repo root
+run the same scripts across every app/package via Turborepo (currently just
+`apps/web` plus the trivial `apps/api`/`apps/llm-service` stubs).
+
 ## Verifying changes
 
-- `tsc -b`, `npm run build`, and `npm run lint` (oxlint) are the baseline checks;
-  run them after any non-trivial change.
+- `tsc -b`, `npm run build`, and `npm run lint` (oxlint), run from `apps/web/`,
+  are the baseline checks; run them after any non-trivial change.
 - Don't verify in a real browser (chromium-cli, Playwright, or similar) unless the
   user explicitly asks for it. It's fine to start a dev server (`npx vite --port
   <port>`) purely to `curl` module paths and confirm they transform without error
