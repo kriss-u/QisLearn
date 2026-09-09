@@ -18,7 +18,7 @@ export interface OracleFigureProps extends OracleBoxProps {
 /**
  * MDX-facing wrapper around OracleBox, following the same
  * `<MdxCard eyebrow icon>` + `<VizSection>` shell every other lesson tag
- * (CodeExercise/Quiz/Visualization/Measurement) uses.
+ * (QiskitCodeExercise/Quiz/Visualization/Measurement) uses.
  */
 export function OracleFigure({ title, description, ...boxProps }: OracleFigureProps) {
   const svgRef = useRef<SVGSVGElement>(null);

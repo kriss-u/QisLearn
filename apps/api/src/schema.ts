@@ -1,22 +1,28 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import {
   codeSnapshot,
   contentBlock,
+  course,
+  courseOrganization,
   lesson,
   lessonPrerequisite,
   lessonProgress,
   lessonTag,
+  member,
   module_,
   quizAttempt,
   tag,
   track,
+  widget,
+  widgetCategory,
+  widgetWidgetCategory,
 } from "@qislearn/db/schema";
 import { GraphQLError } from "graphql";
 import { createSchema } from "graphql-yoga";
 import { JSONResolver } from "graphql-scalars";
 import { ZodError } from "zod";
 import { db } from "./db.js";
-import { requireAdmin, requireUser } from "./authz-guards.js";
+import { requireAdmin, requireCourseOffered, requireOrgAdmin, requireUser } from "./authz-guards.js";
 import { CONTENT_BLOCK_REGISTRY, validateContentBlockData } from "./content-block-registry.js";
 import { LESSON_LAYOUTS, LESSON_LAYOUT_VALUES } from "./lesson-layouts.js";
 import { getLessonMarkdownContent } from "./lesson-content.js";
@@ -85,6 +91,56 @@ function pickDefined<T extends Record<string, unknown>>(obj: T): Partial<T> {
   return result;
 }
 
+// Course ids the viewer may see: every course for a site superadmin, else
+// whatever's been offered to their org (falling back off the session to
+// any membership on record — see myCourses's own comment on why session's
+// activeOrganizationId can't always be trusted to be set yet).
+async function entitledCourseIds(ctx: GraphQLContext): Promise<string[] | "all"> {
+  const user = requireUser(ctx);
+  if (user.role === "admin") return "all";
+  const orgId =
+    ctx.session?.activeOrganizationId ??
+    (await db.query.member.findFirst({ where: eq(member.userId, user.id) }))?.organizationId;
+  if (!orgId) return [];
+  const rows = await db.query.courseOrganization.findMany({ where: eq(courseOrganization.organizationId, orgId) });
+  return rows.map((r) => r.courseId);
+}
+
+// Shapes a `widget` row (+ its joined categories) into the GraphQL Widget
+// type, merging in CONTENT_BLOCK_REGISTRY's fields/schema by key — shared
+// by the `widgets` query and the `updateWidget` mutation's return value.
+function toWidgetPayload(
+  row: { key: string; label: string; description: string | null; implemented: boolean },
+  categories: Array<{ id: string; slug: string; label: string }>,
+) {
+  const registryEntry = CONTENT_BLOCK_REGISTRY.find((e) => e.type === row.key);
+  return {
+    key: row.key,
+    label: row.label,
+    description: row.description,
+    implemented: row.implemented && Boolean(registryEntry),
+    categories,
+    fields: registryEntry?.fields ?? [],
+  };
+}
+
+// Every track, each scoped to just one course's lessons — `dropEmpty`
+// controls whether a track with none of this course's lessons yet is kept
+// (admin authoring, so "add the first lesson under an existing track"
+// works for a brand-new course) or dropped (browsing views, where an empty
+// track is just noise).
+async function tracksForCourse(courseId: string, dropEmpty: boolean) {
+  const allTracks = await db.query.track.findMany({
+    orderBy: (t, { asc }) => asc(t.order),
+    with: {
+      lessons: { orderBy: (l, { asc }) => asc(l.order) },
+      modules: { orderBy: (m, { asc }) => asc(m.order) },
+    },
+  });
+  const scoped = allTracks.map((t) => ({ ...t, lessons: t.lessons.filter((l) => l.courseId === courseId) }));
+  return dropEmpty ? scoped.filter((t) => t.lessons.length > 0) : scoped;
+}
+
 export const schema = createSchema<GraphQLContext>({
   typeDefs: /* GraphQL */ `
     scalar JSON
@@ -92,14 +148,18 @@ export const schema = createSchema<GraphQLContext>({
     type Query {
       health: String!
       me: User
-      tracks: [Track!]!
+      tracks(courseId: ID): [Track!]!
+      courses: [Course!]!
+      course(slug: String!): Course
+      myCourses: [Course!]!
       lesson(slug: String!): Lesson
       myLessonProgress: [LessonProgress!]!
       myCodeSnapshot(lessonSlug: String!, exerciseId: String!): CodeSnapshot
       myQuizAttempt(lessonSlug: String!, quizId: String!): QuizAttempt
       adminLesson(id: ID!): Lesson
       adminTags: [Tag!]!
-      adminBlockTypes: [ContentBlockTypeSpec!]!
+      widgets: [Widget!]!
+      widgetCategories: [WidgetCategory!]!
       adminLessonLayouts: [LessonLayoutSpec!]!
     }
 
@@ -124,11 +184,17 @@ export const schema = createSchema<GraphQLContext>({
       createTrack(slug: String!, title: String!, order: Int!): Track!
       updateTrack(id: ID!, slug: String, title: String, order: Int): Track!
 
+      createCourse(slug: String!, title: String!, order: Int!): Course!
+      updateCourse(id: ID!, slug: String, title: String, order: Int): Course!
+      offerCourse(courseId: ID!, organizationId: ID!): Boolean!
+      unofferCourse(courseId: ID!, organizationId: ID!): Boolean!
+
       createModule(trackId: ID!, slug: String!, title: String!, order: Int!): Module!
       updateModule(id: ID!, slug: String, title: String, order: Int): Module!
       deleteModule(id: ID!): Boolean!
 
       createLesson(
+        courseId: ID!
         trackId: ID!
         moduleId: ID
         slug: String!
@@ -141,6 +207,7 @@ export const schema = createSchema<GraphQLContext>({
       ): Lesson!
       updateLesson(
         id: ID!
+        courseId: ID
         trackId: ID
         moduleId: ID
         slug: String
@@ -160,6 +227,16 @@ export const schema = createSchema<GraphQLContext>({
       createContentBlock(lessonId: ID!, order: Int!, type: String!, data: JSON!): ContentBlock!
       updateContentBlock(id: ID!, order: Int, type: String, data: JSON): ContentBlock!
       deleteContentBlock(id: ID!): Boolean!
+
+      # No createWidget: a new widget always needs real code (a component +
+      # field spec in CONTENT_BLOCK_REGISTRY) to be worth anything, so new
+      # catalog rows still come from the seed script. Categories are pure
+      # metadata, safe to manage here without touching code.
+      updateWidget(key: ID!, label: String, description: String, implemented: Boolean, categoryIds: [ID!]): Widget!
+      deleteWidget(key: ID!): Boolean!
+      createWidgetCategory(slug: String!, label: String!): WidgetCategory!
+      updateWidgetCategory(id: ID!, slug: String, label: String): WidgetCategory!
+      deleteWidgetCategory(id: ID!): Boolean!
 
       suggestLessonQuestions(lessonSlug: String!): [String!]!
     }
@@ -209,6 +286,20 @@ export const schema = createSchema<GraphQLContext>({
       modules: [Module!]!
     }
 
+    """
+    A top-level offering (e.g. "Quantum Computing"). Associates directly
+    with lessons, not tracks — a track ("Math", "Qubits") can be reused
+    across more than one course, so \`tracks\` here is derived from this
+    course's lessons rather than a stored relation.
+    """
+    type Course {
+      id: ID!
+      slug: String!
+      title: String!
+      order: Int!
+      tracks: [Track!]!
+    }
+
     type Module {
       id: ID!
       slug: String!
@@ -238,6 +329,7 @@ export const schema = createSchema<GraphQLContext>({
       difficulty: LessonDifficulty!
       order: Int!
       estimatedMinutes: Int!
+      course: Course!
       track: Track!
       module: Module
       tags: [Tag!]!
@@ -274,9 +366,24 @@ export const schema = createSchema<GraphQLContext>({
       required: Boolean!
     }
 
-    type ContentBlockTypeSpec {
-      type: String!
+    type WidgetCategory {
+      id: ID!
+      slug: String!
       label: String!
+    }
+
+    """
+    A catalog entry for an authorable content-block type. \`implemented:
+    false\` means it's cataloged (so authors can browse/plan around it) but
+    has no working component/field-spec yet — \`fields\` is empty and
+    placing it renders a "not implemented yet" placeholder on the lesson.
+    """
+    type Widget {
+      key: String!
+      label: String!
+      description: String
+      implemented: Boolean!
+      categories: [WidgetCategory!]!
       fields: [ContentBlockFieldSpec!]!
     }
 
@@ -290,25 +397,62 @@ export const schema = createSchema<GraphQLContext>({
     Query: {
       health: () => "ok",
       me: (_parent, _args, ctx) => ctx.user,
-      tracks: () =>
-        db.query.track.findMany({
+      // Requires login (see requireUser inside entitledCourseIds) — a
+      // signed-out visitor can no longer browse course content at all;
+      // this is also what the admin panel's AdminTracks query hits, which
+      // is fine since a site superadmin's entitledCourseIds is "all".
+      tracks: async (_parent, args: { courseId?: string }, ctx) => {
+        if (args.courseId) {
+          // Scoped to one course (admin's CourseDetailPage, or the
+          // student-facing course-grouped home/sidebar via Course.tracks
+          // below). requireCourseOffered has its own admin bypass; admins
+          // keep empty tracks (so "add the first lesson" works on a
+          // brand-new course), everyone else gets them dropped.
+          const courseId = args.courseId;
+          await requireCourseOffered(ctx, courseId);
+          return tracksForCourse(courseId, ctx.user?.role !== "admin");
+        }
+        const allTracks = await db.query.track.findMany({
           orderBy: (t, { asc }) => asc(t.order),
           with: {
             lessons: { orderBy: (l, { asc }) => asc(l.order) },
             modules: { orderBy: (m, { asc }) => asc(m.order) },
           },
-        }),
-      lesson: (_parent, args: { slug: string }) =>
-        db.query.lesson.findFirst({
+        });
+        const courseIds = await entitledCourseIds(ctx);
+        if (courseIds === "all") return allTracks;
+        const allowed = new Set(courseIds);
+        return allTracks
+          .map((t) => ({ ...t, lessons: t.lessons.filter((l) => allowed.has(l.courseId)) }))
+          .filter((t) => t.lessons.length > 0);
+      },
+      courses: () => db.query.course.findMany({ orderBy: (c, { asc }) => asc(c.order) }),
+      course: (_parent, args: { slug: string }) => db.query.course.findFirst({ where: eq(course.slug, args.slug) }),
+      myCourses: async (_parent, _args, ctx) => {
+        const courseIds = await entitledCourseIds(ctx);
+        if (courseIds === "all") return db.query.course.findMany({ orderBy: (c, { asc }) => asc(c.order) });
+        if (courseIds.length === 0) return [];
+        const rows = await db.query.course.findMany({ where: inArray(course.id, courseIds) });
+        return rows.sort((a, b) => a.order - b.order);
+      },
+      lesson: async (_parent, args: { slug: string }, ctx) => {
+        // Requires login (requireCourseOffered throws UNAUTHENTICATED via
+        // requireUser for a signed-out visitor) — course content is no
+        // longer publicly browsable at all.
+        const row = await db.query.lesson.findFirst({
           where: eq(lesson.slug, args.slug),
           with: {
+            course: true,
             track: true,
             module: true,
             tags: { with: { tag: true } },
             contentBlocks: { orderBy: (cb, { asc }) => asc(cb.order) },
             prerequisites: { with: { prerequisite: { with: { track: true } } } },
           },
-        }),
+        });
+        if (row) await requireCourseOffered(ctx, row.courseId);
+        return row;
+      },
       myLessonProgress: async (_parent, _args, ctx) => {
         const user = requireUser(ctx);
         const rows = await db.query.lessonProgress.findMany({ where: eq(lessonProgress.userId, user.id) });
@@ -339,6 +483,7 @@ export const schema = createSchema<GraphQLContext>({
         return db.query.lesson.findFirst({
           where: eq(lesson.id, args.id),
           with: {
+            course: true,
             track: true,
             module: true,
             tags: { with: { tag: true } },
@@ -351,9 +496,17 @@ export const schema = createSchema<GraphQLContext>({
         requireAdmin(ctx);
         return db.query.tag.findMany({ orderBy: (t, { asc }) => asc(t.label) });
       },
-      adminBlockTypes: (_parent, _args, ctx) => {
+      widgets: async (_parent, _args, ctx) => {
         requireAdmin(ctx);
-        return CONTENT_BLOCK_REGISTRY.map((e) => ({ type: e.type, label: e.label, fields: e.fields }));
+        const rows = await db.query.widget.findMany({
+          orderBy: (w, { asc }) => asc(w.order),
+          with: { categories: { with: { category: true } } },
+        });
+        return rows.map((row) => toWidgetPayload(row, row.categories.map((c) => c.category)));
+      },
+      widgetCategories: (_parent, _args, ctx) => {
+        requireAdmin(ctx);
+        return db.query.widgetCategory.findMany({ orderBy: (c, { asc }) => asc(c.label) });
       },
       adminLessonLayouts: (_parent, _args, ctx) => {
         requireAdmin(ctx);
@@ -488,6 +641,53 @@ export const schema = createSchema<GraphQLContext>({
         return row;
       },
 
+      createCourse: async (_parent, args: { slug: string; title: string; order: number }, ctx) => {
+        requireAdmin(ctx);
+        const [row] = await db.insert(course).values(args).returning();
+        return row;
+      },
+      updateCourse: async (
+        _parent,
+        args: { id: string; slug?: string; title?: string; order?: number },
+        ctx,
+      ) => {
+        requireAdmin(ctx);
+        const { id, ...rest } = args;
+        const [row] = await db.update(course).set(pickDefined(rest)).where(eq(course.id, id)).returning();
+        if (!row) throw new GraphQLError("Course not found.");
+        return row;
+      },
+      offerCourse: async (_parent, args: { courseId: string; organizationId: string }, ctx) => {
+        await requireOrgAdmin(ctx, args.organizationId);
+        await db
+          .insert(courseOrganization)
+          .values({ courseId: args.courseId, organizationId: args.organizationId })
+          .onConflictDoNothing();
+        await ctx.authz.write({
+          user: `organization:${args.organizationId}`,
+          relation: "offered_to",
+          object: `course:${args.courseId}`,
+        });
+        return true;
+      },
+      unofferCourse: async (_parent, args: { courseId: string; organizationId: string }, ctx) => {
+        await requireOrgAdmin(ctx, args.organizationId);
+        await db
+          .delete(courseOrganization)
+          .where(
+            and(
+              eq(courseOrganization.courseId, args.courseId),
+              eq(courseOrganization.organizationId, args.organizationId),
+            ),
+          );
+        await ctx.authz.delete({
+          user: `organization:${args.organizationId}`,
+          relation: "offered_to",
+          object: `course:${args.courseId}`,
+        });
+        return true;
+      },
+
       createModule: async (
         _parent,
         args: { trackId: string; slug: string; title: string; order: number },
@@ -520,6 +720,7 @@ export const schema = createSchema<GraphQLContext>({
       createLesson: async (
         _parent,
         args: {
+          courseId: string;
           trackId: string;
           moduleId?: string | null;
           slug: string;
@@ -537,6 +738,7 @@ export const schema = createSchema<GraphQLContext>({
         const [row] = await db
           .insert(lesson)
           .values({
+            courseId: args.courseId,
             trackId: args.trackId,
             moduleId: args.moduleId ?? null,
             slug: args.slug,
@@ -555,6 +757,7 @@ export const schema = createSchema<GraphQLContext>({
         _parent,
         args: {
           id: string;
+          courseId?: string;
           trackId?: string;
           moduleId?: string | null;
           slug?: string;
@@ -600,6 +803,7 @@ export const schema = createSchema<GraphQLContext>({
         const row = await db.query.lesson.findFirst({
           where: eq(lesson.id, args.lessonId),
           with: {
+            course: true,
             track: true,
             module: true,
             tags: { with: { tag: true } },
@@ -627,6 +831,7 @@ export const schema = createSchema<GraphQLContext>({
         const row = await db.query.lesson.findFirst({
           where: eq(lesson.id, args.lessonId),
           with: {
+            course: true,
             track: true,
             module: true,
             tags: { with: { tag: true } },
@@ -674,6 +879,65 @@ export const schema = createSchema<GraphQLContext>({
         return true;
       },
 
+      updateWidget: async (
+        _parent,
+        args: {
+          key: string;
+          label?: string;
+          description?: string | null;
+          implemented?: boolean;
+          categoryIds?: string[];
+        },
+        ctx,
+      ) => {
+        requireAdmin(ctx);
+        const existing = await db.query.widget.findFirst({ where: eq(widget.key, args.key) });
+        if (!existing) throw new GraphQLError("Widget not found.");
+        const { key, categoryIds, ...rest } = args;
+        const set = pickDefined(rest);
+        if (Object.keys(set).length > 0) {
+          await db.update(widget).set(set).where(eq(widget.id, existing.id));
+        }
+        if (categoryIds !== undefined) {
+          await db.transaction(async (tx) => {
+            await tx.delete(widgetWidgetCategory).where(eq(widgetWidgetCategory.widgetId, existing.id));
+            if (categoryIds.length > 0) {
+              await tx
+                .insert(widgetWidgetCategory)
+                .values(categoryIds.map((categoryId) => ({ widgetId: existing.id, categoryId })));
+            }
+          });
+        }
+        const row = await db.query.widget.findFirst({
+          where: eq(widget.id, existing.id),
+          with: { categories: { with: { category: true } } },
+        });
+        if (!row) throw new GraphQLError("Widget not found.");
+        return toWidgetPayload(row, row.categories.map((c) => c.category));
+      },
+      deleteWidget: async (_parent, args: { key: string }, ctx) => {
+        requireAdmin(ctx);
+        await db.delete(widget).where(eq(widget.key, args.key));
+        return true;
+      },
+      createWidgetCategory: async (_parent, args: { slug: string; label: string }, ctx) => {
+        requireAdmin(ctx);
+        const [row] = await db.insert(widgetCategory).values(args).returning();
+        return row;
+      },
+      updateWidgetCategory: async (_parent, args: { id: string; slug?: string; label?: string }, ctx) => {
+        requireAdmin(ctx);
+        const { id, ...rest } = args;
+        const [row] = await db.update(widgetCategory).set(pickDefined(rest)).where(eq(widgetCategory.id, id)).returning();
+        if (!row) throw new GraphQLError("Widget category not found.");
+        return row;
+      },
+      deleteWidgetCategory: async (_parent, args: { id: string }, ctx) => {
+        requireAdmin(ctx);
+        await db.delete(widgetCategory).where(eq(widgetCategory.id, args.id));
+        return true;
+      },
+
       suggestLessonQuestions: async (_parent, args: { lessonSlug: string }, ctx) => {
         requireUser(ctx);
         const lessonContent = await getLessonMarkdownContent(args.lessonSlug);
@@ -692,6 +956,18 @@ export const schema = createSchema<GraphQLContext>({
           where: (l, { eq: eqOp }) => eqOp(l.moduleId, parent.id),
           orderBy: (l, { asc }) => asc(l.order),
         }),
+    },
+    Course: {
+      // Derived, not stored: the distinct tracks used by this course's
+      // lessons — a track can belong to more than one course this way.
+      // Entitlement-checked here (not just trusted from whichever query
+      // produced this Course object) so this field is safe to select from
+      // *any* query, including the unfiltered public `courses` listing —
+      // it never leaks a non-entitled course's lesson content.
+      tracks: async (parent: { id: string }, _args, ctx) => {
+        await requireCourseOffered(ctx, parent.id);
+        return tracksForCourse(parent.id, true);
+      },
     },
     ContentBlockFieldSpec: {
       kind: (parent: { kind: string }) => toFieldKindEnum(parent.kind),

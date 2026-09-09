@@ -2,11 +2,17 @@ import { Box, Button, Container, Field, Heading, Input, Text, VStack } from "@ch
 import { useEffect, useState, type FormEvent } from "react";
 import { Navigate } from "react-router";
 import { signOut, updateUser, useSession } from "../../lib/authClient";
+import { requireSession } from "../../lib/session.server";
 import { buildPageMeta } from "../../lib/seo";
-import type { MetaFunction } from "react-router";
+import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 
 export const meta: MetaFunction = () =>
   buildPageMeta({ title: "Your profile — QisLearn", description: "Manage your QisLearn account.", path: "/profile" });
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  await requireSession(request, "/profile");
+  return null;
+}
 
 export default function ProfilePage() {
   const { data: session, isPending } = useSession();

@@ -72,7 +72,7 @@ export function LessonPreviewDialog({
                   unsaved edits instead of a fetch, so this always matches
                   what learners will see once saved — no separate preview
                   template to keep in sync. A distinct fake lessonId keeps
-                  any CodeExercise/Quiz interaction here from writing into
+                  any QiskitCodeExercise/Quiz interaction here from writing into
                   the admin's own real progress on this lesson. */}
               <PreviewErrorBoundary resetKey={JSON.stringify({ frontmatter, blocks })}>
                 <LessonProvider value={{ lessonId: `preview-${frontmatter.id}`, isPreview: true }}>

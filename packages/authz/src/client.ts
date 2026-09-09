@@ -18,6 +18,12 @@ export function createAuthzClient(env: OpenfgaEnv & { OPENFGA_STORE_ID: string; 
       });
       return result.allowed ?? false;
     },
+    async write(tuple: { user: string; relation: string; object: string }) {
+      await client.write({ writes: [tuple] });
+    },
+    async delete(tuple: { user: string; relation: string; object: string }) {
+      await client.write({ deletes: [tuple] });
+    },
   };
 }
 

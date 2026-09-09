@@ -19,7 +19,7 @@ import { MdxCard } from "./MdxCard";
 
 const PyEditor = lazy(() => import("../../editor/PyEditor").then((m) => ({ default: m.PyEditor })));
 
-export interface CodeExerciseProps {
+export interface QiskitCodeExerciseProps {
   id: string;
   prompt: string;
   starterCode: string;
@@ -33,7 +33,7 @@ interface CheckResult {
   messages: string[];
 }
 
-export function CodeExercise({ id: exerciseId, prompt, starterCode, expectedCircuit, hints = [] }: CodeExerciseProps) {
+export function QiskitCodeExercise({ id: exerciseId, prompt, starterCode, expectedCircuit, hints = [] }: QiskitCodeExerciseProps) {
   const lessonId = useLessonId();
   const isPreview = useIsLessonPreview();
   const { registerExercise, reportResult } = useLessonProgress();

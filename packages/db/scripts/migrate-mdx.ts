@@ -8,7 +8,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import remarkMdx from "remark-mdx";
 import { createDb } from "../src/index.js";
-import { contentBlock, lesson, lessonPrerequisite, track } from "../src/content-schema.js";
+import { contentBlock, course, lesson, lessonPrerequisite, track } from "../src/content-schema.js";
 
 // Mirrors apps/web/src/content/index.ts's reading-time estimate exactly, so
 // migrated lessons keep the same estimatedMinutes learners see today.
@@ -192,6 +192,20 @@ async function main() {
     await tx.delete(lesson);
     await tx.delete(track);
 
+    // Every lesson needs a courseId (see packages/db/src/content-schema.ts);
+    // this script predates the course entity, so it uses/creates the same
+    // default "Quantum Computing" course the schema migration backfilled.
+    const existingCourse = await tx.query.course.findFirst({ where: (c, { eq: eqOp }) => eqOp(c.slug, "quantum-computing") });
+    const courseId =
+      existingCourse?.id ??
+      (
+        await tx
+          .insert(course)
+          .values({ slug: "quantum-computing", title: "Quantum Computing", order: 0 })
+          .returning({ id: course.id })
+      )[0]?.id;
+    if (!courseId) throw new Error("Failed to resolve default course");
+
     const trackIdBySlug = new Map<string, string>();
     for (const [index, slug] of trackSlugs.entries()) {
       const [row] = await tx.insert(track).values({ slug, title: titleCase(slug), order: index + 1 }).returning({
@@ -209,6 +223,7 @@ async function main() {
         .insert(lesson)
         .values({
           slug: p.frontmatter.id,
+          courseId,
           trackId,
           order: p.frontmatter.order,
           title: p.frontmatter.title,

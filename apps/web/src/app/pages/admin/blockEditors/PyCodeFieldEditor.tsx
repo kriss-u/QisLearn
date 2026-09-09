@@ -2,7 +2,7 @@ import { Box, Skeleton } from "@chakra-ui/react";
 import { lazy, Suspense } from "react";
 import { ClientOnly } from "../../../../components/ClientOnly";
 
-// Same lazy+ClientOnly pattern CodeExercise.tsx uses for the learner-facing
+// Same lazy+ClientOnly pattern QiskitCodeExercise.tsx uses for the learner-facing
 // editor — @uiw/react-codemirror touches browser-only APIs.
 const PyEditor = lazy(() => import("../../../../components/editor/PyEditor").then((m) => ({ default: m.PyEditor })));
 

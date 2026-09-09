@@ -20,6 +20,37 @@ query AdminTracks {
   }
 }
 
+query AdminCourseTracks($courseId: ID!) {
+  tracks(courseId: $courseId) {
+    id
+    slug
+    title
+    order
+    modules {
+      id
+      slug
+      title
+      order
+    }
+    lessons {
+      id
+      slug
+      title
+      order
+      difficulty
+    }
+  }
+}
+
+query AdminCourses {
+  courses {
+    id
+    slug
+    title
+    order
+  }
+}
+
 query AdminLesson($id: ID!) {
   adminLesson(id: $id) {
     id
@@ -30,6 +61,11 @@ query AdminLesson($id: ID!) {
     difficulty
     order
     estimatedMinutes
+    course {
+      id
+      slug
+      title
+    }
     track {
       id
       slug
@@ -67,16 +103,31 @@ query AdminTags {
   }
 }
 
-query AdminBlockTypes {
-  adminBlockTypes {
-    type
+query Widgets {
+  widgets {
+    key
     label
+    description
+    implemented
+    categories {
+      id
+      slug
+      label
+    }
     fields {
       name
       label
       kind
       required
     }
+  }
+}
+
+query WidgetCategories {
+  widgetCategories {
+    id
+    slug
+    label
   }
 }
 
@@ -105,6 +156,32 @@ mutation UpdateTrack($id: ID!, $slug: String, $title: String, $order: Int) {
   }
 }
 
+mutation CreateCourse($slug: String!, $title: String!, $order: Int!) {
+  createCourse(slug: $slug, title: $title, order: $order) {
+    id
+    slug
+    title
+    order
+  }
+}
+
+mutation UpdateCourse($id: ID!, $slug: String, $title: String, $order: Int) {
+  updateCourse(id: $id, slug: $slug, title: $title, order: $order) {
+    id
+    slug
+    title
+    order
+  }
+}
+
+mutation OfferCourse($courseId: ID!, $organizationId: ID!) {
+  offerCourse(courseId: $courseId, organizationId: $organizationId)
+}
+
+mutation UnofferCourse($courseId: ID!, $organizationId: ID!) {
+  unofferCourse(courseId: $courseId, organizationId: $organizationId)
+}
+
 mutation CreateModule($trackId: ID!, $slug: String!, $title: String!, $order: Int!) {
   createModule(trackId: $trackId, slug: $slug, title: $title, order: $order) {
     id
@@ -128,6 +205,7 @@ mutation DeleteModule($id: ID!) {
 }
 
 mutation CreateLesson(
+  $courseId: ID!
   $trackId: ID!
   $moduleId: ID
   $slug: String!
@@ -139,6 +217,7 @@ mutation CreateLesson(
   $estimatedMinutes: Int!
 ) {
   createLesson(
+    courseId: $courseId
     trackId: $trackId
     moduleId: $moduleId
     slug: $slug
@@ -156,6 +235,7 @@ mutation CreateLesson(
 
 mutation UpdateLesson(
   $id: ID!
+  $courseId: ID
   $trackId: ID
   $moduleId: ID
   $slug: String
@@ -168,6 +248,7 @@ mutation UpdateLesson(
 ) {
   updateLesson(
     id: $id
+    courseId: $courseId
     trackId: $trackId
     moduleId: $moduleId
     slug: $slug

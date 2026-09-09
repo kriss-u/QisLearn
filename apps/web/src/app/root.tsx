@@ -14,11 +14,12 @@ import {
   ScrollRestoration,
   useLoaderData,
   useMatches,
+  type LoaderFunctionArgs,
   type MetaFunction,
 } from "react-router";
 import { AppShell } from "../components/layout/AppShell";
 import { Provider } from "../components/ui/provider";
-import { getTracks } from "../content";
+import { getCourseGroups } from "../content";
 import { createApolloClient } from "../lib/apolloClient";
 import { useProgressSync } from "../store/useProgressSync";
 import { useSettingsStore } from "../store/settingsStore";
@@ -29,16 +30,20 @@ import "../index.css";
 // replaces this rather than merging with it — this only covers unmatched/error routes.
 export const meta: MetaFunction = () =>
   buildPageMeta({
-    title: "QisLearn — Learn Quantum Computing with Qiskit",
-    description:
-      "Interactive, browser-based lessons for learning quantum computing with Qiskit — circuits, the Bloch sphere, statevectors, and hands-on code exercises. No backend, no install, runs entirely in your browser.",
+    title: "QisLearn",
+    description: "Interactive, browser-based courses — no install required.",
     path: "/",
   });
 
 // Sitewide nav data (AppShell's sidebar) needed on every route, fetched once
-// per request here rather than duplicated in each page's own loader.
-export async function loader() {
-  return { tracks: await getTracks() };
+// per request here rather than duplicated in each page's own loader. This
+// wraps every route including /login itself, so it must never hard-fail a
+// signed-out visitor the way HomePage/LessonPage's own loaders do — an
+// empty sidebar for a logged-out visitor is fine, a redirect loop is not.
+export async function loader({ request }: LoaderFunctionArgs) {
+  const cookie = request.headers.get("cookie") ?? undefined;
+  const courses = await getCourseGroups(cookie).catch(() => []);
+  return { courses };
 }
 
 export function Layout({ children }: PropsWithChildren) {
@@ -78,7 +83,7 @@ function ProgressHydrator() {
 }
 
 export default function Root(): ReactNode {
-  const { tracks } = useLoaderData<typeof loader>();
+  const { courses } = useLoaderData<typeof loader>();
   const hydrateSettings = useSettingsStore((s) => s.hydrate);
   // Fresh per request on the server, stable for the session in the browser
   // — see apolloClient.ts. This provider is for client-initiated hooks
@@ -88,7 +93,20 @@ export default function Root(): ReactNode {
   // /admin gets its own shell (AdminLayout -> AdminShell), not the student
   // AppShell's sidebar/nav — route id comes from the file path relative to
   // app/ that routes.ts points "admin" at.
-  const isAdmin = useMatches().some((m) => m.id.includes("pages/admin/AdminLayout"));
+  const matches = useMatches();
+  const isAdmin = matches.some((m) => m.id.includes("pages/admin/AdminLayout"));
+  // Login/signup, the course-selection screen, and the home dashboard are
+  // their own standalone screens, not the learning app's sidebar shell —
+  // the sidebar only makes sense once you're actually inside a course
+  // (CourseHomePage, LessonPage), not on the "which course" landing page
+  // itself. Profile intentionally keeps the normal shell.
+  const isBareScreen = matches.some(
+    (m) =>
+      m.id.includes("pages/LoginPage") ||
+      m.id.includes("pages/SignupPage") ||
+      m.id.includes("pages/CoursesPage") ||
+      m.id.includes("pages/HomePage"),
+  );
 
   useEffect(() => {
     hydrateSettings();
@@ -98,10 +116,10 @@ export default function Root(): ReactNode {
     <ApolloProvider client={apolloClient}>
       <ProgressHydrator />
       <Provider>
-        {isAdmin ? (
+        {isAdmin || isBareScreen ? (
           <Outlet />
         ) : (
-          <AppShell tracks={tracks}>
+          <AppShell courses={courses}>
             <Outlet />
           </AppShell>
         )}

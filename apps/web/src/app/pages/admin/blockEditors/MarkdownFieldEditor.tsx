@@ -9,7 +9,7 @@ import { useColorMode } from "../../../../components/ui/color-mode";
 
 // @uiw/react-md-editor self-imports a .css file at its module root, which
 // Node's SSR loader can't handle — load it lazily, client-only only, same
-// pattern as PyEditor/CodeExercise's ClientOnly+lazy combo.
+// pattern as PyEditor/QiskitCodeExercise's ClientOnly+lazy combo.
 const MDEditor = lazy(async () => {
   await import("@uiw/react-md-editor/markdown-editor.css");
   const mod = await import("@uiw/react-md-editor");

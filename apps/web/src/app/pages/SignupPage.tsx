@@ -1,7 +1,8 @@
-import { Alert, Box, Button, Container, Field, Heading, Input, Text, VStack } from "@chakra-ui/react";
+import { Alert, Box, Button, Field, Heading, Input, Text, VStack } from "@chakra-ui/react";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams, type MetaFunction } from "react-router";
 import { signUp } from "../../lib/authClient";
+import { AuthScreen } from "../../components/layout/AuthScreen";
 import { buildPageMeta } from "../../lib/seo";
 
 export const meta: MetaFunction = () =>
@@ -30,11 +31,11 @@ export default function SignupPage() {
       setError(signUpError.message ?? "Couldn't create your account.");
       return;
     }
-    navigate(searchParams.get("redirect") ?? "/");
+    navigate(searchParams.get("redirect") ?? "/courses");
   }
 
   return (
-    <Container maxW="sm" py={{ base: "10", md: "16" }}>
+    <AuthScreen>
       <VStack align="stretch" gap="6">
         <Box>
           <Heading size="lg">Sign up</Heading>
@@ -83,6 +84,6 @@ export default function SignupPage() {
           </Link>
         </Text>
       </VStack>
-    </Container>
+    </AuthScreen>
   );
 }

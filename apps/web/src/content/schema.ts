@@ -40,7 +40,7 @@ export type QuizChoice = z.infer<typeof QuizChoiceSchema>;
 
 /**
  * Metadata every lesson .mdx file must export via frontmatter. The lesson
- * body itself (prose, <CodeExercise/>, <Quiz/>, <Visualization/>) is free-form
+ * body itself (prose, <QiskitCodeExercise/>, <Quiz/>, <Visualization/>) is free-form
  * MDX and isn't schema-validated the way this metadata is — see AGENTS.md.
  */
 export const LessonFrontmatterSchema = z.object({

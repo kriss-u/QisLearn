@@ -1,5 +1,5 @@
 import { markdownElements } from "./markdownElements";
-import { CodeExercise } from "./mdx/CodeExercise";
+import { QiskitCodeExercise } from "./mdx/QiskitCodeExercise";
 import { ComplexPlaneExplorer } from "./mdx/ComplexPlaneExplorer";
 import { GroverRotationPlayground } from "./mdx/GroverRotationPlayground";
 import { Measurement } from "./mdx/Measurement";
@@ -19,7 +19,7 @@ import { Visualization } from "./mdx/Visualization";
  */
 export const mdxComponents = {
   ...markdownElements,
-  CodeExercise,
+  QiskitCodeExercise,
   Quiz,
   Visualization,
   Measurement,

@@ -127,6 +127,9 @@ importers:
       '@openrouter/ai-sdk-provider':
         specifier: ^3.0.0
         version: 3.0.0(ai@7.0.94(zod@4.5.4))(zod@4.5.4)
+      '@qislearn/authz':
+        specifier: workspace:*
+        version: link:../../packages/authz
       '@qislearn/config':
         specifier: workspace:*
         version: link:../../packages/config

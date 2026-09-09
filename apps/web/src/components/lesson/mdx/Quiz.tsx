@@ -41,7 +41,7 @@ export function Quiz({ id: quizId, question, choices, explanation }: QuizProps) 
       setSelected(attempt.selectedChoiceId);
       setChecked(attempt.submitted);
     }
-    // One-time "load the initial value" effect — see CodeExercise.tsx for
+    // One-time "load the initial value" effect — see QiskitCodeExercise.tsx for
     // the same pattern and why `attemptData` is deliberately not a dep.
   }, [attemptLoading, session]);
 

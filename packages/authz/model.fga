@@ -3,12 +3,40 @@ model
 
 type user
 
+# `member`/`admin` tuples must be written whenever a `member` row is
+# created/removed in Postgres, or course entitlement checks below have
+# nothing to evaluate against. Currently only wired for personal-org
+# auto-creation (apps/api/src/auth.ts, `databaseHooks.user.create.after`) —
+# team-org creation/invitation-acceptance/member-removal don't sync to FGA
+# yet, since team-org features are themselves still just "create + invite,"
+# not yet built out. Add the corresponding tuple writes there once they are.
 type organization
   relations
     define member: [user]
     define admin: [user]
     define can_view_org: member or admin
     define can_manage_org: admin
+
+# Global superadmin bypass (better-auth's `user.role === "admin"`) is a
+# code-level check in apps/api (see requireCourseOffered in
+# apps/api/src/authz-guards.ts), not modeled here — FGA has no clean "admin
+# of every object of this type" relation without per-object tuples.
+type course
+  relations
+    # Modeled now for a planned future feature (course-scoped content
+    # authors granted authoring rights on one specific course without being
+    # a global superadmin) but not wired into any resolver yet:
+    # createCourse/updateCourse/createLesson/updateLesson stay gated by the
+    # existing global requireAdmin, exactly mirroring lesson.can_edit_lesson
+    # below.
+    define admin: [user]
+    define can_edit_course: admin
+    define offered_to: [organization]
+    # True iff the caller is a `member` of any organization related via
+    # `offered_to` — the actual ReBAC payoff: a plain `user:<id>` check
+    # transparently covers a personal-org admin, a team-org admin, and a
+    # team-org member with no special-casing per actor kind.
+    define can_view_course: admin or member from offered_to
 
 # Content is currently global/public (no org-scoping decision yet, see
 # docs/BACKEND_PLAN.md §10) — can_view_lesson is intentionally unconditional

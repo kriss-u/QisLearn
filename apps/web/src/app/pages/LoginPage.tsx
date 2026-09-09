@@ -1,7 +1,8 @@
-import { Alert, Box, Button, Container, Field, Heading, Input, Text, VStack } from "@chakra-ui/react";
+import { Alert, Box, Button, Field, Heading, Input, Text, VStack } from "@chakra-ui/react";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams, type MetaFunction } from "react-router";
 import { signIn } from "../../lib/authClient";
+import { AuthScreen } from "../../components/layout/AuthScreen";
 import { buildPageMeta } from "../../lib/seo";
 
 export const meta: MetaFunction = () =>
@@ -25,11 +26,11 @@ export default function LoginPage() {
       setError(signInError.message ?? "Couldn't log you in — check your email and password.");
       return;
     }
-    navigate(searchParams.get("redirect") ?? "/");
+    navigate(searchParams.get("redirect") ?? "/courses");
   }
 
   return (
-    <Container maxW="sm" py={{ base: "10", md: "16" }}>
+    <AuthScreen>
       <VStack align="stretch" gap="6">
         <Box>
           <Heading size="lg">Log in</Heading>
@@ -73,6 +74,6 @@ export default function LoginPage() {
           </Link>
         </Text>
       </VStack>
-    </Container>
+    </AuthScreen>
   );
 }

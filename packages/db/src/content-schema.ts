@@ -1,5 +1,36 @@
 import { relations } from "drizzle-orm";
-import { integer, jsonb, pgTable, primaryKey, text, uuid } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgTable, primaryKey, text, uuid } from "drizzle-orm/pg-core";
+import { organization } from "./auth-schema.js";
+
+// Top-level offering (e.g. "Quantum Computing", future "LLM Development").
+// Associates directly with `lesson`, not `track`: a track ("Math", "Qubits")
+// is a reusable grouping that can appear under more than one course, so
+// which tracks "belong to" a course is derived from the courses's lessons
+// rather than stored as a track->course FK (see `courseTracks` query).
+export const course = pgTable("course", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  order: integer("order").notNull(),
+});
+
+// Which organizations a course has been offered to (entitlement). The
+// actual authorization check is done via OpenFGA (packages/authz/model.fga
+// `course#offered_to`) — this table is the source of truth for listing
+// ("which courses does org X have") and is kept in sync with the FGA tuple
+// on every offer/un-offer.
+export const courseOrganization = pgTable(
+  "course_organization",
+  {
+    courseId: uuid("course_id")
+      .notNull()
+      .references(() => course.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+  },
+  (t) => [primaryKey({ columns: [t.courseId, t.organizationId] })],
+);
 
 export const track = pgTable("track", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -30,6 +61,9 @@ export const lessonDifficulties = ["beginner", "intermediate", "advanced"] as co
 export const lesson = pgTable("lesson", {
   id: uuid("id").primaryKey().defaultRandom(),
   slug: text("slug").notNull().unique(),
+  courseId: uuid("course_id")
+    .notNull()
+    .references(() => course.id, { onDelete: "cascade" }),
   trackId: uuid("track_id")
     .notNull()
     .references(() => track.id, { onDelete: "cascade" }),
@@ -95,6 +129,69 @@ export const contentBlock = pgTable("content_block", {
   data: jsonb("data").notNull().$type<Record<string, unknown>>(),
 });
 
+// Catalog of authorable widget types, for the admin content-block picker.
+// `key` matches `content_block.type` and the `CONTENT_BLOCK_REGISTRY` type
+// string (apps/api/src/content-block-registry.ts) when a component exists;
+// `implemented: false` means the widget is cataloged (so authors can see
+// it's planned and place it) but has no working component/field-spec yet —
+// the lesson renderer shows a "not implemented yet" placeholder for it.
+export const widget = pgTable("widget", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  key: text("key").notNull().unique(),
+  label: text("label").notNull(),
+  description: text("description"),
+  implemented: boolean("implemented").notNull().default(false),
+  order: integer("order").notNull(),
+});
+
+export const widgetCategory = pgTable("widget_category", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: text("slug").notNull().unique(),
+  label: text("label").notNull(),
+});
+
+export const widgetWidgetCategory = pgTable(
+  "widget_widget_category",
+  {
+    widgetId: uuid("widget_id")
+      .notNull()
+      .references(() => widget.id, { onDelete: "cascade" }),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => widgetCategory.id, { onDelete: "cascade" }),
+  },
+  (t) => [primaryKey({ columns: [t.widgetId, t.categoryId] })],
+);
+
+export const courseRelations = relations(course, ({ many }) => ({
+  lessons: many(lesson),
+  offeredTo: many(courseOrganization),
+}));
+
+export const courseOrganizationRelations = relations(courseOrganization, ({ one }) => ({
+  course: one(course, { fields: [courseOrganization.courseId], references: [course.id] }),
+  organization: one(organization, {
+    fields: [courseOrganization.organizationId],
+    references: [organization.id],
+  }),
+}));
+
+export const widgetRelations = relations(widget, ({ many }) => ({
+  categories: many(widgetWidgetCategory),
+}));
+
+export const widgetCategoryRelations = relations(widgetCategory, ({ many }) => ({
+  widgets: many(widgetWidgetCategory),
+}));
+
+export const widgetWidgetCategoryRelations = relations(widgetWidgetCategory, ({ one }) => ({
+  widget: one(widget, { fields: [widgetWidgetCategory.widgetId], references: [widget.id] }),
+  category: one(widgetCategory, {
+    fields: [widgetWidgetCategory.categoryId],
+    references: [widgetCategory.id],
+  }),
+}));
+
 export const trackRelations = relations(track, ({ many }) => ({
   lessons: many(lesson),
   modules: many(module_),
@@ -106,6 +203,7 @@ export const moduleRelations = relations(module_, ({ one, many }) => ({
 }));
 
 export const lessonRelations = relations(lesson, ({ one, many }) => ({
+  course: one(course, { fields: [lesson.courseId], references: [course.id] }),
   track: one(track, { fields: [lesson.trackId], references: [track.id] }),
   module: one(module_, { fields: [lesson.moduleId], references: [module_.id] }),
   contentBlocks: many(contentBlock),

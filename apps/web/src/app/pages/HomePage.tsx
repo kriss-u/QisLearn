@@ -1,119 +1,79 @@
-import { Badge, Box, Card, Container, HStack, Heading, SimpleGrid, Text, VStack } from "@chakra-ui/react";
-import { Link, useLoaderData, type MetaFunction } from "react-router";
-import { getTracks } from "../../content";
-import { useProgressStore } from "../../store/progressStore";
-import { STATUS_COLOR_PALETTE } from "../../store/statusColor";
+import { Card, Container, Heading, HStack, SimpleGrid, Text, VStack } from "@chakra-ui/react";
+import { Link, redirect, useLoaderData, type LoaderFunctionArgs, type MetaFunction } from "react-router";
+import { getMyCourseList, GraphQLRequestError } from "../../content";
+import { AuthMenu } from "../../components/layout/AuthMenu";
 import { Logo } from "../../components/ui/Logo";
-import { SITE_URL, buildPageMeta } from "../../lib/seo";
+import { buildPageMeta } from "../../lib/seo";
 
-const TITLE = "QisLearn — Learn Quantum Computing with Qiskit";
-const DESCRIPTION =
-  "Interactive, browser-based lessons for learning quantum computing with Qiskit — circuits, the Bloch sphere, statevectors, and hands-on code exercises. No backend, no install, runs entirely in your browser.";
-
-export async function loader() {
-  return { tracks: await getTracks() };
+// The landing dashboard — deliberately its own bare screen (see root.tsx's
+// isBareScreen), not wrapped in the learning app's sidebar shell. The
+// sidebar only makes sense once you're actually inside a course; this page
+// is where you pick which one, even when there's only one to pick (a
+// direct link, not an auto-redirect — this is real rendered content, not
+// a waypoint). Deliberately generic: never assumes there's exactly one
+// course, or what any of them are about.
+export async function loader({ request }: LoaderFunctionArgs) {
+  const cookie = request.headers.get("cookie") ?? undefined;
+  let courses;
+  try {
+    courses = await getMyCourseList(cookie);
+  } catch (err) {
+    if (err instanceof GraphQLRequestError && err.code === "UNAUTHENTICATED") {
+      throw redirect("/login?redirect=/");
+    }
+    throw err;
+  }
+  if (courses.length === 0) throw redirect("/courses");
+  return { courses };
 }
 
-export const meta: MetaFunction<typeof loader> = ({ loaderData }) => {
-  const tracks = loaderData?.tracks ?? [];
-  const lessons = tracks.flatMap((track) => track.lessons);
-
-  return buildPageMeta({
-    title: TITLE,
-    description: DESCRIPTION,
-    path: "/",
-    ldJson: {
-      "@context": "https://schema.org",
-      "@type": "Course",
-      name: "QisLearn",
-      description: DESCRIPTION,
-      url: SITE_URL,
-      provider: { "@type": "Organization", name: "QisLearn", url: SITE_URL },
-      hasCourseInstance: {
-        "@type": "CourseInstance",
-        courseMode: "online",
-        courseWorkload: "PT" + lessons.reduce((sum, l) => sum + l.estimatedMinutes, 0) + "M",
-      },
-      hasPart: lessons.map((lesson) => ({
-        "@type": "LearningResource",
-        name: lesson.title,
-        description: lesson.summary,
-        url: `${SITE_URL}/lesson/${lesson.id}`,
-      })),
-    },
-  });
-};
+export const meta: MetaFunction = () =>
+  buildPageMeta({ title: "Your courses — QisLearn", description: "Pick a course to continue.", path: "/" });
 
 export default function HomePage() {
-  const { tracks } = useLoaderData<typeof loader>();
-  const statusByLesson = useProgressStore((s) => s.statusByLesson);
+  const { courses } = useLoaderData<typeof loader>();
 
   return (
-    <Container maxW={{ base: "6xl", "2xl": "8xl" }} px="0" py={{ base: "6", md: "10" }}>
-      <Box mb="14" maxW="2xl">
-        <HStack gap="3" mb="5">
+    <Container maxW={{ base: "6xl", "2xl": "8xl" }} py={{ base: "6", md: "10" }}>
+      <HStack justify="space-between" mb="10">
+        <HStack gap="3">
           <Logo boxSize="10" />
-          <Badge colorPalette="ember" variant="subtle" size="lg">
-            Runs 100% in your browser
-          </Badge>
-        </HStack>
-        <Heading size="3xl" mb="4" letterSpacing="tight">
-          Learn Quantum Computing with{" "}
-          <Text as="span" color="colorPalette.fg">
-            Qiskit
-          </Text>
-        </Heading>
-        <Text color="fg.muted" fontSize="lg">
-          Interactive lessons that run entirely in your browser. Progress is saved locally in
-          IndexedDB — nothing leaves your machine.
-        </Text>
-      </Box>
-
-      {tracks.map((track) => (
-        <Box key={track.slug} mb="14">
-          <Heading size="lg" mb="5">
-            {track.title}
+          <Heading size="2xl" letterSpacing="tight">
+            Your courses
           </Heading>
-          <SimpleGrid columns={{ base: 1, sm: 2, lg: 3, "2xl": 4 }} gap="5">
-            {track.lessons.map((lesson) => {
-              const status = statusByLesson[lesson.id] ?? "not-started";
-              return (
-                <Link key={lesson.id} to={`/lesson/${lesson.id}`}>
-                  <Card.Root
-                    h="full"
-                    colorPalette="quantum"
-                    variant="elevated"
-                    bg="bg.glass"
-                    backdropFilter="blur(12px)"
-                    boxShadow="glass"
-                    _hover={{ borderColor: "colorPalette.solid", transform: "translateY(-3px)", boxShadow: "glow" }}
-                    borderWidth="1px"
-                    borderColor="border.glass"
-                  >
-                    <Card.Body gap="1">
-                      <VStack align="stretch" gap="2.5">
-                        <Badge
-                          alignSelf="flex-start"
-                          colorPalette={STATUS_COLOR_PALETTE[status]}
-                          variant="subtle"
-                          textTransform="capitalize"
-                        >
-                          {status.replace("-", " ")}
-                        </Badge>
-                        <Card.Title fontSize="lg">{lesson.title}</Card.Title>
-                        <Card.Description fontSize="sm">{lesson.summary}</Card.Description>
-                        <Text fontSize="xs" color="fg.subtle" mt="1">
-                          {lesson.estimatedMinutes} min read
-                        </Text>
-                      </VStack>
-                    </Card.Body>
-                  </Card.Root>
-                </Link>
-              );
-            })}
-          </SimpleGrid>
-        </Box>
-      ))}
+        </HStack>
+        <AuthMenu />
+      </HStack>
+
+      <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} gap="5">
+        {courses.map((course) => (
+          <Link key={course.slug} to={`/course/${course.slug}`}>
+            <Card.Root
+              h="full"
+              colorPalette="quantum"
+              variant="elevated"
+              bg="bg.glass"
+              backdropFilter="blur(12px)"
+              boxShadow="glass"
+              _hover={{ borderColor: "colorPalette.solid", transform: "translateY(-3px)", boxShadow: "glow" }}
+              borderWidth="1px"
+              borderColor="border.glass"
+            >
+              <Card.Body>
+                <VStack align="stretch" gap="1">
+                  <Card.Title fontSize="lg">{course.title}</Card.Title>
+                </VStack>
+              </Card.Body>
+            </Card.Root>
+          </Link>
+        ))}
+      </SimpleGrid>
+
+      <Text fontSize="sm" color="fg.muted" mt="8">
+        <Link to="/courses" style={{ textDecoration: "underline" }}>
+          Manage courses
+        </Link>
+      </Text>
     </Container>
   );
 }

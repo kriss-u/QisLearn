@@ -62,7 +62,7 @@ function renderInput(field: BlockFieldSpec, value: unknown, onChange: (next: unk
         />
       );
     case "LONG_TEXT":
-      // Every remaining LONG_TEXT field is Python (CodeExercise's
+      // Every remaining LONG_TEXT field is Python (QiskitCodeExercise's
       // starterCode/solutionCode) — real syntax highlighting instead of a
       // plain mono textarea, same editor learners get.
       return <PyCodeFieldEditor value={typeof value === "string" ? value : ""} onChange={onChange} />;

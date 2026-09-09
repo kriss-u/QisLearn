@@ -1,5 +1,5 @@
 import { createAuthClient } from "better-auth/react";
-import { adminClient } from "better-auth/client/plugins";
+import { adminClient, organizationClient } from "better-auth/client/plugins";
 
 // authClient talks to better-auth's own REST handler (mounted at
 // /api/auth on apps/api, see apps/api/src/index.ts), not the /graphql
@@ -11,7 +11,7 @@ export const API_ORIGIN = new URL(API_URL).origin;
 
 export const authClient = createAuthClient({
   baseURL: API_ORIGIN,
-  plugins: [adminClient()],
+  plugins: [adminClient(), organizationClient()],
 });
 
-export const { useSession, signIn, signUp, signOut, updateUser } = authClient;
+export const { useSession, signIn, signUp, signOut, updateUser, useActiveOrganization } = authClient;

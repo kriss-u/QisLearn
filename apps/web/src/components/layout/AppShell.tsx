@@ -16,7 +16,7 @@ import type { PropsWithChildren } from "react";
 import { useState } from "react";
 import { LuGithub, LuMenu } from "react-icons/lu";
 import { Link, useParams } from "react-router";
-import type { TrackGroup } from "../../content";
+import type { CourseGroup } from "../../content";
 import { useProgressStore } from "../../store/progressStore";
 import { STATUS_COLOR_PALETTE } from "../../store/statusColor";
 import { Logo } from "../ui/Logo";
@@ -30,7 +30,7 @@ const STATUS_LABEL: Record<string, string> = {
   completed: "Done",
 };
 
-function NavContent({ tracks, onNavigate }: { tracks: TrackGroup[]; onNavigate?: () => void }) {
+function NavContent({ courses, onNavigate }: { courses: CourseGroup[]; onNavigate?: () => void }) {
   const { lessonId } = useParams();
   const statusByLesson = useProgressStore((s) => s.statusByLesson);
 
@@ -46,58 +46,70 @@ function NavContent({ tracks, onNavigate }: { tracks: TrackGroup[]; onNavigate?:
           </HStack>
         </Link>
         <Text fontSize="xs" color="fg.muted">
-          Learn quantum computing with Qiskit, entirely in your browser.
+          Interactive lessons, entirely in your browser.
         </Text>
       </Box>
 
       <Separator borderColor="border.muted" />
 
       <Box flex="1" minH="0" overflowY="auto" px="4" py="5">
-        {tracks.map((track) => (
-          <Box key={track.slug} mb="7">
-            <Text
-              fontSize="xs"
-              fontWeight="bold"
-              textTransform="uppercase"
-              letterSpacing="wide"
-              color="fg.subtle"
-              mb="2.5"
-              px="2"
-            >
-              {track.title}
-            </Text>
-            <VStack align="stretch" gap="1">
-              {track.lessons.map((lesson) => {
-                const status = statusByLesson[lesson.id];
-                const active = lesson.id === lessonId;
-                return (
-                  <Link key={lesson.id} to={`/lesson/${lesson.id}`} onClick={onNavigate}>
-                    <HStack
-                      justify="space-between"
-                      px="3"
-                      py="2.5"
-                      rounded="l2"
-                      bg={active ? "colorPalette.subtle" : "transparent"}
-                      transition="background 0.15s ease"
-                      _hover={{ bg: active ? "colorPalette.subtle" : "bg.muted" }}
-                    >
-                      <Text
-                        fontSize="sm"
-                        fontWeight={active ? "semibold" : "normal"}
-                        color={active ? "colorPalette.fg" : "fg"}
-                      >
-                        {lesson.title}
-                      </Text>
-                      {status && status !== "not-started" && (
-                        <Badge size="sm" colorPalette={STATUS_COLOR_PALETTE[status]} variant="subtle" flexShrink={0}>
-                          {STATUS_LABEL[status]}
-                        </Badge>
-                      )}
-                    </HStack>
-                  </Link>
-                );
-              })}
-            </VStack>
+        {courses.map((course) => (
+          <Box key={course.slug} mb="8">
+            {/* Only worth a heading of its own once there's more than one
+                course to distinguish — the common single-course case skips
+                straight to its tracks, same look as before this existed. */}
+            {courses.length > 1 && (
+              <Text fontSize="sm" fontWeight="bold" mb="3" px="2">
+                {course.title}
+              </Text>
+            )}
+            {course.tracks.map((track) => (
+              <Box key={track.slug} mb="7">
+                <Text
+                  fontSize="xs"
+                  fontWeight="bold"
+                  textTransform="uppercase"
+                  letterSpacing="wide"
+                  color="fg.subtle"
+                  mb="2.5"
+                  px="2"
+                >
+                  {track.title}
+                </Text>
+                <VStack align="stretch" gap="1">
+                  {track.lessons.map((lesson) => {
+                    const status = statusByLesson[lesson.id];
+                    const active = lesson.id === lessonId;
+                    return (
+                      <Link key={lesson.id} to={`/lesson/${lesson.id}`} onClick={onNavigate}>
+                        <HStack
+                          justify="space-between"
+                          px="3"
+                          py="2.5"
+                          rounded="l2"
+                          bg={active ? "colorPalette.subtle" : "transparent"}
+                          transition="background 0.15s ease"
+                          _hover={{ bg: active ? "colorPalette.subtle" : "bg.muted" }}
+                        >
+                          <Text
+                            fontSize="sm"
+                            fontWeight={active ? "semibold" : "normal"}
+                            color={active ? "colorPalette.fg" : "fg"}
+                          >
+                            {lesson.title}
+                          </Text>
+                          {status && status !== "not-started" && (
+                            <Badge size="sm" colorPalette={STATUS_COLOR_PALETTE[status]} variant="subtle" flexShrink={0}>
+                              {STATUS_LABEL[status]}
+                            </Badge>
+                          )}
+                        </HStack>
+                      </Link>
+                    );
+                  })}
+                </VStack>
+              </Box>
+            ))}
           </Box>
         ))}
       </Box>
@@ -121,7 +133,7 @@ function NavContent({ tracks, onNavigate }: { tracks: TrackGroup[]; onNavigate?:
   );
 }
 
-export function AppShell({ tracks, children }: PropsWithChildren<{ tracks: TrackGroup[] }>) {
+export function AppShell({ courses, children }: PropsWithChildren<{ courses: CourseGroup[] }>) {
   const [navOpen, setNavOpen] = useState(false);
 
   return (
@@ -139,7 +151,7 @@ export function AppShell({ tracks, children }: PropsWithChildren<{ tracks: Track
         bg="bg.panel"
         display={{ base: "none", md: "block" }}
       >
-        <NavContent tracks={tracks} />
+        <NavContent courses={courses} />
       </Box>
 
       <Drawer.Root open={navOpen} onOpenChange={(details) => setNavOpen(details.open)} placement="start" size="xs">
@@ -150,7 +162,7 @@ export function AppShell({ tracks, children }: PropsWithChildren<{ tracks: Track
               <Drawer.CloseTrigger asChild position="absolute" top="4" right="4" zIndex="1">
                 <CloseButton size="sm" />
               </Drawer.CloseTrigger>
-              <NavContent tracks={tracks} onNavigate={() => setNavOpen(false)} />
+              <NavContent courses={courses} onNavigate={() => setNavOpen(false)} />
             </Drawer.Content>
           </Drawer.Positioner>
         </Portal>

@@ -44,11 +44,19 @@ export type ContentBlockFieldSpec = {
   required: Scalars['Boolean']['output'];
 };
 
-export type ContentBlockTypeSpec = {
-  __typename?: 'ContentBlockTypeSpec';
-  fields: Array<ContentBlockFieldSpec>;
-  label: Scalars['String']['output'];
-  type: Scalars['String']['output'];
+/**
+ * A top-level offering (e.g. "Quantum Computing"). Associates directly
+ * with lessons, not tracks — a track ("Math", "Qubits") can be reused
+ * across more than one course, so `tracks` here is derived from this
+ * course's lessons rather than a stored relation.
+ */
+export type Course = {
+  __typename?: 'Course';
+  id: Scalars['ID']['output'];
+  order: Scalars['Int']['output'];
+  slug: Scalars['String']['output'];
+  title: Scalars['String']['output'];
+  tracks: Array<Track>;
 };
 
 export type FieldKind =
@@ -68,6 +76,7 @@ export type FieldKind =
 export type Lesson = {
   __typename?: 'Lesson';
   contentBlocks: Array<ContentBlock>;
+  course: Course;
   difficulty: LessonDifficulty;
   estimatedMinutes: Scalars['Int']['output'];
   id: Scalars['ID']['output'];
@@ -117,6 +126,7 @@ export type Module = {
 export type Mutation = {
   __typename?: 'Mutation';
   createContentBlock: ContentBlock;
+  createCourse: Course;
   createLesson: Lesson;
   createModule: Module;
   createTag: Tag;
@@ -125,12 +135,15 @@ export type Mutation = {
   deleteLesson: Scalars['Boolean']['output'];
   deleteModule: Scalars['Boolean']['output'];
   deleteQuizAttempt: Scalars['Boolean']['output'];
+  offerCourse: Scalars['Boolean']['output'];
   resetMyProgress: Scalars['Boolean']['output'];
   saveCodeSnapshot: CodeSnapshot;
   saveQuizAttempt: QuizAttempt;
   setLessonProgress: LessonProgress;
   suggestLessonQuestions: Array<Scalars['String']['output']>;
+  unofferCourse: Scalars['Boolean']['output'];
   updateContentBlock: ContentBlock;
+  updateCourse: Course;
   updateLesson: Lesson;
   updateLessonPrerequisites: Lesson;
   updateLessonTags: Lesson;
@@ -147,7 +160,15 @@ export type MutationCreateContentBlockArgs = {
 };
 
 
+export type MutationCreateCourseArgs = {
+  order: Scalars['Int']['input'];
+  slug: Scalars['String']['input'];
+  title: Scalars['String']['input'];
+};
+
+
 export type MutationCreateLessonArgs = {
+  courseId: Scalars['ID']['input'];
   difficulty: LessonDifficulty;
   estimatedMinutes: Scalars['Int']['input'];
   layout: Scalars['String']['input'];
@@ -202,6 +223,12 @@ export type MutationDeleteQuizAttemptArgs = {
 };
 
 
+export type MutationOfferCourseArgs = {
+  courseId: Scalars['ID']['input'];
+  organizationId: Scalars['ID']['input'];
+};
+
+
 export type MutationSaveCodeSnapshotArgs = {
   code: Scalars['String']['input'];
   exerciseId: Scalars['String']['input'];
@@ -230,6 +257,12 @@ export type MutationSuggestLessonQuestionsArgs = {
 };
 
 
+export type MutationUnofferCourseArgs = {
+  courseId: Scalars['ID']['input'];
+  organizationId: Scalars['ID']['input'];
+};
+
+
 export type MutationUpdateContentBlockArgs = {
   data?: InputMaybe<Scalars['JSON']['input']>;
   id: Scalars['ID']['input'];
@@ -238,7 +271,16 @@ export type MutationUpdateContentBlockArgs = {
 };
 
 
+export type MutationUpdateCourseArgs = {
+  id: Scalars['ID']['input'];
+  order?: InputMaybe<Scalars['Int']['input']>;
+  slug?: InputMaybe<Scalars['String']['input']>;
+  title?: InputMaybe<Scalars['String']['input']>;
+};
+
+
 export type MutationUpdateLessonArgs = {
+  courseId?: InputMaybe<Scalars['ID']['input']>;
   difficulty?: InputMaybe<LessonDifficulty>;
   estimatedMinutes?: InputMaybe<Scalars['Int']['input']>;
   id: Scalars['ID']['input'];
@@ -281,17 +323,20 @@ export type MutationUpdateTrackArgs = {
 
 export type Query = {
   __typename?: 'Query';
-  adminBlockTypes: Array<ContentBlockTypeSpec>;
   adminLesson?: Maybe<Lesson>;
   adminLessonLayouts: Array<LessonLayoutSpec>;
   adminTags: Array<Tag>;
+  courses: Array<Course>;
   health: Scalars['String']['output'];
   lesson?: Maybe<Lesson>;
   me?: Maybe<User>;
   myCodeSnapshot?: Maybe<CodeSnapshot>;
+  myCourses: Array<Course>;
   myLessonProgress: Array<LessonProgress>;
   myQuizAttempt?: Maybe<QuizAttempt>;
   tracks: Array<Track>;
+  widgetCategories: Array<WidgetCategory>;
+  widgets: Array<Widget>;
 };
 
 
@@ -314,6 +359,11 @@ export type QueryMyCodeSnapshotArgs = {
 export type QueryMyQuizAttemptArgs = {
   lessonSlug: Scalars['String']['input'];
   quizId: Scalars['String']['input'];
+};
+
+
+export type QueryTracksArgs = {
+  courseId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type QuizAttempt = {
@@ -350,27 +400,67 @@ export type User = {
   role?: Maybe<Scalars['String']['output']>;
 };
 
+/**
+ * A catalog entry for an authorable content-block type. `implemented:
+ * false` means it's cataloged (so authors can browse/plan around it) but
+ * has no working component/field-spec yet — `fields` is empty and
+ * placing it renders a "not implemented yet" placeholder on the lesson.
+ */
+export type Widget = {
+  __typename?: 'Widget';
+  categories: Array<WidgetCategory>;
+  description?: Maybe<Scalars['String']['output']>;
+  fields: Array<ContentBlockFieldSpec>;
+  implemented: Scalars['Boolean']['output'];
+  key: Scalars['String']['output'];
+  label: Scalars['String']['output'];
+};
+
+export type WidgetCategory = {
+  __typename?: 'WidgetCategory';
+  id: Scalars['ID']['output'];
+  label: Scalars['String']['output'];
+  slug: Scalars['String']['output'];
+};
+
 export type AdminTracksQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type AdminTracksQuery = { __typename?: 'Query', tracks: Array<{ __typename?: 'Track', id: string, slug: string, title: string, order: number, modules: Array<{ __typename?: 'Module', id: string, slug: string, title: string, order: number }>, lessons: Array<{ __typename?: 'Lesson', id: string, slug: string, title: string, order: number, difficulty: LessonDifficulty }> }> };
+
+export type AdminCourseTracksQueryVariables = Exact<{
+  courseId: Scalars['ID']['input'];
+}>;
+
+
+export type AdminCourseTracksQuery = { __typename?: 'Query', tracks: Array<{ __typename?: 'Track', id: string, slug: string, title: string, order: number, modules: Array<{ __typename?: 'Module', id: string, slug: string, title: string, order: number }>, lessons: Array<{ __typename?: 'Lesson', id: string, slug: string, title: string, order: number, difficulty: LessonDifficulty }> }> };
+
+export type AdminCoursesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminCoursesQuery = { __typename?: 'Query', courses: Array<{ __typename?: 'Course', id: string, slug: string, title: string, order: number }> };
 
 export type AdminLessonQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type AdminLessonQuery = { __typename?: 'Query', adminLesson?: { __typename?: 'Lesson', id: string, slug: string, title: string, summary: string, layout: string, difficulty: LessonDifficulty, order: number, estimatedMinutes: number, track: { __typename?: 'Track', id: string, slug: string, title: string }, module?: { __typename?: 'Module', id: string, slug: string, title: string } | null, tags: Array<{ __typename?: 'Tag', id: string, slug: string, label: string }>, prerequisites: Array<{ __typename?: 'Lesson', id: string, slug: string, title: string }>, contentBlocks: Array<{ __typename?: 'ContentBlock', id: string, order: number, type: string, data: Record<string, unknown> }> } | null };
+export type AdminLessonQuery = { __typename?: 'Query', adminLesson?: { __typename?: 'Lesson', id: string, slug: string, title: string, summary: string, layout: string, difficulty: LessonDifficulty, order: number, estimatedMinutes: number, course: { __typename?: 'Course', id: string, slug: string, title: string }, track: { __typename?: 'Track', id: string, slug: string, title: string }, module?: { __typename?: 'Module', id: string, slug: string, title: string } | null, tags: Array<{ __typename?: 'Tag', id: string, slug: string, label: string }>, prerequisites: Array<{ __typename?: 'Lesson', id: string, slug: string, title: string }>, contentBlocks: Array<{ __typename?: 'ContentBlock', id: string, order: number, type: string, data: Record<string, unknown> }> } | null };
 
 export type AdminTagsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type AdminTagsQuery = { __typename?: 'Query', adminTags: Array<{ __typename?: 'Tag', id: string, slug: string, label: string }> };
 
-export type AdminBlockTypesQueryVariables = Exact<{ [key: string]: never; }>;
+export type WidgetsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminBlockTypesQuery = { __typename?: 'Query', adminBlockTypes: Array<{ __typename?: 'ContentBlockTypeSpec', type: string, label: string, fields: Array<{ __typename?: 'ContentBlockFieldSpec', name: string, label: string, kind: FieldKind, required: boolean }> }> };
+export type WidgetsQuery = { __typename?: 'Query', widgets: Array<{ __typename?: 'Widget', key: string, label: string, description?: string | null, implemented: boolean, categories: Array<{ __typename?: 'WidgetCategory', id: string, slug: string, label: string }>, fields: Array<{ __typename?: 'ContentBlockFieldSpec', name: string, label: string, kind: FieldKind, required: boolean }> }> };
+
+export type WidgetCategoriesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type WidgetCategoriesQuery = { __typename?: 'Query', widgetCategories: Array<{ __typename?: 'WidgetCategory', id: string, slug: string, label: string }> };
 
 export type AdminLessonLayoutsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -395,6 +485,41 @@ export type UpdateTrackMutationVariables = Exact<{
 
 
 export type UpdateTrackMutation = { __typename?: 'Mutation', updateTrack: { __typename?: 'Track', id: string, slug: string, title: string, order: number } };
+
+export type CreateCourseMutationVariables = Exact<{
+  slug: Scalars['String']['input'];
+  title: Scalars['String']['input'];
+  order: Scalars['Int']['input'];
+}>;
+
+
+export type CreateCourseMutation = { __typename?: 'Mutation', createCourse: { __typename?: 'Course', id: string, slug: string, title: string, order: number } };
+
+export type UpdateCourseMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  slug?: InputMaybe<Scalars['String']['input']>;
+  title?: InputMaybe<Scalars['String']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type UpdateCourseMutation = { __typename?: 'Mutation', updateCourse: { __typename?: 'Course', id: string, slug: string, title: string, order: number } };
+
+export type OfferCourseMutationVariables = Exact<{
+  courseId: Scalars['ID']['input'];
+  organizationId: Scalars['ID']['input'];
+}>;
+
+
+export type OfferCourseMutation = { __typename?: 'Mutation', offerCourse: boolean };
+
+export type UnofferCourseMutationVariables = Exact<{
+  courseId: Scalars['ID']['input'];
+  organizationId: Scalars['ID']['input'];
+}>;
+
+
+export type UnofferCourseMutation = { __typename?: 'Mutation', unofferCourse: boolean };
 
 export type CreateModuleMutationVariables = Exact<{
   trackId: Scalars['ID']['input'];
@@ -424,6 +549,7 @@ export type DeleteModuleMutationVariables = Exact<{
 export type DeleteModuleMutation = { __typename?: 'Mutation', deleteModule: boolean };
 
 export type CreateLessonMutationVariables = Exact<{
+  courseId: Scalars['ID']['input'];
   trackId: Scalars['ID']['input'];
   moduleId?: InputMaybe<Scalars['ID']['input']>;
   slug: Scalars['String']['input'];
@@ -440,6 +566,7 @@ export type CreateLessonMutation = { __typename?: 'Mutation', createLesson: { __
 
 export type UpdateLessonMutationVariables = Exact<{
   id: Scalars['ID']['input'];
+  courseId?: InputMaybe<Scalars['ID']['input']>;
   trackId?: InputMaybe<Scalars['ID']['input']>;
   moduleId?: InputMaybe<Scalars['ID']['input']>;
   slug?: InputMaybe<Scalars['String']['input']>;
@@ -530,6 +657,21 @@ export type SaveCodeSnapshotMutationVariables = Exact<{
 
 
 export type SaveCodeSnapshotMutation = { __typename?: 'Mutation', saveCodeSnapshot: { __typename?: 'CodeSnapshot', lessonSlug: string, exerciseId: string, code: string, resultOk?: boolean | null, resultMessages?: Array<string> | null, updatedAt: string } };
+
+export type CoursesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type CoursesQuery = { __typename?: 'Query', courses: Array<{ __typename?: 'Course', id: string, slug: string, title: string, order: number }> };
+
+export type MyCoursesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MyCoursesQuery = { __typename?: 'Query', myCourses: Array<{ __typename?: 'Course', id: string, slug: string, title: string, order: number }> };
+
+export type MyCourseGroupsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MyCourseGroupsQuery = { __typename?: 'Query', myCourses: Array<{ __typename?: 'Course', id: string, slug: string, title: string, order: number, tracks: Array<{ __typename?: 'Track', id: string, slug: string, title: string, order: number, lessons: Array<{ __typename?: 'Lesson', id: string, slug: string, title: string, summary: string, layout: string, order: number, estimatedMinutes: number }> }> }> };
 
 export type LessonQueryVariables = Exact<{
   slug: Scalars['String']['input'];
@@ -653,6 +795,110 @@ export type AdminTracksQueryHookResult = ReturnType<typeof useAdminTracksQuery>;
 export type AdminTracksLazyQueryHookResult = ReturnType<typeof useAdminTracksLazyQuery>;
 export type AdminTracksSuspenseQueryHookResult = ReturnType<typeof useAdminTracksSuspenseQuery>;
 export type AdminTracksQueryResult = Apollo.QueryResult<AdminTracksQuery, AdminTracksQueryVariables>;
+export const AdminCourseTracksDocument = gql`
+    query AdminCourseTracks($courseId: ID!) {
+  tracks(courseId: $courseId) {
+    id
+    slug
+    title
+    order
+    modules {
+      id
+      slug
+      title
+      order
+    }
+    lessons {
+      id
+      slug
+      title
+      order
+      difficulty
+    }
+  }
+}
+    `;
+
+/**
+ * __useAdminCourseTracksQuery__
+ *
+ * To run a query within a React component, call `useAdminCourseTracksQuery` and pass it any options that fit your needs.
+ * When your component renders, `useAdminCourseTracksQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useAdminCourseTracksQuery({
+ *   variables: {
+ *      courseId: // value for 'courseId'
+ *   },
+ * });
+ */
+export function useAdminCourseTracksQuery(baseOptions: Apollo.QueryHookOptions<AdminCourseTracksQuery, AdminCourseTracksQueryVariables> & ({ variables: AdminCourseTracksQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<AdminCourseTracksQuery, AdminCourseTracksQueryVariables>(AdminCourseTracksDocument, options);
+      }
+export function useAdminCourseTracksLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<AdminCourseTracksQuery, AdminCourseTracksQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<AdminCourseTracksQuery, AdminCourseTracksQueryVariables>(AdminCourseTracksDocument, options);
+        }
+// @ts-ignore
+export function useAdminCourseTracksSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<AdminCourseTracksQuery, AdminCourseTracksQueryVariables>): Apollo.UseSuspenseQueryResult<AdminCourseTracksQuery, AdminCourseTracksQueryVariables>;
+export function useAdminCourseTracksSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<AdminCourseTracksQuery, AdminCourseTracksQueryVariables>): Apollo.UseSuspenseQueryResult<AdminCourseTracksQuery | undefined, AdminCourseTracksQueryVariables>;
+export function useAdminCourseTracksSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<AdminCourseTracksQuery, AdminCourseTracksQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<AdminCourseTracksQuery, AdminCourseTracksQueryVariables>(AdminCourseTracksDocument, options);
+        }
+export type AdminCourseTracksQueryHookResult = ReturnType<typeof useAdminCourseTracksQuery>;
+export type AdminCourseTracksLazyQueryHookResult = ReturnType<typeof useAdminCourseTracksLazyQuery>;
+export type AdminCourseTracksSuspenseQueryHookResult = ReturnType<typeof useAdminCourseTracksSuspenseQuery>;
+export type AdminCourseTracksQueryResult = Apollo.QueryResult<AdminCourseTracksQuery, AdminCourseTracksQueryVariables>;
+export const AdminCoursesDocument = gql`
+    query AdminCourses {
+  courses {
+    id
+    slug
+    title
+    order
+  }
+}
+    `;
+
+/**
+ * __useAdminCoursesQuery__
+ *
+ * To run a query within a React component, call `useAdminCoursesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useAdminCoursesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useAdminCoursesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useAdminCoursesQuery(baseOptions?: Apollo.QueryHookOptions<AdminCoursesQuery, AdminCoursesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<AdminCoursesQuery, AdminCoursesQueryVariables>(AdminCoursesDocument, options);
+      }
+export function useAdminCoursesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<AdminCoursesQuery, AdminCoursesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<AdminCoursesQuery, AdminCoursesQueryVariables>(AdminCoursesDocument, options);
+        }
+// @ts-ignore
+export function useAdminCoursesSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<AdminCoursesQuery, AdminCoursesQueryVariables>): Apollo.UseSuspenseQueryResult<AdminCoursesQuery, AdminCoursesQueryVariables>;
+export function useAdminCoursesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<AdminCoursesQuery, AdminCoursesQueryVariables>): Apollo.UseSuspenseQueryResult<AdminCoursesQuery | undefined, AdminCoursesQueryVariables>;
+export function useAdminCoursesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<AdminCoursesQuery, AdminCoursesQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<AdminCoursesQuery, AdminCoursesQueryVariables>(AdminCoursesDocument, options);
+        }
+export type AdminCoursesQueryHookResult = ReturnType<typeof useAdminCoursesQuery>;
+export type AdminCoursesLazyQueryHookResult = ReturnType<typeof useAdminCoursesLazyQuery>;
+export type AdminCoursesSuspenseQueryHookResult = ReturnType<typeof useAdminCoursesSuspenseQuery>;
+export type AdminCoursesQueryResult = Apollo.QueryResult<AdminCoursesQuery, AdminCoursesQueryVariables>;
 export const AdminLessonDocument = gql`
     query AdminLesson($id: ID!) {
   adminLesson(id: $id) {
@@ -664,6 +910,11 @@ export const AdminLessonDocument = gql`
     difficulty
     order
     estimatedMinutes
+    course {
+      id
+      slug
+      title
+    }
     track {
       id
       slug
@@ -773,11 +1024,18 @@ export type AdminTagsQueryHookResult = ReturnType<typeof useAdminTagsQuery>;
 export type AdminTagsLazyQueryHookResult = ReturnType<typeof useAdminTagsLazyQuery>;
 export type AdminTagsSuspenseQueryHookResult = ReturnType<typeof useAdminTagsSuspenseQuery>;
 export type AdminTagsQueryResult = Apollo.QueryResult<AdminTagsQuery, AdminTagsQueryVariables>;
-export const AdminBlockTypesDocument = gql`
-    query AdminBlockTypes {
-  adminBlockTypes {
-    type
+export const WidgetsDocument = gql`
+    query Widgets {
+  widgets {
+    key
     label
+    description
+    implemented
+    categories {
+      id
+      slug
+      label
+    }
     fields {
       name
       label
@@ -789,39 +1047,83 @@ export const AdminBlockTypesDocument = gql`
     `;
 
 /**
- * __useAdminBlockTypesQuery__
+ * __useWidgetsQuery__
  *
- * To run a query within a React component, call `useAdminBlockTypesQuery` and pass it any options that fit your needs.
- * When your component renders, `useAdminBlockTypesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useWidgetsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useWidgetsQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useAdminBlockTypesQuery({
+ * const { data, loading, error } = useWidgetsQuery({
  *   variables: {
  *   },
  * });
  */
-export function useAdminBlockTypesQuery(baseOptions?: Apollo.QueryHookOptions<AdminBlockTypesQuery, AdminBlockTypesQueryVariables>) {
+export function useWidgetsQuery(baseOptions?: Apollo.QueryHookOptions<WidgetsQuery, WidgetsQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<AdminBlockTypesQuery, AdminBlockTypesQueryVariables>(AdminBlockTypesDocument, options);
+        return Apollo.useQuery<WidgetsQuery, WidgetsQueryVariables>(WidgetsDocument, options);
       }
-export function useAdminBlockTypesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<AdminBlockTypesQuery, AdminBlockTypesQueryVariables>) {
+export function useWidgetsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<WidgetsQuery, WidgetsQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<AdminBlockTypesQuery, AdminBlockTypesQueryVariables>(AdminBlockTypesDocument, options);
+          return Apollo.useLazyQuery<WidgetsQuery, WidgetsQueryVariables>(WidgetsDocument, options);
         }
 // @ts-ignore
-export function useAdminBlockTypesSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<AdminBlockTypesQuery, AdminBlockTypesQueryVariables>): Apollo.UseSuspenseQueryResult<AdminBlockTypesQuery, AdminBlockTypesQueryVariables>;
-export function useAdminBlockTypesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<AdminBlockTypesQuery, AdminBlockTypesQueryVariables>): Apollo.UseSuspenseQueryResult<AdminBlockTypesQuery | undefined, AdminBlockTypesQueryVariables>;
-export function useAdminBlockTypesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<AdminBlockTypesQuery, AdminBlockTypesQueryVariables>) {
+export function useWidgetsSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<WidgetsQuery, WidgetsQueryVariables>): Apollo.UseSuspenseQueryResult<WidgetsQuery, WidgetsQueryVariables>;
+export function useWidgetsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<WidgetsQuery, WidgetsQueryVariables>): Apollo.UseSuspenseQueryResult<WidgetsQuery | undefined, WidgetsQueryVariables>;
+export function useWidgetsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<WidgetsQuery, WidgetsQueryVariables>) {
           const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<AdminBlockTypesQuery, AdminBlockTypesQueryVariables>(AdminBlockTypesDocument, options);
+          return Apollo.useSuspenseQuery<WidgetsQuery, WidgetsQueryVariables>(WidgetsDocument, options);
         }
-export type AdminBlockTypesQueryHookResult = ReturnType<typeof useAdminBlockTypesQuery>;
-export type AdminBlockTypesLazyQueryHookResult = ReturnType<typeof useAdminBlockTypesLazyQuery>;
-export type AdminBlockTypesSuspenseQueryHookResult = ReturnType<typeof useAdminBlockTypesSuspenseQuery>;
-export type AdminBlockTypesQueryResult = Apollo.QueryResult<AdminBlockTypesQuery, AdminBlockTypesQueryVariables>;
+export type WidgetsQueryHookResult = ReturnType<typeof useWidgetsQuery>;
+export type WidgetsLazyQueryHookResult = ReturnType<typeof useWidgetsLazyQuery>;
+export type WidgetsSuspenseQueryHookResult = ReturnType<typeof useWidgetsSuspenseQuery>;
+export type WidgetsQueryResult = Apollo.QueryResult<WidgetsQuery, WidgetsQueryVariables>;
+export const WidgetCategoriesDocument = gql`
+    query WidgetCategories {
+  widgetCategories {
+    id
+    slug
+    label
+  }
+}
+    `;
+
+/**
+ * __useWidgetCategoriesQuery__
+ *
+ * To run a query within a React component, call `useWidgetCategoriesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useWidgetCategoriesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWidgetCategoriesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useWidgetCategoriesQuery(baseOptions?: Apollo.QueryHookOptions<WidgetCategoriesQuery, WidgetCategoriesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<WidgetCategoriesQuery, WidgetCategoriesQueryVariables>(WidgetCategoriesDocument, options);
+      }
+export function useWidgetCategoriesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<WidgetCategoriesQuery, WidgetCategoriesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<WidgetCategoriesQuery, WidgetCategoriesQueryVariables>(WidgetCategoriesDocument, options);
+        }
+// @ts-ignore
+export function useWidgetCategoriesSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<WidgetCategoriesQuery, WidgetCategoriesQueryVariables>): Apollo.UseSuspenseQueryResult<WidgetCategoriesQuery, WidgetCategoriesQueryVariables>;
+export function useWidgetCategoriesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<WidgetCategoriesQuery, WidgetCategoriesQueryVariables>): Apollo.UseSuspenseQueryResult<WidgetCategoriesQuery | undefined, WidgetCategoriesQueryVariables>;
+export function useWidgetCategoriesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<WidgetCategoriesQuery, WidgetCategoriesQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<WidgetCategoriesQuery, WidgetCategoriesQueryVariables>(WidgetCategoriesDocument, options);
+        }
+export type WidgetCategoriesQueryHookResult = ReturnType<typeof useWidgetCategoriesQuery>;
+export type WidgetCategoriesLazyQueryHookResult = ReturnType<typeof useWidgetCategoriesLazyQuery>;
+export type WidgetCategoriesSuspenseQueryHookResult = ReturnType<typeof useWidgetCategoriesSuspenseQuery>;
+export type WidgetCategoriesQueryResult = Apollo.QueryResult<WidgetCategoriesQuery, WidgetCategoriesQueryVariables>;
 export const AdminLessonLayoutsDocument = gql`
     query AdminLessonLayouts {
   adminLessonLayouts {
@@ -942,6 +1244,147 @@ export function useUpdateTrackMutation(baseOptions?: Apollo.MutationHookOptions<
 export type UpdateTrackMutationHookResult = ReturnType<typeof useUpdateTrackMutation>;
 export type UpdateTrackMutationResult = Apollo.MutationResult<UpdateTrackMutation>;
 export type UpdateTrackMutationOptions = Apollo.BaseMutationOptions<UpdateTrackMutation, UpdateTrackMutationVariables>;
+export const CreateCourseDocument = gql`
+    mutation CreateCourse($slug: String!, $title: String!, $order: Int!) {
+  createCourse(slug: $slug, title: $title, order: $order) {
+    id
+    slug
+    title
+    order
+  }
+}
+    `;
+export type CreateCourseMutationFn = Apollo.MutationFunction<CreateCourseMutation, CreateCourseMutationVariables>;
+
+/**
+ * __useCreateCourseMutation__
+ *
+ * To run a mutation, you first call `useCreateCourseMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateCourseMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createCourseMutation, { data, loading, error }] = useCreateCourseMutation({
+ *   variables: {
+ *      slug: // value for 'slug'
+ *      title: // value for 'title'
+ *      order: // value for 'order'
+ *   },
+ * });
+ */
+export function useCreateCourseMutation(baseOptions?: Apollo.MutationHookOptions<CreateCourseMutation, CreateCourseMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateCourseMutation, CreateCourseMutationVariables>(CreateCourseDocument, options);
+      }
+export type CreateCourseMutationHookResult = ReturnType<typeof useCreateCourseMutation>;
+export type CreateCourseMutationResult = Apollo.MutationResult<CreateCourseMutation>;
+export type CreateCourseMutationOptions = Apollo.BaseMutationOptions<CreateCourseMutation, CreateCourseMutationVariables>;
+export const UpdateCourseDocument = gql`
+    mutation UpdateCourse($id: ID!, $slug: String, $title: String, $order: Int) {
+  updateCourse(id: $id, slug: $slug, title: $title, order: $order) {
+    id
+    slug
+    title
+    order
+  }
+}
+    `;
+export type UpdateCourseMutationFn = Apollo.MutationFunction<UpdateCourseMutation, UpdateCourseMutationVariables>;
+
+/**
+ * __useUpdateCourseMutation__
+ *
+ * To run a mutation, you first call `useUpdateCourseMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateCourseMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateCourseMutation, { data, loading, error }] = useUpdateCourseMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      slug: // value for 'slug'
+ *      title: // value for 'title'
+ *      order: // value for 'order'
+ *   },
+ * });
+ */
+export function useUpdateCourseMutation(baseOptions?: Apollo.MutationHookOptions<UpdateCourseMutation, UpdateCourseMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdateCourseMutation, UpdateCourseMutationVariables>(UpdateCourseDocument, options);
+      }
+export type UpdateCourseMutationHookResult = ReturnType<typeof useUpdateCourseMutation>;
+export type UpdateCourseMutationResult = Apollo.MutationResult<UpdateCourseMutation>;
+export type UpdateCourseMutationOptions = Apollo.BaseMutationOptions<UpdateCourseMutation, UpdateCourseMutationVariables>;
+export const OfferCourseDocument = gql`
+    mutation OfferCourse($courseId: ID!, $organizationId: ID!) {
+  offerCourse(courseId: $courseId, organizationId: $organizationId)
+}
+    `;
+export type OfferCourseMutationFn = Apollo.MutationFunction<OfferCourseMutation, OfferCourseMutationVariables>;
+
+/**
+ * __useOfferCourseMutation__
+ *
+ * To run a mutation, you first call `useOfferCourseMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useOfferCourseMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [offerCourseMutation, { data, loading, error }] = useOfferCourseMutation({
+ *   variables: {
+ *      courseId: // value for 'courseId'
+ *      organizationId: // value for 'organizationId'
+ *   },
+ * });
+ */
+export function useOfferCourseMutation(baseOptions?: Apollo.MutationHookOptions<OfferCourseMutation, OfferCourseMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<OfferCourseMutation, OfferCourseMutationVariables>(OfferCourseDocument, options);
+      }
+export type OfferCourseMutationHookResult = ReturnType<typeof useOfferCourseMutation>;
+export type OfferCourseMutationResult = Apollo.MutationResult<OfferCourseMutation>;
+export type OfferCourseMutationOptions = Apollo.BaseMutationOptions<OfferCourseMutation, OfferCourseMutationVariables>;
+export const UnofferCourseDocument = gql`
+    mutation UnofferCourse($courseId: ID!, $organizationId: ID!) {
+  unofferCourse(courseId: $courseId, organizationId: $organizationId)
+}
+    `;
+export type UnofferCourseMutationFn = Apollo.MutationFunction<UnofferCourseMutation, UnofferCourseMutationVariables>;
+
+/**
+ * __useUnofferCourseMutation__
+ *
+ * To run a mutation, you first call `useUnofferCourseMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUnofferCourseMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [unofferCourseMutation, { data, loading, error }] = useUnofferCourseMutation({
+ *   variables: {
+ *      courseId: // value for 'courseId'
+ *      organizationId: // value for 'organizationId'
+ *   },
+ * });
+ */
+export function useUnofferCourseMutation(baseOptions?: Apollo.MutationHookOptions<UnofferCourseMutation, UnofferCourseMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UnofferCourseMutation, UnofferCourseMutationVariables>(UnofferCourseDocument, options);
+      }
+export type UnofferCourseMutationHookResult = ReturnType<typeof useUnofferCourseMutation>;
+export type UnofferCourseMutationResult = Apollo.MutationResult<UnofferCourseMutation>;
+export type UnofferCourseMutationOptions = Apollo.BaseMutationOptions<UnofferCourseMutation, UnofferCourseMutationVariables>;
 export const CreateModuleDocument = gql`
     mutation CreateModule($trackId: ID!, $slug: String!, $title: String!, $order: Int!) {
   createModule(trackId: $trackId, slug: $slug, title: $title, order: $order) {
@@ -1052,8 +1495,9 @@ export type DeleteModuleMutationHookResult = ReturnType<typeof useDeleteModuleMu
 export type DeleteModuleMutationResult = Apollo.MutationResult<DeleteModuleMutation>;
 export type DeleteModuleMutationOptions = Apollo.BaseMutationOptions<DeleteModuleMutation, DeleteModuleMutationVariables>;
 export const CreateLessonDocument = gql`
-    mutation CreateLesson($trackId: ID!, $moduleId: ID, $slug: String!, $title: String!, $summary: String!, $layout: String!, $difficulty: LessonDifficulty!, $order: Int!, $estimatedMinutes: Int!) {
+    mutation CreateLesson($courseId: ID!, $trackId: ID!, $moduleId: ID, $slug: String!, $title: String!, $summary: String!, $layout: String!, $difficulty: LessonDifficulty!, $order: Int!, $estimatedMinutes: Int!) {
   createLesson(
+    courseId: $courseId
     trackId: $trackId
     moduleId: $moduleId
     slug: $slug
@@ -1084,6 +1528,7 @@ export type CreateLessonMutationFn = Apollo.MutationFunction<CreateLessonMutatio
  * @example
  * const [createLessonMutation, { data, loading, error }] = useCreateLessonMutation({
  *   variables: {
+ *      courseId: // value for 'courseId'
  *      trackId: // value for 'trackId'
  *      moduleId: // value for 'moduleId'
  *      slug: // value for 'slug'
@@ -1104,9 +1549,10 @@ export type CreateLessonMutationHookResult = ReturnType<typeof useCreateLessonMu
 export type CreateLessonMutationResult = Apollo.MutationResult<CreateLessonMutation>;
 export type CreateLessonMutationOptions = Apollo.BaseMutationOptions<CreateLessonMutation, CreateLessonMutationVariables>;
 export const UpdateLessonDocument = gql`
-    mutation UpdateLesson($id: ID!, $trackId: ID, $moduleId: ID, $slug: String, $title: String, $summary: String, $layout: String, $difficulty: LessonDifficulty, $order: Int, $estimatedMinutes: Int) {
+    mutation UpdateLesson($id: ID!, $courseId: ID, $trackId: ID, $moduleId: ID, $slug: String, $title: String, $summary: String, $layout: String, $difficulty: LessonDifficulty, $order: Int, $estimatedMinutes: Int) {
   updateLesson(
     id: $id
+    courseId: $courseId
     trackId: $trackId
     moduleId: $moduleId
     slug: $slug
@@ -1144,6 +1590,7 @@ export type UpdateLessonMutationFn = Apollo.MutationFunction<UpdateLessonMutatio
  * const [updateLessonMutation, { data, loading, error }] = useUpdateLessonMutation({
  *   variables: {
  *      id: // value for 'id'
+ *      courseId: // value for 'courseId'
  *      trackId: // value for 'trackId'
  *      moduleId: // value for 'moduleId'
  *      slug: // value for 'slug'
@@ -1516,6 +1963,156 @@ export function useSaveCodeSnapshotMutation(baseOptions?: Apollo.MutationHookOpt
 export type SaveCodeSnapshotMutationHookResult = ReturnType<typeof useSaveCodeSnapshotMutation>;
 export type SaveCodeSnapshotMutationResult = Apollo.MutationResult<SaveCodeSnapshotMutation>;
 export type SaveCodeSnapshotMutationOptions = Apollo.BaseMutationOptions<SaveCodeSnapshotMutation, SaveCodeSnapshotMutationVariables>;
+export const CoursesDocument = gql`
+    query Courses {
+  courses {
+    id
+    slug
+    title
+    order
+  }
+}
+    `;
+
+/**
+ * __useCoursesQuery__
+ *
+ * To run a query within a React component, call `useCoursesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useCoursesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useCoursesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useCoursesQuery(baseOptions?: Apollo.QueryHookOptions<CoursesQuery, CoursesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<CoursesQuery, CoursesQueryVariables>(CoursesDocument, options);
+      }
+export function useCoursesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<CoursesQuery, CoursesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<CoursesQuery, CoursesQueryVariables>(CoursesDocument, options);
+        }
+// @ts-ignore
+export function useCoursesSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<CoursesQuery, CoursesQueryVariables>): Apollo.UseSuspenseQueryResult<CoursesQuery, CoursesQueryVariables>;
+export function useCoursesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<CoursesQuery, CoursesQueryVariables>): Apollo.UseSuspenseQueryResult<CoursesQuery | undefined, CoursesQueryVariables>;
+export function useCoursesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<CoursesQuery, CoursesQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<CoursesQuery, CoursesQueryVariables>(CoursesDocument, options);
+        }
+export type CoursesQueryHookResult = ReturnType<typeof useCoursesQuery>;
+export type CoursesLazyQueryHookResult = ReturnType<typeof useCoursesLazyQuery>;
+export type CoursesSuspenseQueryHookResult = ReturnType<typeof useCoursesSuspenseQuery>;
+export type CoursesQueryResult = Apollo.QueryResult<CoursesQuery, CoursesQueryVariables>;
+export const MyCoursesDocument = gql`
+    query MyCourses {
+  myCourses {
+    id
+    slug
+    title
+    order
+  }
+}
+    `;
+
+/**
+ * __useMyCoursesQuery__
+ *
+ * To run a query within a React component, call `useMyCoursesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMyCoursesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMyCoursesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useMyCoursesQuery(baseOptions?: Apollo.QueryHookOptions<MyCoursesQuery, MyCoursesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<MyCoursesQuery, MyCoursesQueryVariables>(MyCoursesDocument, options);
+      }
+export function useMyCoursesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MyCoursesQuery, MyCoursesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<MyCoursesQuery, MyCoursesQueryVariables>(MyCoursesDocument, options);
+        }
+// @ts-ignore
+export function useMyCoursesSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<MyCoursesQuery, MyCoursesQueryVariables>): Apollo.UseSuspenseQueryResult<MyCoursesQuery, MyCoursesQueryVariables>;
+export function useMyCoursesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<MyCoursesQuery, MyCoursesQueryVariables>): Apollo.UseSuspenseQueryResult<MyCoursesQuery | undefined, MyCoursesQueryVariables>;
+export function useMyCoursesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<MyCoursesQuery, MyCoursesQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<MyCoursesQuery, MyCoursesQueryVariables>(MyCoursesDocument, options);
+        }
+export type MyCoursesQueryHookResult = ReturnType<typeof useMyCoursesQuery>;
+export type MyCoursesLazyQueryHookResult = ReturnType<typeof useMyCoursesLazyQuery>;
+export type MyCoursesSuspenseQueryHookResult = ReturnType<typeof useMyCoursesSuspenseQuery>;
+export type MyCoursesQueryResult = Apollo.QueryResult<MyCoursesQuery, MyCoursesQueryVariables>;
+export const MyCourseGroupsDocument = gql`
+    query MyCourseGroups {
+  myCourses {
+    id
+    slug
+    title
+    order
+    tracks {
+      id
+      slug
+      title
+      order
+      lessons {
+        id
+        slug
+        title
+        summary
+        layout
+        order
+        estimatedMinutes
+      }
+    }
+  }
+}
+    `;
+
+/**
+ * __useMyCourseGroupsQuery__
+ *
+ * To run a query within a React component, call `useMyCourseGroupsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMyCourseGroupsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMyCourseGroupsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useMyCourseGroupsQuery(baseOptions?: Apollo.QueryHookOptions<MyCourseGroupsQuery, MyCourseGroupsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<MyCourseGroupsQuery, MyCourseGroupsQueryVariables>(MyCourseGroupsDocument, options);
+      }
+export function useMyCourseGroupsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MyCourseGroupsQuery, MyCourseGroupsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<MyCourseGroupsQuery, MyCourseGroupsQueryVariables>(MyCourseGroupsDocument, options);
+        }
+// @ts-ignore
+export function useMyCourseGroupsSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<MyCourseGroupsQuery, MyCourseGroupsQueryVariables>): Apollo.UseSuspenseQueryResult<MyCourseGroupsQuery, MyCourseGroupsQueryVariables>;
+export function useMyCourseGroupsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<MyCourseGroupsQuery, MyCourseGroupsQueryVariables>): Apollo.UseSuspenseQueryResult<MyCourseGroupsQuery | undefined, MyCourseGroupsQueryVariables>;
+export function useMyCourseGroupsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<MyCourseGroupsQuery, MyCourseGroupsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<MyCourseGroupsQuery, MyCourseGroupsQueryVariables>(MyCourseGroupsDocument, options);
+        }
+export type MyCourseGroupsQueryHookResult = ReturnType<typeof useMyCourseGroupsQuery>;
+export type MyCourseGroupsLazyQueryHookResult = ReturnType<typeof useMyCourseGroupsLazyQuery>;
+export type MyCourseGroupsSuspenseQueryHookResult = ReturnType<typeof useMyCourseGroupsSuspenseQuery>;
+export type MyCourseGroupsQueryResult = Apollo.QueryResult<MyCourseGroupsQuery, MyCourseGroupsQueryVariables>;
 export const LessonDocument = gql`
     query Lesson($slug: String!) {
   lesson(slug: $slug) {

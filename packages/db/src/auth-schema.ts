@@ -99,6 +99,14 @@ export const organization = pgTable(
     logo: text("logo"),
     createdAt: timestamp("created_at").notNull(),
     metadata: text("metadata"),
+    // Auto-created at signup, one per user, with that user as its sole
+    // `admin` member. Closed by construction — invitations into a personal
+    // org are rejected (see apps/api/src/auth.ts) — so a user who wants
+    // collaborators creates a separate, non-personal org instead. This
+    // keeps "solo user" and "org member" a single code path everywhere
+    // else (course entitlement, OpenFGA checks, admin role) rather than
+    // two structures needing separate support.
+    isPersonal: boolean("is_personal").notNull().default(false),
   },
   (table) => [uniqueIndex("organization_slug_uidx").on(table.slug)],
 );

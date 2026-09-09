@@ -1,0 +1,41 @@
+query Courses {
+  courses {
+    id
+    slug
+    title
+    order
+  }
+}
+
+query MyCourses {
+  myCourses {
+    id
+    slug
+    title
+    order
+  }
+}
+
+query MyCourseGroups {
+  myCourses {
+    id
+    slug
+    title
+    order
+    tracks {
+      id
+      slug
+      title
+      order
+      lessons {
+        id
+        slug
+        title
+        summary
+        layout
+        order
+        estimatedMinutes
+      }
+    }
+  }
+}

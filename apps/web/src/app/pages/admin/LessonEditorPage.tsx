@@ -25,7 +25,6 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useParams } from "react-router";
 import {
   type LessonDifficulty,
-  useAdminBlockTypesQuery,
   useAdminLessonLayoutsQuery,
   useAdminLessonQuery,
   useAdminTagsQuery,
@@ -38,7 +37,8 @@ import {
   useUpdateLessonMutation,
   useUpdateLessonPrerequisitesMutation,
   useUpdateLessonTagsMutation,
-  type AdminBlockTypesQuery,
+  useWidgetsQuery,
+  type WidgetsQuery,
 } from "@qislearn/graphql-schema";
 import type { ContentBlockData } from "../../../content";
 import type { LessonFrontmatter } from "../../../content/schema";
@@ -48,7 +48,30 @@ import { DragHandle } from "./DragHandle";
 import { LessonPreviewDialog } from "./LessonPreviewDialog";
 import { spacedOrders, useDragReorder } from "./useDragReorder";
 
-type BlockTypeSpec = AdminBlockTypesQuery["adminBlockTypes"][number];
+// `type`/`label`/`fields` mirror the old adminBlockTypes shape (minimal
+// diff below); `implemented`/`categories` come from the widget catalog.
+type BlockTypeSpec = Pick<WidgetsQuery["widgets"][number], "label" | "fields" | "implemented" | "categories"> & {
+  type: string;
+};
+
+// Groups the type picker by widget category (a multi-category widget
+// appears under each of its categories) — purely for browsing/discovery,
+// picking one is never blocked even if it isn't implemented yet (see
+// ContentBlockList's "not implemented" placeholder on the real lesson).
+function groupBlockTypesByCategory(blockTypes: BlockTypeSpec[]): { label: string; types: BlockTypeSpec[] }[] {
+  const groups = new Map<string, BlockTypeSpec[]>();
+  for (const t of blockTypes) {
+    const categories = t.categories.length > 0 ? t.categories.map((c) => c.label) : ["Other"];
+    for (const label of categories) {
+      groups.set(label, [...(groups.get(label) ?? []), t]);
+    }
+  }
+  return [...groups.entries()].map(([label, types]) => ({ label, types }));
+}
+
+function blockTypeOptionLabel(t: BlockTypeSpec): string {
+  return t.implemented ? t.label : `${t.label} (not implemented yet)`;
+}
 
 // Owns title/summary (main column, natural document flow) plus every other
 // lesson-settings field (sidebar) under one save action, since they're all
@@ -463,10 +486,14 @@ function ContentBlockRow({
             value={type}
             onChange={(e) => setType(e.target.value)}
           >
-            {blockTypes.map((t) => (
-              <option key={t.type} value={t.type}>
-                {t.label}
-              </option>
+            {groupBlockTypesByCategory(blockTypes).map((group) => (
+              <optgroup key={group.label} label={group.label}>
+                {group.types.map((t) => (
+                  <option key={t.type} value={t.type}>
+                    {blockTypeOptionLabel(t)}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </NativeSelect.Field>
           <NativeSelect.Indicator />
@@ -710,10 +737,14 @@ function NewBlockRow({
             value={type}
             onChange={(e) => handleTypeChange(e.target.value)}
           >
-            {blockTypes.map((t) => (
-              <option key={t.type} value={t.type}>
-                {t.label}
-              </option>
+            {groupBlockTypesByCategory(blockTypes).map((group) => (
+              <optgroup key={group.label} label={group.label}>
+                {group.types.map((t) => (
+                  <option key={t.type} value={t.type}>
+                    {blockTypeOptionLabel(t)}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </NativeSelect.Field>
           <NativeSelect.Indicator />
@@ -752,8 +783,14 @@ export default function LessonEditorPage() {
     skip: !lessonId,
   });
   const { data: tracksData } = useAdminTracksQuery();
-  const { data: blockTypesData } = useAdminBlockTypesQuery();
-  const blockTypes = blockTypesData?.adminBlockTypes ?? [];
+  const { data: widgetsData } = useWidgetsQuery();
+  const blockTypes: BlockTypeSpec[] = (widgetsData?.widgets ?? []).map((w) => ({
+    type: w.key,
+    label: w.label,
+    fields: w.fields,
+    implemented: w.implemented,
+    categories: w.categories,
+  }));
   const [deleteLesson, { loading: deletingLesson }] = useDeleteLessonMutation();
   const [updateBlockOrder] = useUpdateContentBlockMutation();
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);

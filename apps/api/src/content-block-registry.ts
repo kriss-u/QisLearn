@@ -83,8 +83,8 @@ export const CONTENT_BLOCK_REGISTRY: RegistryEntry[] = [
   ]),
 
   entry(
-    "CodeExercise",
-    "Code exercise",
+    "QiskitCodeExercise",
+    "Qiskit code exercise",
     z.object({
       id: z.string(),
       prompt: z.string(),

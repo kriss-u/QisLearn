@@ -13,7 +13,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "migrate:mdx": "tsx scripts/migrate-mdx.ts"
+    "migrate:mdx": "tsx scripts/migrate-mdx.ts",
+    "seed:widgets": "tsx scripts/seed-widgets.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.44.0",

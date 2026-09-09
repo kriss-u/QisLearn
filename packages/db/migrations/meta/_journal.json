@@ -29,6 +29,13 @@
       "when": 1788873921576,
       "tag": "0003_careful_peter_parker",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788927213646,
+      "tag": "0004_rich_sphinx",
+      "breakpoints": true
     }
   ]
 }

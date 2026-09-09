@@ -14,17 +14,43 @@ via `pnpm --filter @qislearn/web <script>` from the repo root, or
 
 The backend (`apps/api`, `packages/db`, `packages/authz`,
 `packages/graphql-schema`) is wired into `apps/web` as of the SSR/GraphQL
-cutover: lesson content lives in Postgres (`track`/`lesson`/`content_block`
-tables) and is served over GraphQL from `apps/api`, which `apps/web`
-server-renders through. Auth (better-auth) has a minimal UI now (`/login`,
-`/signup`, `/profile`) and lesson progress/code snapshots/quiz attempts are
-Postgres-backed (`lesson_progress`/`code_snapshot`/`quiz_attempt` tables,
-gated by session — logged-out visitors get a working-but-unsaved editor, no
-login wall); Dexie is gone entirely from `apps/web`. OpenFGA's authorization
-model is checked in (`packages/authz/model.fga`, including a `lesson` type)
-but not yet wired into `apps/api` resolvers — admin-only mutations
-(content authoring under `/admin`) are gated by better-auth's `admin` plugin
-role instead. `apps/llm-service` is still an unwired stub. See
+cutover, and the platform is now course-generic rather than
+quantum-specific — nothing structural assumes the subject matter, even
+though the one course that exists today (`quantum-computing`) is Qiskit
+content. The content model is `course`/`track`/`lesson`/`content_block`:
+a course associates directly with lessons (not tracks) since a track
+("Math", "Qubits") can be shared across more than one course — which
+tracks "belong to" a course is derived from its lessons, not a stored
+`track.courseId`. Content is served over GraphQL from `apps/api`, which
+`apps/web` server-renders through.
+
+**Every route requires a signed-in, entitled user except `/login` and
+`/signup`** — there is no login wall exception left. Auth (better-auth) has
+a UI at `/login`/`/signup`/`/profile`/`/courses`; every signup
+auto-creates a closed personal organization (`organization.isPersonal`,
+see its column comment in `packages/db/src/auth-schema.ts`) with that user
+as its sole admin — invites into it are rejected, so "solo user" and "org
+member" are one code path everywhere, not two. Which courses an
+organization's members can see is entitlement (`course_organization`
+table + a real OpenFGA `course` type/`offered_to` relation in
+`packages/authz/model.fga` — this is genuinely wired into `apps/api`
+resolvers via `requireCourseOffered`/`requireOrgAdmin` in
+`apps/api/src/authz-guards.ts`, not just checked in); `/courses` is where
+an org's admin toggles which public courses it studies. **All authorization
+checks (who can see/edit what) must go through OpenFGA** — add a relation
+to `packages/authz/model.fga` and a guard in `authz-guards.ts` rather than
+hand-rolling an ownership/role check against Postgres rows directly, so
+there's one system of record for "who can do what" instead of two. Lesson progress,
+code snapshots, and quiz attempts are Postgres-backed
+(`lesson_progress`/`code_snapshot`/`quiz_attempt` tables, tied to the
+signed-in user — there's no anonymous/unsaved mode anymore). Content
+authoring under `/admin` is a course list → `/admin/courses/:slug` detail
+view (track/lesson management scoped to that course), gated by
+better-auth's `admin` plugin role. Authorable widget types (the MDX
+components an author drops into a lesson) are a DB-backed, categorized
+catalog (`widget`/`widget_category` tables) rather than a fixed list — see
+`apps/api/src/content-block-registry.ts`'s own comment on how it merges
+with the catalog. `apps/llm-service` is still an unwired stub. See
 **[docs/BACKEND_PLAN.md](./docs/BACKEND_PLAN.md)** for the architecture
 decision record and phased roadmap before adding to the backend; don't
 introduce backend conventions that contradict it without updating that doc
