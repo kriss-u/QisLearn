@@ -23,7 +23,6 @@ import { Logo } from "../ui/Logo";
 import { ColorModeButton } from "../ui/color-mode";
 import { LatexModeButton } from "../ui/latex-mode";
 import { AuthMenu } from "./AuthMenu";
-import { ResetDataButton } from "./ResetDataButton";
 
 const STATUS_LABEL: Record<string, string> = {
   "not-started": "",
@@ -104,9 +103,6 @@ function NavContent({ tracks, onNavigate }: { tracks: TrackGroup[]; onNavigate?:
       </Box>
 
       <Separator borderColor="border.muted" flexShrink={0} />
-      <Box px="4" py="4" flexShrink={0}>
-        <ResetDataButton />
-      </Box>
 
       <Box as="footer" px="6" py="4" borderTopWidth="1px" borderColor="border.muted" flexShrink={0}>
         <Text fontSize="xs" color="fg.subtle">

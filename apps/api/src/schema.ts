@@ -19,6 +19,8 @@ import { db } from "./db.js";
 import { requireAdmin, requireUser } from "./authz-guards.js";
 import { CONTENT_BLOCK_REGISTRY, validateContentBlockData } from "./content-block-registry.js";
 import { LESSON_LAYOUTS, LESSON_LAYOUT_VALUES } from "./lesson-layouts.js";
+import { getLessonMarkdownContent } from "./lesson-content.js";
+import { suggestLessonQuestions } from "./lesson-qa.js";
 import type { GraphQLContext } from "./context.js";
 
 function badInput(message: string): never {
@@ -158,6 +160,8 @@ export const schema = createSchema<GraphQLContext>({
       createContentBlock(lessonId: ID!, order: Int!, type: String!, data: JSON!): ContentBlock!
       updateContentBlock(id: ID!, order: Int, type: String, data: JSON): ContentBlock!
       deleteContentBlock(id: ID!): Boolean!
+
+      suggestLessonQuestions(lessonSlug: String!): [String!]!
     }
 
     enum LessonStatus {
@@ -668,6 +672,12 @@ export const schema = createSchema<GraphQLContext>({
         requireAdmin(ctx);
         await db.delete(contentBlock).where(eq(contentBlock.id, args.id));
         return true;
+      },
+
+      suggestLessonQuestions: async (_parent, args: { lessonSlug: string }, ctx) => {
+        requireUser(ctx);
+        const lessonContent = await getLessonMarkdownContent(args.lessonSlug);
+        return suggestLessonQuestions(lessonContent);
       },
     },
     Lesson: {

@@ -36,6 +36,11 @@ export const apiEnvSchema = z.object({
   ...openfgaEnvSchema.shape,
   OPENFGA_STORE_ID: z.string().min(1),
   OPENFGA_MODEL_ID: z.string().min(1),
+  // Template-question answering (apps/api/src/template-question.ts).
+  // Optional: with no key set, askTemplateQuestion fails with a clear
+  // GraphQLError instead of crashing the whole API at startup.
+  OPENROUTER_API_KEY: optionalNonEmpty,
+  OPENROUTER_MODEL: z.string().min(1).default("openai/gpt-4o-mini"),
 });
 
 export type ApiEnv = z.infer<typeof apiEnvSchema>;

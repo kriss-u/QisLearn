@@ -28,3 +28,7 @@ query Lesson($slug: String!) {
     }
   }
 }
+
+mutation SuggestLessonQuestions($lessonSlug: String!) {
+  suggestLessonQuestions(lessonSlug: $lessonSlug)
+}

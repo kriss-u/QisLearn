@@ -129,6 +129,7 @@ export type Mutation = {
   saveCodeSnapshot: CodeSnapshot;
   saveQuizAttempt: QuizAttempt;
   setLessonProgress: LessonProgress;
+  suggestLessonQuestions: Array<Scalars['String']['output']>;
   updateContentBlock: ContentBlock;
   updateLesson: Lesson;
   updateLessonPrerequisites: Lesson;
@@ -221,6 +222,11 @@ export type MutationSaveQuizAttemptArgs = {
 export type MutationSetLessonProgressArgs = {
   lessonSlug: Scalars['String']['input'];
   status: LessonStatus;
+};
+
+
+export type MutationSuggestLessonQuestionsArgs = {
+  lessonSlug: Scalars['String']['input'];
 };
 
 
@@ -531,6 +537,13 @@ export type LessonQueryVariables = Exact<{
 
 
 export type LessonQuery = { __typename?: 'Query', lesson?: { __typename?: 'Lesson', slug: string, title: string, summary: string, layout: string, order: number, estimatedMinutes: number, track: { __typename?: 'Track', slug: string }, prerequisites: Array<{ __typename?: 'Lesson', slug: string, title: string, summary: string, layout: string, order: number, estimatedMinutes: number, track: { __typename?: 'Track', slug: string } }>, contentBlocks: Array<{ __typename?: 'ContentBlock', id: string, order: number, type: string, data: Record<string, unknown> }> } | null };
+
+export type SuggestLessonQuestionsMutationVariables = Exact<{
+  lessonSlug: Scalars['String']['input'];
+}>;
+
+
+export type SuggestLessonQuestionsMutation = { __typename?: 'Mutation', suggestLessonQuestions: Array<string> };
 
 export type MyQuizAttemptQueryVariables = Exact<{
   lessonSlug: Scalars['String']['input'];
@@ -1571,6 +1584,37 @@ export type LessonQueryHookResult = ReturnType<typeof useLessonQuery>;
 export type LessonLazyQueryHookResult = ReturnType<typeof useLessonLazyQuery>;
 export type LessonSuspenseQueryHookResult = ReturnType<typeof useLessonSuspenseQuery>;
 export type LessonQueryResult = Apollo.QueryResult<LessonQuery, LessonQueryVariables>;
+export const SuggestLessonQuestionsDocument = gql`
+    mutation SuggestLessonQuestions($lessonSlug: String!) {
+  suggestLessonQuestions(lessonSlug: $lessonSlug)
+}
+    `;
+export type SuggestLessonQuestionsMutationFn = Apollo.MutationFunction<SuggestLessonQuestionsMutation, SuggestLessonQuestionsMutationVariables>;
+
+/**
+ * __useSuggestLessonQuestionsMutation__
+ *
+ * To run a mutation, you first call `useSuggestLessonQuestionsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSuggestLessonQuestionsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [suggestLessonQuestionsMutation, { data, loading, error }] = useSuggestLessonQuestionsMutation({
+ *   variables: {
+ *      lessonSlug: // value for 'lessonSlug'
+ *   },
+ * });
+ */
+export function useSuggestLessonQuestionsMutation(baseOptions?: Apollo.MutationHookOptions<SuggestLessonQuestionsMutation, SuggestLessonQuestionsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SuggestLessonQuestionsMutation, SuggestLessonQuestionsMutationVariables>(SuggestLessonQuestionsDocument, options);
+      }
+export type SuggestLessonQuestionsMutationHookResult = ReturnType<typeof useSuggestLessonQuestionsMutation>;
+export type SuggestLessonQuestionsMutationResult = Apollo.MutationResult<SuggestLessonQuestionsMutation>;
+export type SuggestLessonQuestionsMutationOptions = Apollo.BaseMutationOptions<SuggestLessonQuestionsMutation, SuggestLessonQuestionsMutationVariables>;
 export const MyQuizAttemptDocument = gql`
     query MyQuizAttempt($lessonSlug: String!, $quizId: String!) {
   myQuizAttempt(lessonSlug: $lessonSlug, quizId: $quizId) {

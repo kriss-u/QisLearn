@@ -7,7 +7,7 @@ import { adminClient } from "better-auth/client/plugins";
 // from the same VITE_API_URL env var apolloClient.ts already reads, rather
 // than a second env var.
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000/graphql";
-const API_ORIGIN = new URL(API_URL).origin;
+export const API_ORIGIN = new URL(API_URL).origin;
 
 export const authClient = createAuthClient({
   baseURL: API_ORIGIN,

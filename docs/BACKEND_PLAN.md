@@ -200,6 +200,42 @@ implementation; this is the shape.
 
 ## 6. LLM / adaptive learning service
 
+- **Status note (2026-09-08):** the first real LLM feature shipped ahead of
+  LiteLLM/`apps/llm-service` — a small "Ask about this lesson" Q&A panel,
+  built directly in `apps/api` (`apps/api/src/lesson-qa.ts`) calling
+  OpenRouter (`@openrouter/ai-sdk-provider` + Vercel AI SDK's
+  `generateText`/`generateObject`) rather than standing up the full gateway
+  described below. Deliberate scope-narrowing, same call as §5's Pothos
+  deferral: not enough LLM surface area yet to justify the separate service
+  and container. Revisit extracting to `apps/llm-service` once a second LLM
+  feature lands. Concretely:
+  - `Mutation.suggestLessonQuestions(lessonSlug)`: generates 3-4 example
+    questions fresh on every call (nothing persisted) — the same pattern as
+    the sample-prompt chips on an LLM chat box, grounded only in that
+    lesson's own markdown content blocks concatenated together.
+  - `Mutation.askAboutLesson(lessonSlug, question)`: answers using ONLY that
+    lesson's content, explicitly told to say "not covered" rather than
+    reach for outside knowledge. No caching — regenerated per ask.
+  - Frontend: `apps/web/src/components/lesson/AskPanel.tsx`, an "Ask" button
+    in `LessonLayout`'s header. Deliberately **no freeform question box** —
+    a learner can only click a generated suggestion, never type arbitrary
+    text, so the model is never asked something nobody (a suggestion
+    generator, at least) vetted as on-topic first.
+  - Config: `OPENROUTER_API_KEY` (required to actually call the model;
+    absent key fails the mutation with a clear `NOT_CONFIGURED` error
+    rather than crashing the API) and `OPENROUTER_MODEL` (default
+    `openai/gpt-4o-mini` — picked for cost, swappable per-deployment via
+    env with no code change) in `packages/config/src/env.ts`.
+  - **Deferred, NOT built**: an earlier pass at this also prototyped
+    auto-generating a graded "concept quiz" popup per markdown block
+    (a stored, cached quiz with a marked-correct choice, inserted
+    automatically without any lesson-author placeholder). Pulled back out
+    before shipping — a quiz presents a specific choice as "correct" with
+    no verification step, which is a materially higher-stakes claim than
+    an ask-panel's transparent, non-authoritative Q&A answer. Worth
+    revisiting later, but only alongside an actual correctness-verification
+    story (e.g. an admin review queue before a generated quiz goes live).
+
 - `infra/docker` runs a LiteLLM proxy container configured with multiple
   model routes: OpenRouter (catch-all for hosted models), direct Anthropic
   and OpenAI keys where you want provider-specific features, and an Ollama
@@ -246,20 +282,28 @@ implementation; this is the shape.
    `apps/web` was **not** touched in this pass — it still reads lessons
    from the MDX registry exactly as before, and no `.mdx` file has been
    deleted.
-3. **Not yet done.** `apps/web` cutover: remove `@mdx-js/rollup`, the MDX
-   Vite plugin config, and `src/content/lessons/*.mdx` from the frontend
-   build. `LessonPage` switches from `loadLessonContent()`'s dynamic MDX
-   import to a GraphQL query for the lesson's ordered `content_block` list,
-   rendered by a block-type switch (`markdown` through the existing
-   `Markdown` component, every other type through its matching existing
-   component from `mdxComponents.ts`, unchanged except props now come from
-   a query result instead of MDX-compiled JSX props). Needs a GraphQL
-   client in `apps/web` (urql, per §2) and visual verification across all
-   22 lessons before any `.mdx` file is deleted.
-4. **Not yet done.** A minimal authoring path for v1: direct GraphQL
-   mutations (or a Drizzle Studio-style DB GUI) editing `content_block`
-   rows. A real authoring UI (drag-to-reorder blocks, live preview) is
-   explicitly out of scope for the first cut, tracked as a later phase.
+3. **Done.** `apps/web` cutover is complete: no `@mdx-js/*` dependency, no
+   MDX Vite plugin config remain. `LessonPage` reads lessons via
+   `apps/web/src/content/index.ts`'s GraphQL queries (`tracks`, `lesson`)
+   instead of `loadLessonContent()`'s dynamic MDX import, and
+   `ContentBlockList` renders `lesson.contentBlocks` through a block-type
+   switch (`markdown` through the existing `Markdown` component, every
+   other type through its matching component, unchanged except props now
+   come from a query result). Note: the GraphQL client that shipped is
+   **Apollo Client** (`@apollo/client`), not urql as originally scoped in
+   §2 — table in §2 is stale on this point, kept for the rationale record.
+   `src/content/lessons/*.mdx` (all 22 source files) have been deleted now
+   that nothing references them.
+4. **Done.** Admin authoring UI: `apps/api` exposes
+   `createTrack`/`updateTrack`, `createModule`/`updateModule`/`deleteModule`,
+   `createLesson`/`updateLesson`/`deleteLesson`,
+   `updateLessonPrerequisites`, `createTag`/`updateLessonTags`, and
+   `createContentBlock`/`updateContentBlock`/`deleteContentBlock`
+   mutations, all gated by `requireAdmin`. `apps/web` has an `/admin` route
+   with rich rendering/preview for editing lessons and content blocks
+   directly, superseding the originally-scoped "direct GraphQL mutations
+   or DB GUI" placeholder — this went further than the v1 cut described
+   here.
 
 ## 8. Docker Compose (dev) sketch
 
@@ -284,23 +328,39 @@ three requests in.
    with Drizzle adapter and the `organization` plugin, OpenFGA container
    running with a minimal authorization model (user/org/member relations
    only, no content relations yet), a "who am I" GraphQL query end to end.
-3. **Partly done. Content schema + migration**: Drizzle schema for
-   `track`/`lesson`/`content_block` and the MDX-to-Postgres migration
-   script are done and verified (see §7 steps 1-2). Still outstanding:
-   `apps/web` switched to read lessons from GraphQL instead of the MDX
-   registry, verified lesson-by-lesson against the current site before
-   deleting any `.mdx` file (§7 step 3).
-4. **User data cutover**: `lesson_progress`/`code_snapshot`/`quiz_attempt`
-   tables and mutations, `apps/web` switched off Dexie entirely (delete
-   `src/db/`), zustand stores trimmed to ephemeral-only state, OpenFGA
-   content relations (`can_view_lesson`/`can_edit_lesson`) enforced on the
-   relevant queries/mutations.
-5. **Assignments/labs/grades**: new domain tables and GraphQL types,
-   instructor-facing mutations gated by OpenFGA `can_edit_lesson`-style
-   relations scoped per org.
-6. **LLM service v1**: LiteLLM container plus `apps/llm-service`'s tutoring/
-   hints endpoint, wired into `<CodeExercise>`'s hint UI as an additional
-   "ask for a hint" action alongside the existing static `hints` prop.
+3. **Done. Content schema + migration**: Drizzle schema for
+   `track`/`lesson`/`content_block`, the MDX-to-Postgres migration script,
+   `apps/web`'s cutover to reading lessons via GraphQL, deletion of the
+   source `.mdx` files, and an admin authoring UI beyond the original v1
+   scope are all done (see §7 steps 1-4).
+4. **Done. User data cutover**: `lesson_progress`/`code_snapshot`/
+   `quiz_attempt` tables exist (`packages/db/src/user-data-schema.ts`) with
+   `setLessonProgress`/`saveCodeSnapshot`/`saveQuizAttempt`/
+   `deleteQuizAttempt`/`resetMyProgress` mutations in `apps/api`. Dexie is
+   fully removed from `apps/web` (no dependency, no `src/db/`); zustand's
+   `progressStore`/`settingsStore` hold only ephemeral/synced-cache state,
+   with `useProgressSync()` doing the actual GraphQL reads/writes. The
+   in-sidebar "Reset all data" button was removed per product decision
+   (2026-09-08) — the underlying `resetProgress()` action stays in
+   `useProgressSync.ts`, unused, for whenever a profile page picks it back
+   up. OpenFGA content relations are **intentionally still a stub**: per
+   §10's open multi-tenancy question, `can_view_lesson` is unconditional
+   and `can_edit_lesson` is checked as a plain `requireAdmin` role check in
+   `apps/api/src/authz-guards.ts` rather than a live OpenFGA `.check()` —
+   the `.fga` model documents this as deliberate until org-scoped editing
+   is actually needed.
+5. **Deferred. Assignments/labs/grades**: paused before starting (2026-09-08)
+   — grading itself needs more product design first: different instructors
+   want different schemes (whole-assignment score out of some total,
+   per-question weighting, etc.), and `grade` as sketched in §4 is too thin
+   to support that. Revisit with a real grading-scheme model before building
+   `assignment`/`assignment_submission`/`grade`. See §10.1 for the resolved
+   org-scoping direction this phase will build on once it's picked back up.
+6. **Partly done. LLM service v1**: the "Ask about this lesson" Q&A feature
+   (§6's status note) shipped as a first slice, directly in `apps/api`
+   rather than the LiteLLM/`apps/llm-service` architecture below — still
+   outstanding: the actual LiteLLM container, `apps/llm-service` extraction,
+   and the tutoring/hints endpoint wired into `<CodeExercise>`.
 7. **Adaptive learning**: `concept_mastery`/`learning_path_event` tables,
    the difficulty/path rules engine, spaced-repetition scheduling, surfaced
    in the UI as a "recommended next" lesson and a review queue.
@@ -322,6 +382,54 @@ three requests in.
   derived from a smaller v1 (user/org only) and extended once content
   relations are actually needed, avoiding premature modeling of relations
   that don't exist yet.
+
+### 10.1 Resolved direction: what "org" is for (2026-09-08)
+
+The multi-tenancy boundary question above is resolved, superseding any
+earlier "every org forks its own copy of content" idea floated during
+design discussion (never implemented) — that would have made pushing a
+content fix to already-forked orgs impossible to reconcile without a real
+diff/merge engine, which isn't worth building speculatively. Instead:
+
+- **The curriculum (`track`/`lesson`/`content_block`) stays fully canonical
+  and shared by every org.** Only the platform maintainer edits it — this
+  is exactly today's `requireAdmin`-gated mutation set, unchanged. No org
+  ever forks or overrides a lesson, so there's nothing to reconcile.
+- **"Org" is the student/instructor/grading boundary, not a content
+  boundary.** An org's instructors manage their own students, assignments,
+  submissions, and grades (§9 phase 5, once picked back up) against the
+  shared canonical curriculum. Personalized/adaptive content (phase 7's
+  `concept_mastery`-driven recommendations, and any future LLM-generated
+  practice quizzes) is scoped per user, not per org content-fork.
+- **Two independent role checks, not a hierarchy**: `user.role` (from
+  better-auth's `admin` plugin, already in `auth-schema.ts`) is the
+  **platform-wide superadmin** — edits canonical content, sees every org.
+  `member.role` (better-auth's `organization` plugin, already in
+  `auth-schema.ts`) is the **per-org role** (owner/admin/member, extensible
+  to e.g. "instructor") — manages only that org's own members/assignments/
+  grades, with no visibility into other orgs or superadmin actions. No new
+  tables needed for this split, just two separately-checked guard functions
+  (`requireAdmin`/a future `requireOrgRole`) — `requireAdmin` should be
+  renamed `requireSuperAdmin` when phase 5 resumes, to stop it reading as
+  the same thing as an org's own "admin" member role.
+- **Auth is required app-wide, no anonymous browsing** (not yet
+  implemented — still open, blocks phase 5): every user belongs to at
+  least one org, with an individual learner getting an auto-provisioned
+  personal org at signup rather than being a special anonymous-content
+  case.
+- **Multi-org self-hosting works with zero extra schema**: a university
+  running its own instance can create as many `organization` rows as it
+  has schools/departments (e.g. one LSU deployment, several orgs) — an org
+  is just a tenant boundary, nothing assumes one org per deployment.
+- **Idea, explicitly deferred, not scoped**: turning this into a generic
+  content-authoring + hosting + LLM-personalization platform for other
+  domains (bring-your-own interactive widgets beyond the current 11
+  quantum-computing-specific components). `content_block.type` already
+  being free text with a swappable registry
+  (`apps/api/src/content-block-registry.ts`) is the right foundation for
+  this eventually, but a real third-party plugin system (external orgs
+  registering their own widget types/components) is its own project, not
+  something to design speculatively now.
 
 ## 11. Version notes (checked September 2026)
 

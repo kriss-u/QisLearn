@@ -3,6 +3,7 @@ import { Badge, Box, Container, HStack, Heading, IconButton, Separator, Text } f
 import type { PropsWithChildren } from "react";
 import { LuPrinter } from "react-icons/lu";
 import type { LessonFrontmatter, LessonLayout as LessonLayoutKind } from "../../content/schema";
+import { AskPanel } from "./AskPanel";
 
 type MaxW = ConditionalValue<string>;
 
@@ -36,14 +37,17 @@ export function LessonLayout({ lesson, children }: PropsWithChildren<{ lesson: L
             {lesson.estimatedMinutes} min read
           </Text>
         </HStack>
-        <IconButton
-          aria-label="Print lesson"
-          variant="ghost"
-          size="sm"
-          onClick={() => window.print()}
-        >
-          <LuPrinter />
-        </IconButton>
+        <HStack gap="2">
+          <AskPanel />
+          <IconButton
+            aria-label="Print lesson"
+            variant="ghost"
+            size="sm"
+            onClick={() => window.print()}
+          >
+            <LuPrinter />
+          </IconButton>
+        </HStack>
       </HStack>
       <Box id="lesson-print-area">
         <Heading size="2xl" mb="2">

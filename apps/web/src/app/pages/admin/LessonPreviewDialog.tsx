@@ -8,11 +8,24 @@ import { LessonProgressProvider } from "../../../components/lesson/LessonProgres
 import type { ContentBlockData } from "../../../content";
 import type { LessonFrontmatter } from "../../../content/schema";
 
-class PreviewErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+// `resetKey` clears a caught error whenever the previewed data changes
+// (so fixing the bad field retries the render) WITHOUT unmounting
+// `children` itself — an earlier version used `resetKey` as a `key` prop
+// instead, which forced a full remount, including every Bloch sphere's
+// WebGL <Canvas>, on every single keystroke while editing (rapid
+// create/destroy of WebGL contexts eventually exhausts the browser's
+// context limit and the sphere just stops rendering).
+class PreviewErrorBoundary extends Component<{ resetKey: string; children: ReactNode }, { error: Error | null }> {
   state: { error: Error | null } = { error: null };
 
   static getDerivedStateFromError(error: Error) {
     return { error };
+  }
+
+  componentDidUpdate(prevProps: { resetKey: string }) {
+    if (this.state.error && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({ error: null });
+    }
   }
 
   render() {
@@ -61,7 +74,7 @@ export function LessonPreviewDialog({
                   template to keep in sync. A distinct fake lessonId keeps
                   any CodeExercise/Quiz interaction here from writing into
                   the admin's own real progress on this lesson. */}
-              <PreviewErrorBoundary key={JSON.stringify({ frontmatter, blocks })}>
+              <PreviewErrorBoundary resetKey={JSON.stringify({ frontmatter, blocks })}>
                 <LessonProvider value={{ lessonId: `preview-${frontmatter.id}` }}>
                   <LessonProgressProvider lessonId={`preview-${frontmatter.id}`}>
                     <LessonLayout lesson={frontmatter}>

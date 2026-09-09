@@ -4,6 +4,7 @@ import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth.js";
 import { createContext } from "./context.js";
 import { env } from "./env.js";
+import { handleLessonChat } from "./lesson-chat.js";
 import { schema } from "./schema.js";
 
 const authHandler = toNodeHandler(auth);
@@ -28,6 +29,26 @@ const server = createServer((req, res) => {
       return;
     }
     authHandler(req, res);
+    return;
+  }
+  if (req.url === "/api/lesson-chat") {
+    // Plain HTTP, not GraphQL: @ai-sdk/react's useChat speaks a specific
+    // SSE/HTTP streaming protocol (see lesson-chat.ts), not GraphQL's
+    // subscription protocol, so this stays outside Yoga same as /api/auth.
+    res.setHeader("Access-Control-Allow-Origin", corsOptions.origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    if (req.method === "OPTIONS") {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+    handleLessonChat(req, res).catch((err: unknown) => {
+      console.error(err);
+      if (!res.headersSent) res.writeHead(500, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "Internal server error" }));
+    });
     return;
   }
   yoga(req, res);

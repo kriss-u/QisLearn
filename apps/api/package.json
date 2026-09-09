@@ -15,8 +15,11 @@
     "admin:create": "tsx --env-file-if-exists=.env scripts/create-admin.ts"
   },
   "dependencies": {
+    "@ai-sdk/provider": "4.0.11",
+    "@openrouter/ai-sdk-provider": "^3.0.0",
     "@qislearn/config": "workspace:*",
     "@qislearn/db": "workspace:*",
+    "ai": "^7.0.94",
     "better-auth": "^1.7.3",
     "drizzle-orm": "^0.44.0",
     "graphql": "^16.11.0",
