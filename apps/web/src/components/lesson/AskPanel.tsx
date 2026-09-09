@@ -6,15 +6,15 @@ import {
   Drawer,
   HStack,
   IconButton,
-  Input,
   Portal,
   Spinner,
   Text,
+  Textarea,
   VStack,
 } from "@chakra-ui/react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LuMessageCircleQuestion, LuSend } from "react-icons/lu";
 import { useSuggestLessonQuestionsMutation } from "@qislearn/graphql-schema";
 import { API_ORIGIN, useSession } from "../../lib/authClient";
@@ -33,6 +33,7 @@ export function AskPanel() {
   const { data: session } = useSession();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [suggestQuestions, { loading: suggesting }] = useSuggestLessonQuestionsMutation();
   const [suggestions, setSuggestions] = useState<string[] | null>(null);
   const [suggestError, setSuggestError] = useState<string | null>(null);
@@ -48,13 +49,24 @@ export function AskPanel() {
   );
   const { messages, sendMessage, status, error } = useChat({ id: lessonId, transport });
 
+  useEffect(() => {
+    if (error) console.error("[AskPanel] chat error:", error);
+  }, [error]);
+
   function handleOpen() {
     setOpen(true);
     if (suggestions || !session) return;
     setSuggestError(null);
     suggestQuestions({ variables: { lessonSlug: lessonId } })
-      .then(({ data }) => setSuggestions(data?.suggestLessonQuestions ?? []))
-      .catch((err: unknown) => setSuggestError(err instanceof Error ? err.message : "Couldn't load suggestions."));
+      .then(({ data, errors }) => {
+        const questions = data?.suggestLessonQuestions ?? [];
+        console.log("[AskPanel] suggestLessonQuestions raw response:", { questions, errors });
+        setSuggestions(questions);
+      })
+      .catch((err: unknown) => {
+        console.error("[AskPanel] suggestLessonQuestions failed:", err);
+        setSuggestError(err instanceof Error ? err.message : "Couldn't load suggestions.");
+      });
   }
 
   function handleSend(text: string) {
@@ -62,6 +74,12 @@ export function AskPanel() {
     if (!trimmed || status === "streaming" || status === "submitted") return;
     sendMessage({ text: trimmed });
     setInput("");
+    if (inputRef.current) inputRef.current.style.height = "auto";
+  }
+
+  function autoGrow(el: HTMLTextAreaElement) {
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
   }
 
   const busy = status === "streaming" || status === "submitted";
@@ -169,14 +187,25 @@ export function AskPanel() {
               </Drawer.Body>
 
               <Drawer.Footer>
-                <HStack w="full">
-                  <Input
-                    placeholder="Ask a question…"
+                <HStack w="full" align="flex-end">
+                  <Textarea
+                    ref={inputRef}
+                    placeholder="Ask a question… (Shift+Enter for a new line)"
                     value={input}
                     disabled={!session}
-                    onChange={(e) => setInput(e.target.value)}
+                    rows={1}
+                    resize="none"
+                    maxH="32"
+                    overflowY="auto"
+                    onChange={(e) => {
+                      setInput(e.target.value);
+                      autoGrow(e.target);
+                    }}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") handleSend(input);
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSend(input);
+                      }
                     }}
                   />
                   <IconButton
