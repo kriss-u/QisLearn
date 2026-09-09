@@ -1,15 +1,20 @@
 import { Box, HStack, IconButton, Text } from "@chakra-ui/react";
-import { python } from "@codemirror/lang-python";
+import { python, pythonLanguage } from "@codemirror/lang-python";
 import { EditorView } from "@codemirror/view";
 import { githubDark, githubLight } from "@uiw/codemirror-theme-github";
 import CodeMirror from "@uiw/react-codemirror";
 import { useEffect, useState } from "react";
 import { LuCheck, LuCopy } from "react-icons/lu";
 import { useColorMode } from "../ui/color-mode";
+import { qiskitCompletionSource } from "./qiskitCompletions";
 
 const fontTheme = EditorView.theme({
   "&": { fontFamily: "'Fira Code', ui-monospace, monospace" },
   ".cm-content": { fontFamily: "'Fira Code', ui-monospace, monospace" },
+});
+
+const qiskitCompletions = pythonLanguage.data.of({
+  autocomplete: qiskitCompletionSource,
 });
 
 export interface PyEditorProps {
@@ -71,7 +76,7 @@ export function PyEditor({
           onChange={onChange}
           minHeight={minHeight}
           theme={colorMode === "dark" && !isPrinting ? githubDark : githubLight}
-          extensions={[python(), fontTheme]}
+          extensions={[python(), qiskitCompletions, fontTheme]}
           readOnly={readOnly}
           basicSetup={{
             lineNumbers: showLineNumbers,

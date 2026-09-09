@@ -186,6 +186,9 @@ importers:
       '@chakra-ui/react':
         specifier: ^3.36.1
         version: 3.37.0(@emotion/react@11.14.0(@types/react@19.2.18)(react@19.2.8)(supports-color@7.2.0))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@codemirror/autocomplete':
+        specifier: ^6.20.3
+        version: 6.20.3
       '@codemirror/lang-python':
         specifier: ^6.2.1
         version: 6.2.1
