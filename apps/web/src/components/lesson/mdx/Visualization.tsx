@@ -1,4 +1,4 @@
-import { Box, HStack, SimpleGrid, Skeleton, Text, useToken, VStack } from "@chakra-ui/react";
+import { Box, Flex, HStack, SimpleGrid, Skeleton, Text, useToken, VStack } from "@chakra-ui/react";
 import { Suspense, lazy, useMemo, useRef, useState } from "react";
 import { LuAtom } from "react-icons/lu";
 import { ClientOnly } from "../../ClientOnly";
@@ -252,9 +252,9 @@ export function Visualization({ title, description, circuit, views = DEFAULT_VIE
           <VizLatexToggle>
             {(latexAction) => (
               <VizSection title="Bloch Sphere" action={latexAction}>
-                <SimpleGrid columns={{ base: 1, md: circuit.numQubits }} gap="6">
+                <Flex direction="row" wrap="wrap" gap="6" align="flex-start">
                   {Array.from({ length: circuit.numQubits }, (_, q) => (
-                    <VStack key={q} gap="3">
+                    <VStack key={q} gap="3" flex="0 1 300px" maxW="320px">
                       <HStack justify="space-between" w="full">
                         <BlochQubitLabel index={q} numQubits={circuit.numQubits} label={circuit.qubitLabels?.[q]} />
                         <VizActions onCopy={() => handleBlochCopy(q)} onDownload={() => handleBlochDownload(q)} />
@@ -273,7 +273,7 @@ export function Visualization({ title, description, circuit, views = DEFAULT_VIE
                       </ClientOnly>
                     </VStack>
                   ))}
-                </SimpleGrid>
+                </Flex>
               </VizSection>
             )}
           </VizLatexToggle>

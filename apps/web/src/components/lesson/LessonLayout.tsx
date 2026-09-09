@@ -37,17 +37,15 @@ export function LessonLayout({ lesson, children }: PropsWithChildren<{ lesson: L
             {lesson.estimatedMinutes} min read
           </Text>
         </HStack>
-        <HStack gap="2">
-          <AskPanel />
-          <IconButton
-            aria-label="Print lesson"
-            variant="ghost"
-            size="sm"
-            onClick={() => window.print()}
-          >
-            <LuPrinter />
-          </IconButton>
-        </HStack>
+        <IconButton
+          className="no-print"
+          aria-label="Print lesson"
+          variant="ghost"
+          size="sm"
+          onClick={() => window.print()}
+        >
+          <LuPrinter />
+        </IconButton>
       </HStack>
       <Box id="lesson-print-area">
         <Heading size="2xl" mb="2">
@@ -59,6 +57,7 @@ export function LessonLayout({ lesson, children }: PropsWithChildren<{ lesson: L
         <Separator className="print-only" borderColor="border.muted" mb="8" />
         {children}
       </Box>
+      <AskPanel />
     </Container>
   );
 }

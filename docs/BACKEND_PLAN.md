@@ -226,6 +226,16 @@ implementation; this is the shape.
     rather than crashing the API) and `OPENROUTER_MODEL` (default
     `openai/gpt-4o-mini` — picked for cost, swappable per-deployment via
     env with no code change) in `packages/config/src/env.ts`.
+  - **Idea, NOT built (2026-09-08)**: persist each user's ask-panel Q&A
+    (question, answer, model, lesson, timestamp) per user rather than
+    discarding it after the response streams, so a learner's question
+    history is visible later (to them, and potentially to an
+    instructor/admin view of what learners are getting stuck on). Would
+    need a new table (e.g. `lesson_qa_message`, keyed by user + lesson,
+    mirroring the `quiz_attempt`/`code_snapshot` pattern) and a GraphQL
+    query to read it back. Not implemented — raised as a future direction,
+    not scoped yet (retention/privacy policy, whether org admins should see
+    other users' questions, etc. all unresolved).
   - **Deferred, NOT built**: an earlier pass at this also prototyped
     auto-generating a graded "concept quiz" popup per markdown block
     (a stored, cached quiz with a marked-correct choice, inserted

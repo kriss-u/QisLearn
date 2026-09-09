@@ -94,7 +94,8 @@ export function BlochSphere({ vector, onCanvasReady }: BlochSphereProps) {
       bg="bg.panel"
       aspectRatio={1}
       minH="220px"
-      maxH="380px"
+      maxH="320px"
+      maxW="320px"
       w="full"
       position="relative"
       overflow="hidden"

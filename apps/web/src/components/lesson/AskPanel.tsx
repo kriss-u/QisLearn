@@ -68,7 +68,19 @@ export function AskPanel() {
 
   return (
     <>
-      <Button className="no-print" size="sm" variant="outline" onClick={handleOpen}>
+      <Button
+        className="no-print"
+        position="fixed"
+        bottom="6"
+        right="6"
+        zIndex="overlay"
+        rounded="full"
+        size="lg"
+        px="5"
+        colorPalette="quantum"
+        boxShadow="lg"
+        onClick={handleOpen}
+      >
         <LuMessageCircleQuestion /> Ask
       </Button>
 
@@ -141,9 +153,13 @@ export function AskPanel() {
                             size="sm"
                             variant="outline"
                             justifyContent="flex-start"
+                            whiteSpace="normal"
+                            textAlign="left"
+                            h="auto"
+                            py="2"
                             onClick={() => handleSend(question)}
                           >
-                            {question}
+                            <Markdown inline>{question}</Markdown>
                           </Button>
                         ))}
                       </VStack>
