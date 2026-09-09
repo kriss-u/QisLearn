@@ -1,6 +1,15 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import { boolean, integer, jsonb, pgTable, primaryKey, text, uuid } from "drizzle-orm/pg-core";
 import { organization } from "./auth-schema.js";
+
+// UUIDv7 (Postgres 18 builtin, no extension) instead of v4/gen_random_uuid:
+// its leading bytes are a millisecond timestamp, so ids sort roughly by
+// creation order — better b-tree insert locality than random v4, and a
+// `select ... order by id` or a plain filename/dump ordering already reads
+// newest-last, which matters for a content-heavy schema that gets seeded,
+// diffed, and shared between local dev databases a lot more than most
+// tables here get random-access lookups by id.
+const uuidv7 = () => sql`uuidv7()`;
 
 // Top-level offering (e.g. "Quantum Computing", future "LLM Development").
 // Associates directly with `lesson`, not `track`: a track ("Math", "Qubits")
@@ -8,7 +17,7 @@ import { organization } from "./auth-schema.js";
 // which tracks "belong to" a course is derived from the courses's lessons
 // rather than stored as a track->course FK (see `courseTracks` query).
 export const course = pgTable("course", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: uuid("id").primaryKey().default(uuidv7()),
   slug: text("slug").notNull().unique(),
   title: text("title").notNull(),
   order: integer("order").notNull(),
@@ -33,7 +42,7 @@ export const courseOrganization = pgTable(
 );
 
 export const track = pgTable("track", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: uuid("id").primaryKey().default(uuidv7()),
   slug: text("slug").notNull().unique(),
   title: text("title").notNull(),
   order: integer("order").notNull(),
@@ -44,7 +53,7 @@ export const track = pgTable("track", {
 // on `lesson.moduleId` below: a track can mix grouped and ungrouped lessons,
 // and none of the existing 22 migrated lessons belong to a module yet.
 export const module_ = pgTable("module", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: uuid("id").primaryKey().default(uuidv7()),
   trackId: uuid("track_id")
     .notNull()
     .references(() => track.id, { onDelete: "cascade" }),
@@ -59,7 +68,7 @@ export const module_ = pgTable("module", {
 export const lessonDifficulties = ["beginner", "intermediate", "advanced"] as const;
 
 export const lesson = pgTable("lesson", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: uuid("id").primaryKey().default(uuidv7()),
   slug: text("slug").notNull().unique(),
   courseId: uuid("course_id")
     .notNull()
@@ -96,7 +105,7 @@ export const lessonPrerequisite = pgTable(
 // independent of a lesson's track/module position — for search/filter, not
 // sequencing (that's still track/module/lesson `order`).
 export const tag = pgTable("tag", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: uuid("id").primaryKey().default(uuidv7()),
   slug: text("slug").notNull().unique(),
   label: text("label").notNull(),
 });
@@ -120,7 +129,7 @@ export const lessonTag = pgTable(
 // text rather than a fixed enum: lesson authors add new one-off interactive
 // widgets fairly often, and each addition shouldn't require a DB migration.
 export const contentBlock = pgTable("content_block", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: uuid("id").primaryKey().default(uuidv7()),
   lessonId: uuid("lesson_id")
     .notNull()
     .references(() => lesson.id, { onDelete: "cascade" }),
@@ -136,7 +145,7 @@ export const contentBlock = pgTable("content_block", {
 // it's planned and place it) but has no working component/field-spec yet —
 // the lesson renderer shows a "not implemented yet" placeholder for it.
 export const widget = pgTable("widget", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: uuid("id").primaryKey().default(uuidv7()),
   key: text("key").notNull().unique(),
   label: text("label").notNull(),
   description: text("description"),
@@ -145,7 +154,7 @@ export const widget = pgTable("widget", {
 });
 
 export const widgetCategory = pgTable("widget_category", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: uuid("id").primaryKey().default(uuidv7()),
   slug: text("slug").notNull().unique(),
   label: text("label").notNull(),
 });

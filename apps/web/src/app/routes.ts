@@ -12,5 +12,7 @@ export default [
     index("pages/admin/AdminHome.tsx"),
     route("courses/:courseSlug", "pages/admin/CourseDetailPage.tsx"),
     route("lessons/:lessonId", "pages/admin/LessonEditorPage.tsx"),
+    route("widgets", "pages/admin/WidgetsPage.tsx"),
+    route("content-backup", "pages/admin/ContentBackupPage.tsx"),
   ]),
 ] satisfies RouteConfig;

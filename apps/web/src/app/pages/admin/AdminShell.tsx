@@ -30,6 +30,12 @@ export function AdminShell({ children }: PropsWithChildren) {
           <ChakraLink asChild fontSize="sm" color="fg.muted">
             <Link to="/admin">Content</Link>
           </ChakraLink>
+          <ChakraLink asChild fontSize="sm" color="fg.muted">
+            <Link to="/admin/widgets">Widgets</Link>
+          </ChakraLink>
+          <ChakraLink asChild fontSize="sm" color="fg.muted">
+            <Link to="/admin/content-backup">Content backup</Link>
+          </ChakraLink>
         </HStack>
         <HStack gap="3">
           <ChakraLink asChild fontSize="sm" color="fg.muted">

@@ -5,6 +5,7 @@ import {
   Button,
   CloseButton,
   Collapsible,
+  Combobox,
   Dialog,
   Field,
   Flex,
@@ -19,6 +20,7 @@ import {
   Textarea,
   VStack,
   Wrap,
+  useListCollection,
 } from "@chakra-ui/react";
 import { LuChevronDown, LuTrash2 } from "react-icons/lu";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -54,23 +56,84 @@ type BlockTypeSpec = Pick<WidgetsQuery["widgets"][number], "label" | "fields" | 
   type: string;
 };
 
-// Groups the type picker by widget category (a multi-category widget
-// appears under each of its categories) — purely for browsing/discovery,
-// picking one is never blocked even if it isn't implemented yet (see
-// ContentBlockList's "not implemented" placeholder on the real lesson).
-function groupBlockTypesByCategory(blockTypes: BlockTypeSpec[]): { label: string; types: BlockTypeSpec[] }[] {
-  const groups = new Map<string, BlockTypeSpec[]>();
-  for (const t of blockTypes) {
-    const categories = t.categories.length > 0 ? t.categories.map((c) => c.label) : ["Other"];
-    for (const label of categories) {
-      groups.set(label, [...(groups.get(label) ?? []), t]);
-    }
-  }
-  return [...groups.entries()].map(([label, types]) => ({ label, types }));
-}
-
 function blockTypeOptionLabel(t: BlockTypeSpec): string {
   return t.implemented ? t.label : `${t.label} (not implemented yet)`;
+}
+
+function blockTypeCategoryLabel(t: BlockTypeSpec): string {
+  return t.categories.length > 0 ? t.categories.map((c) => c.label).join(", ") : "Uncategorized";
+}
+
+// Searchable replacement for a plain <select>: with dozens of widget types
+// across categories, typing to filter beats scanning a long native dropdown
+// — each category is shown as subtext under its widget instead of grouping
+// into <optgroup>s, since a multi-category widget would otherwise have to
+// appear (and be searched for) more than once.
+function BlockTypeCombobox({
+  value,
+  onChange,
+  blockTypes,
+  width,
+}: {
+  value: string;
+  onChange: (type: string) => void;
+  blockTypes: BlockTypeSpec[];
+  width?: string;
+}) {
+  const { collection, filter, set } = useListCollection({
+    initialItems: blockTypes,
+    itemToString: blockTypeOptionLabel,
+    itemToValue: (t) => t.type,
+  });
+
+  useEffect(() => {
+    set(blockTypes);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blockTypes]);
+
+  const selected = blockTypes.find((t) => t.type === value);
+
+  return (
+    <Combobox.Root
+      collection={collection}
+      value={[value]}
+      defaultInputValue={selected ? blockTypeOptionLabel(selected) : value}
+      selectionBehavior="replace"
+      openOnClick
+      width={width}
+      onValueChange={(details) => {
+        const next = details.value[0];
+        if (next) onChange(next);
+      }}
+      onInputValueChange={(details) => filter(details.inputValue)}
+    >
+      <Combobox.Control>
+        <Combobox.Input placeholder="Search block types…" />
+        <Combobox.IndicatorGroup>
+          <Combobox.ClearTrigger />
+          <Combobox.Trigger />
+        </Combobox.IndicatorGroup>
+      </Combobox.Control>
+      <Portal>
+        <Combobox.Positioner>
+          <Combobox.Content>
+            <Combobox.Empty>No matching block types</Combobox.Empty>
+            {collection.items.map((t) => (
+              <Combobox.Item key={t.type} item={t}>
+                <VStack align="start" gap="0">
+                  <Combobox.ItemText>{blockTypeOptionLabel(t)}</Combobox.ItemText>
+                  <Text fontSize="2xs" color="fg.muted">
+                    {blockTypeCategoryLabel(t)}
+                  </Text>
+                </VStack>
+                <Combobox.ItemIndicator />
+              </Combobox.Item>
+            ))}
+          </Combobox.Content>
+        </Combobox.Positioner>
+      </Portal>
+    </Combobox.Root>
+  );
 }
 
 // Owns title/summary (main column, natural document flow) plus every other
@@ -481,23 +544,9 @@ function ContentBlockRow({
           onDragEnd={onDragEnd}
           rowRef={rowRef}
         />
-        <NativeSelect.Root size="sm" maxW="44" flexShrink={0}>
-          <NativeSelect.Field
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-          >
-            {groupBlockTypesByCategory(blockTypes).map((group) => (
-              <optgroup key={group.label} label={group.label}>
-                {group.types.map((t) => (
-                  <option key={t.type} value={t.type}>
-                    {blockTypeOptionLabel(t)}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </NativeSelect.Field>
-          <NativeSelect.Indicator />
-        </NativeSelect.Root>
+        <Box flexShrink={0}>
+          <BlockTypeCombobox value={type} onChange={setType} blockTypes={blockTypes} width="72" />
+        </Box>
         {summary && !open && (
           <Text
             fontSize="xs"
@@ -730,25 +779,9 @@ function NewBlockRow({
       rounded="l2"
       p="3"
     >
-      <Field.Root maxW="56">
+      <Field.Root maxW="96">
         <Field.Label fontSize="xs">Type</Field.Label>
-        <NativeSelect.Root size="sm">
-          <NativeSelect.Field
-            value={type}
-            onChange={(e) => handleTypeChange(e.target.value)}
-          >
-            {groupBlockTypesByCategory(blockTypes).map((group) => (
-              <optgroup key={group.label} label={group.label}>
-                {group.types.map((t) => (
-                  <option key={t.type} value={t.type}>
-                    {blockTypeOptionLabel(t)}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </NativeSelect.Field>
-          <NativeSelect.Indicator />
-        </NativeSelect.Root>
+        <BlockTypeCombobox value={type} onChange={handleTypeChange} blockTypes={blockTypes} />
       </Field.Root>
       {spec && (
         <DynamicBlockForm fields={spec.fields} data={data} onChange={setData} />

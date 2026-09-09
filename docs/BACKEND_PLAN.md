@@ -377,6 +377,19 @@ three requests in.
 8. **Deploy target decision**: revisit hosting once the app is feature-
    complete enough to need a real environment; fill in `infra/terraform`
    for whichever target is chosen then, no earlier.
+9. **Future. Content backup 3-way merge**: `/admin/content-backup`
+   (`apps/api/src/content-snapshot.ts`) currently does a 2-way diff/restore
+   (current DB vs. an uploaded snapshot file, upsert by natural key,
+   incoming always wins for anything it contains) — good enough for
+   solo/sequential use, but it can't distinguish "the file has new work" from
+   "the file would clobber a local-only edit." A real 3-way merge needs a
+   stored common-ancestor snapshot (e.g. a `content_snapshot_base` table,
+   updated on each successful restore) so a preview can classify each
+   changed entity as a clean create/update/delete vs. an actual conflict
+   (both sides changed it differently since the base) and surface a
+   GitHub-style per-conflict "keep local / take incoming" resolution before
+   allowing the merge — deliberately not built yet, scope noted here so it
+   isn't reinvented from scratch when it's actually needed.
 
 ## 10. Open questions to resolve during implementation
 

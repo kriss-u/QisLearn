@@ -324,3 +324,53 @@ mutation UpdateContentBlock($id: ID!, $order: Int, $type: String, $data: JSON) {
 mutation DeleteContentBlock($id: ID!) {
   deleteContentBlock(id: $id)
 }
+
+mutation UpdateWidget($key: ID!, $label: String, $description: String, $implemented: Boolean, $categoryIds: [ID!]) {
+  updateWidget(key: $key, label: $label, description: $description, implemented: $implemented, categoryIds: $categoryIds) {
+    key
+    label
+    description
+    implemented
+    categories {
+      id
+      slug
+      label
+    }
+  }
+}
+
+mutation DeleteWidget($key: ID!) {
+  deleteWidget(key: $key)
+}
+
+mutation CreateWidgetCategory($slug: String!, $label: String!) {
+  createWidgetCategory(slug: $slug, label: $label) {
+    id
+    slug
+    label
+  }
+}
+
+mutation UpdateWidgetCategory($id: ID!, $slug: String, $label: String) {
+  updateWidgetCategory(id: $id, slug: $slug, label: $label) {
+    id
+    slug
+    label
+  }
+}
+
+mutation DeleteWidgetCategory($id: ID!) {
+  deleteWidgetCategory(id: $id)
+}
+
+query ContentSnapshot {
+  contentSnapshot
+}
+
+mutation PreviewContentRestore($snapshot: JSON!) {
+  previewContentRestore(snapshot: $snapshot)
+}
+
+mutation RestoreContentSnapshot($snapshot: JSON!, $prune: Boolean) {
+  restoreContentSnapshot(snapshot: $snapshot, prune: $prune)
+}

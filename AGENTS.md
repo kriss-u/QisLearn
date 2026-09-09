@@ -175,7 +175,7 @@ changing it.
   `CircuitDiagram` draws that register as its own classical wire. Still, **no
   lesson exercise's `expectedCircuit` should ever require them**. Per-lesson
   content intentionally standardizes on the explicit `.measure(qubit, clbit)`
-  form as the one graded pattern (see `05-measurement.mdx`);
+  form as the one graded pattern (see the "Measurement" lesson's exercises);
   `measure_all`/`measure_active` are covered as reading-only material, not
   exercised, since which classical register they implicitly create is exactly
   the kind of thing that's clear to *read* but awkward to grade unambiguously.
@@ -208,10 +208,9 @@ changing it.
   everything else. The same `Markdown` component also renders short
   prop-string content (quiz question/choices, exercise prompt/hints).
   `apps/web` no longer compiles or imports `.mdx` files at all (`@mdx-js/rollup`
-  was removed from `vite.config.ts`); the `.mdx` files under
-  `src/content/lessons/` are now purely the **authoring source for the
-  migration script** (`packages/db/scripts/migrate-mdx.ts`), not something the
-  app reads directly. See Content model below for the authoring workflow.
+  was removed from `vite.config.ts`, and `src/content/lessons/` no longer
+  exists) — content is authored directly against Postgres through `/admin`
+  (see Content model below), not from a file on disk.
 
 ## Directory map
 
@@ -249,10 +248,9 @@ src/
       LessonContext.tsx       supplies lessonId to <CodeExercise/> for snapshot keys
       LessonLayout.tsx        header (title/badges) wrapping the lesson body
   content/                Content types + GraphQL-backed data fetching
-    lessons/<nn-slug>.mdx   legacy authoring source, see Content model below
     schema.ts               LessonFrontmatter, Circuit/Gate, QuizChoice, etc
-                             (still the prop-shape types content_block.data
-                             conforms to; unrelated to fetching now)
+                             (the prop-shape types content_block.data
+                             conforms to; unrelated to fetching)
     index.ts                 getTracks/getAllLessons/getLesson/getNextLesson:
                              async, fetch apps/api's GraphQL endpoint; see
                              Content model below. No caching (see Stack: SSR)
@@ -294,36 +292,34 @@ src/
 
 ## Content model (how a lesson is built)
 
-**Two-stage pipeline, since the GraphQL cutover:** author a lesson as a
-`.mdx` file (as described in this whole section, unchanged), then run
-`pnpm --filter @qislearn/db migrate:mdx` (`packages/db/scripts/migrate-mdx.ts`)
-to parse every `.mdx` file under `src/content/lessons/` and load it into
-Postgres (`track`/`lesson`/`lesson_prerequisite`/`content_block` tables,
-truncated and fully re-inserted each run — it's a one-shot batch load, not
-an incremental sync). `apps/web` reads from Postgres via `apps/api`'s
-GraphQL API at request time (`content/index.ts`); it never reads `.mdx`
-files itself. **So: editing a `.mdx` file has no visible effect until you
-re-run the migration script.** This is the authoring format, not the
-runtime format — everything below about frontmatter, tags, LaTeX
-conventions, and stable ids describes the `.mdx` source, which is exactly
-what the migration script expects and what a learner will eventually see
-once it's re-migrated.
+**Content is authored live against Postgres through `/admin`** (`CourseDetailPage`
+for track/lesson structure, `LessonEditorPage`/`DynamicBlockForm` for a
+lesson's `content_block` list) — there is no file-based authoring step and
+nothing to "re-migrate"; a save in the admin UI is immediately what
+`apps/web` serves. (An earlier version of this pipeline authored lessons as
+`.mdx` files under `src/content/lessons/` and batch-loaded them with a
+migration script; that directory and script are gone — this section now
+describes the `content_block` data model directly; everything below about
+frontmatter fields, block types, LaTeX conventions, and stable ids still
+describes exactly what each admin field/block maps to, just filled in
+through a form instead of typed as MDX/JSX.)
 
-Each lesson is a single `.mdx` file under `src/content/lessons/`. A YAML
-frontmatter block gives its metadata (validated against `LessonFrontmatterSchema`
-in `src/content/schema.ts`): `id`, `track`, `order`, `title`, `summary`, `layout`
-(`standard | theory-heavy | circuit-focus | lab`: changes the container
-width/framing in `LessonLayout.tsx`), `estimatedMinutes`, `prerequisites`. The body
-below the frontmatter is free-form MDX: normal Markdown prose (LaTeX via `$...$` /
-`$$...$$`, fenced ` ```python ` blocks get real syntax highlighting via
-`MarkdownCodeBlock`), interspersed with custom tags — four generic ones used
-across many lessons, plus one-off bespoke widgets particular lessons bring in
-(`OracleFigure`, `ComplexPlaneExplorer`, `TensorProductBuilder`,
-`GroverRotationPlayground`, `QFTPhaseWheel`, `PhaseEstimationPlayground`,
-`ModularExponentiationExplorer` — see `mdxComponents.ts` for the full list).
-Each becomes its own `content_block` row after migration, `type` set to the
-tag's exact name (`"markdown"` for plain prose between tags). The four
-generic ones:
+A lesson's metadata (validated against `LessonFrontmatterSchema` in
+`apps/web/src/content/schema.ts` — still the reference for what these fields
+mean, even though nothing parses it from a file anymore): `id`/slug, `track`,
+`order`, `title`, `summary`, `layout` (`standard | theory-heavy |
+circuit-focus | lab`: changes the container width/framing in
+`LessonLayout.tsx`), `estimatedMinutes`, `prerequisites`. A lesson's body is
+its ordered `content_block` list: plain-prose blocks (`type: "markdown"`,
+LaTeX via `$...$` / `$$...$$`, fenced ` ```python ` blocks get real syntax
+highlighting via `MarkdownCodeBlock`) interspersed with typed blocks — four
+generic ones used across many lessons, plus one-off bespoke widgets
+particular lessons bring in (`OracleFigure`, `ComplexPlaneExplorer`,
+`TensorProductBuilder`, `GroverRotationPlayground`, `QFTPhaseWheel`,
+`PhaseEstimationPlayground`, `ModularExponentiationExplorer` — see
+`mdxComponents.ts` for the full list, and `/admin/widgets` for the catalog
+each one's `label`/`description`/category/`implemented` flag lives in).
+`content_block.type` is the block's exact tag name. The four generic ones:
 
 - `<CodeExercise id="..." prompt="..." starterCode={\`...\`} expectedCircuit={{...}}
   hints={[...]} />`: starter code, optional `expectedCircuit` checked via
@@ -395,9 +391,9 @@ rendered there and Python doesn't use LaTeX syntax anyway.
 which `CircuitDiagram` renders as a caption and per-wire labels respectively;
 this is what makes `QuantumCircuit(..., name="...")` and a named `QuantumRegister`
 visibly "do something" for a learner, not just be inert syntax. When authoring a
-`Visualization`, set these directly in the `circuit` prop if you want the diagram
-to demonstrate naming (see `03-entanglement.mdx`'s Bell-state visualization). When
-a learner types the equivalent Python in a `CodeExercise`, `extractCircuit` derives
+`Visualization`, set these directly in the `circuit` field if you want the diagram
+to demonstrate naming (see the "Entanglement" lesson's Bell-state visualization).
+When a learner types the equivalent Python in a `QiskitCodeExercise`, `extractCircuit` derives
 both automatically; grading (`compareCircuits`) ignores both, though, since it
 only compares qubit count and gates.
 
@@ -416,16 +412,12 @@ on a sentinel at the end of the content marks it `completed` once the
 learner scrolls there (see `store/progressStore.ts`; `setStatus` also
 refuses to downgrade a `completed` lesson back to `in-progress`).
 
-To add a lesson: create `src/content/lessons/<order-slug>.mdx` with frontmatter
-(unique `id`, `order`, `prerequisites` naming other lessons' `id`s if applicable),
-write the body, then run `pnpm --filter @qislearn/db migrate:mdx` to load it
-(and every other lesson) into Postgres — nothing picks it up automatically
-otherwise. The migration script fails loudly on invalid frontmatter or an
-unresolvable `prerequisites` slug, but does **not** schema-validate each
-tag's props the way `LessonFrontmatterSchema` validates frontmatter (it
-evaluates whatever JS expression each JSX attribute contains and stores it
-as-is in `content_block.data`); a malformed `<CodeExercise .../>` prop shape
-only surfaces at render time in `apps/web`, not at migration time.
+To add a lesson: create it from `/admin/courses/:courseSlug` (unique slug,
+`order`, track), then add its `content_block`s and prerequisites from
+`/admin/lessons/:lessonId`. There's no schema validation on a block's
+`data` shape beyond what `DynamicBlockForm`'s field kinds enforce in the
+UI — a malformed value only surfaces at render time in `apps/web`, not at
+save time.
 
 **`id` vs. `order`, and why neither is a sequential integer suffix**: `id` is a
 stable, purely descriptive slug (e.g. `algorithms-oracles`, not
@@ -442,20 +434,17 @@ steps of 100 (100, 200, 300, ...) precisely so a lesson can be inserted later
 without renumbering its neighbors: pick the midpoint (150 between 100 and 200),
 and if that gap fills too, bisect again (125 or 175). The `.mdx` filename mirrors
 `order` as a prefix purely for directory browsability (`1100-multi-qubit-
-superposition.mdx`); unlike `id`, nothing in code reads the filename, so renaming
-one when inserting a lesson is just a `git mv`, not a data-migration concern.
+superposition.mdx`) was a holdover from the old `.mdx`-file era and no longer
+applies — a lesson's `order` alone determines position now.
 
-**How the migration script parses a `.mdx` file** (`packages/db/scripts/migrate-mdx.ts`):
-frontmatter via a `remark-frontmatter`-augmented `unified`/`remark-parse`
-pipeline (matching `apps/web/vite.config.ts`'s old plugin set, so parsing
-stays consistent with what the source was originally authored/previewed
-against), walking the resulting mdast tree's top-level nodes in order —
-consecutive non-JSX nodes get merged into one `markdown` block (original
-source text preserved byte-for-byte via each node's position offsets), each
-top-level JSX tag becomes its own block. JSX expression attributes
-(`circuit={{...}}`) are evaluated via `new Function(...)`, safe only because
-lesson `.mdx` files are repo-controlled content, not user input; don't reuse
-that evaluation approach anywhere that touches untrusted strings.
+**Content backup/restore**: `/admin/content-backup` exports/diffs/restores
+the full content model (courses/tracks/modules/lessons/content_blocks/tags/
+widgets/widget_categories — not user data) as a natural-key-keyed JSON
+snapshot, via `apps/api/src/content-snapshot.ts`. Use it to move content
+between environments (download a snapshot from one, upload it on another to
+diff/restore) — see that file's comments for the snapshot shape and restore
+semantics (upsert by slug/key; deleting rows requires the explicit "prune"
+option).
 
 ## Qiskit conventions: read this before touching simulation or diagram code
 
@@ -490,14 +479,14 @@ Qiskit behavior for that gate/feature, not generic textbook convention.
 - **No backwards-compatibility shims.** This is a from-scratch scaffold; if
   something's unused, delete it rather than deprecating it.
 - **No em dashes (`—`), en dashes (`–`), or spaced hyphens ( - ) as prose
-  punctuation** in this file or in *any* authored lesson content: MDX body
-  text, `<Quiz>` `question`/`choices[].text`/`explanation`, and
-  `<CodeExercise>` `prompt`/`hints`. They read as minus signs next to quantum
-  math (negative amplitudes, `|−⟩` states, etc.). Use a comma, colon,
-  semicolon, parentheses, or a new sentence instead. This is not just a style
-  preference for freshly-written prose: before marking any new or edited
-  lesson done, grep the touched `.mdx` file for `—`, `–`, and ` - ` (a
-  hyphen with spaces on both sides, not a hyphenated word or a `-` inside
+  punctuation** in this file or in *any* authored lesson content: markdown
+  content-block text, `Quiz` `question`/`choices[].text`/`explanation`, and
+  `QiskitCodeExercise` `prompt`/`hints`. They read as minus signs next to
+  quantum math (negative amplitudes, `|−⟩` states, etc.). Use a comma,
+  colon, semicolon, parentheses, or a new sentence instead. This is not just
+  a style preference for freshly-written prose: before marking any new or
+  edited lesson done, check the touched block's text for `—`, `–`, and ` - `
+  (a hyphen with spaces on both sides, not a hyphenated word or a `-` inside
   code) and rewrite any hit. A plain, unhyphenated `-` still reads fine
   inside identifiers or Python code, this rule is about prose punctuation
   only.

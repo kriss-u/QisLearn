@@ -131,12 +131,17 @@ export type Mutation = {
   createModule: Module;
   createTag: Tag;
   createTrack: Track;
+  createWidgetCategory: WidgetCategory;
   deleteContentBlock: Scalars['Boolean']['output'];
   deleteLesson: Scalars['Boolean']['output'];
   deleteModule: Scalars['Boolean']['output'];
   deleteQuizAttempt: Scalars['Boolean']['output'];
+  deleteWidget: Scalars['Boolean']['output'];
+  deleteWidgetCategory: Scalars['Boolean']['output'];
   offerCourse: Scalars['Boolean']['output'];
+  previewContentRestore: Scalars['JSON']['output'];
   resetMyProgress: Scalars['Boolean']['output'];
+  restoreContentSnapshot: Scalars['JSON']['output'];
   saveCodeSnapshot: CodeSnapshot;
   saveQuizAttempt: QuizAttempt;
   setLessonProgress: LessonProgress;
@@ -149,6 +154,8 @@ export type Mutation = {
   updateLessonTags: Lesson;
   updateModule: Module;
   updateTrack: Track;
+  updateWidget: Widget;
+  updateWidgetCategory: WidgetCategory;
 };
 
 
@@ -202,6 +209,12 @@ export type MutationCreateTrackArgs = {
 };
 
 
+export type MutationCreateWidgetCategoryArgs = {
+  label: Scalars['String']['input'];
+  slug: Scalars['String']['input'];
+};
+
+
 export type MutationDeleteContentBlockArgs = {
   id: Scalars['ID']['input'];
 };
@@ -223,9 +236,30 @@ export type MutationDeleteQuizAttemptArgs = {
 };
 
 
+export type MutationDeleteWidgetArgs = {
+  key: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteWidgetCategoryArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationOfferCourseArgs = {
   courseId: Scalars['ID']['input'];
   organizationId: Scalars['ID']['input'];
+};
+
+
+export type MutationPreviewContentRestoreArgs = {
+  snapshot: Scalars['JSON']['input'];
+};
+
+
+export type MutationRestoreContentSnapshotArgs = {
+  prune?: InputMaybe<Scalars['Boolean']['input']>;
+  snapshot: Scalars['JSON']['input'];
 };
 
 
@@ -321,11 +355,29 @@ export type MutationUpdateTrackArgs = {
   title?: InputMaybe<Scalars['String']['input']>;
 };
 
+
+export type MutationUpdateWidgetArgs = {
+  categoryIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  implemented?: InputMaybe<Scalars['Boolean']['input']>;
+  key: Scalars['ID']['input'];
+  label?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type MutationUpdateWidgetCategoryArgs = {
+  id: Scalars['ID']['input'];
+  label?: InputMaybe<Scalars['String']['input']>;
+  slug?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type Query = {
   __typename?: 'Query';
   adminLesson?: Maybe<Lesson>;
   adminLessonLayouts: Array<LessonLayoutSpec>;
   adminTags: Array<Tag>;
+  contentSnapshot: Scalars['JSON']['output'];
+  course?: Maybe<Course>;
   courses: Array<Course>;
   health: Scalars['String']['output'];
   lesson?: Maybe<Lesson>;
@@ -342,6 +394,11 @@ export type Query = {
 
 export type QueryAdminLessonArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryCourseArgs = {
+  slug: Scalars['String']['input'];
 };
 
 
@@ -638,6 +695,68 @@ export type DeleteContentBlockMutationVariables = Exact<{
 
 
 export type DeleteContentBlockMutation = { __typename?: 'Mutation', deleteContentBlock: boolean };
+
+export type UpdateWidgetMutationVariables = Exact<{
+  key: Scalars['ID']['input'];
+  label?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  implemented?: InputMaybe<Scalars['Boolean']['input']>;
+  categoryIds?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
+}>;
+
+
+export type UpdateWidgetMutation = { __typename?: 'Mutation', updateWidget: { __typename?: 'Widget', key: string, label: string, description?: string | null, implemented: boolean, categories: Array<{ __typename?: 'WidgetCategory', id: string, slug: string, label: string }> } };
+
+export type DeleteWidgetMutationVariables = Exact<{
+  key: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteWidgetMutation = { __typename?: 'Mutation', deleteWidget: boolean };
+
+export type CreateWidgetCategoryMutationVariables = Exact<{
+  slug: Scalars['String']['input'];
+  label: Scalars['String']['input'];
+}>;
+
+
+export type CreateWidgetCategoryMutation = { __typename?: 'Mutation', createWidgetCategory: { __typename?: 'WidgetCategory', id: string, slug: string, label: string } };
+
+export type UpdateWidgetCategoryMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  slug?: InputMaybe<Scalars['String']['input']>;
+  label?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type UpdateWidgetCategoryMutation = { __typename?: 'Mutation', updateWidgetCategory: { __typename?: 'WidgetCategory', id: string, slug: string, label: string } };
+
+export type DeleteWidgetCategoryMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteWidgetCategoryMutation = { __typename?: 'Mutation', deleteWidgetCategory: boolean };
+
+export type ContentSnapshotQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ContentSnapshotQuery = { __typename?: 'Query', contentSnapshot: Record<string, unknown> };
+
+export type PreviewContentRestoreMutationVariables = Exact<{
+  snapshot: Scalars['JSON']['input'];
+}>;
+
+
+export type PreviewContentRestoreMutation = { __typename?: 'Mutation', previewContentRestore: Record<string, unknown> };
+
+export type RestoreContentSnapshotMutationVariables = Exact<{
+  snapshot: Scalars['JSON']['input'];
+  prune?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type RestoreContentSnapshotMutation = { __typename?: 'Mutation', restoreContentSnapshot: Record<string, unknown> };
 
 export type MyCodeSnapshotQueryVariables = Exact<{
   lessonSlug: Scalars['String']['input'];
@@ -1866,6 +1985,295 @@ export function useDeleteContentBlockMutation(baseOptions?: Apollo.MutationHookO
 export type DeleteContentBlockMutationHookResult = ReturnType<typeof useDeleteContentBlockMutation>;
 export type DeleteContentBlockMutationResult = Apollo.MutationResult<DeleteContentBlockMutation>;
 export type DeleteContentBlockMutationOptions = Apollo.BaseMutationOptions<DeleteContentBlockMutation, DeleteContentBlockMutationVariables>;
+export const UpdateWidgetDocument = gql`
+    mutation UpdateWidget($key: ID!, $label: String, $description: String, $implemented: Boolean, $categoryIds: [ID!]) {
+  updateWidget(
+    key: $key
+    label: $label
+    description: $description
+    implemented: $implemented
+    categoryIds: $categoryIds
+  ) {
+    key
+    label
+    description
+    implemented
+    categories {
+      id
+      slug
+      label
+    }
+  }
+}
+    `;
+export type UpdateWidgetMutationFn = Apollo.MutationFunction<UpdateWidgetMutation, UpdateWidgetMutationVariables>;
+
+/**
+ * __useUpdateWidgetMutation__
+ *
+ * To run a mutation, you first call `useUpdateWidgetMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateWidgetMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateWidgetMutation, { data, loading, error }] = useUpdateWidgetMutation({
+ *   variables: {
+ *      key: // value for 'key'
+ *      label: // value for 'label'
+ *      description: // value for 'description'
+ *      implemented: // value for 'implemented'
+ *      categoryIds: // value for 'categoryIds'
+ *   },
+ * });
+ */
+export function useUpdateWidgetMutation(baseOptions?: Apollo.MutationHookOptions<UpdateWidgetMutation, UpdateWidgetMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdateWidgetMutation, UpdateWidgetMutationVariables>(UpdateWidgetDocument, options);
+      }
+export type UpdateWidgetMutationHookResult = ReturnType<typeof useUpdateWidgetMutation>;
+export type UpdateWidgetMutationResult = Apollo.MutationResult<UpdateWidgetMutation>;
+export type UpdateWidgetMutationOptions = Apollo.BaseMutationOptions<UpdateWidgetMutation, UpdateWidgetMutationVariables>;
+export const DeleteWidgetDocument = gql`
+    mutation DeleteWidget($key: ID!) {
+  deleteWidget(key: $key)
+}
+    `;
+export type DeleteWidgetMutationFn = Apollo.MutationFunction<DeleteWidgetMutation, DeleteWidgetMutationVariables>;
+
+/**
+ * __useDeleteWidgetMutation__
+ *
+ * To run a mutation, you first call `useDeleteWidgetMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteWidgetMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteWidgetMutation, { data, loading, error }] = useDeleteWidgetMutation({
+ *   variables: {
+ *      key: // value for 'key'
+ *   },
+ * });
+ */
+export function useDeleteWidgetMutation(baseOptions?: Apollo.MutationHookOptions<DeleteWidgetMutation, DeleteWidgetMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeleteWidgetMutation, DeleteWidgetMutationVariables>(DeleteWidgetDocument, options);
+      }
+export type DeleteWidgetMutationHookResult = ReturnType<typeof useDeleteWidgetMutation>;
+export type DeleteWidgetMutationResult = Apollo.MutationResult<DeleteWidgetMutation>;
+export type DeleteWidgetMutationOptions = Apollo.BaseMutationOptions<DeleteWidgetMutation, DeleteWidgetMutationVariables>;
+export const CreateWidgetCategoryDocument = gql`
+    mutation CreateWidgetCategory($slug: String!, $label: String!) {
+  createWidgetCategory(slug: $slug, label: $label) {
+    id
+    slug
+    label
+  }
+}
+    `;
+export type CreateWidgetCategoryMutationFn = Apollo.MutationFunction<CreateWidgetCategoryMutation, CreateWidgetCategoryMutationVariables>;
+
+/**
+ * __useCreateWidgetCategoryMutation__
+ *
+ * To run a mutation, you first call `useCreateWidgetCategoryMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateWidgetCategoryMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createWidgetCategoryMutation, { data, loading, error }] = useCreateWidgetCategoryMutation({
+ *   variables: {
+ *      slug: // value for 'slug'
+ *      label: // value for 'label'
+ *   },
+ * });
+ */
+export function useCreateWidgetCategoryMutation(baseOptions?: Apollo.MutationHookOptions<CreateWidgetCategoryMutation, CreateWidgetCategoryMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateWidgetCategoryMutation, CreateWidgetCategoryMutationVariables>(CreateWidgetCategoryDocument, options);
+      }
+export type CreateWidgetCategoryMutationHookResult = ReturnType<typeof useCreateWidgetCategoryMutation>;
+export type CreateWidgetCategoryMutationResult = Apollo.MutationResult<CreateWidgetCategoryMutation>;
+export type CreateWidgetCategoryMutationOptions = Apollo.BaseMutationOptions<CreateWidgetCategoryMutation, CreateWidgetCategoryMutationVariables>;
+export const UpdateWidgetCategoryDocument = gql`
+    mutation UpdateWidgetCategory($id: ID!, $slug: String, $label: String) {
+  updateWidgetCategory(id: $id, slug: $slug, label: $label) {
+    id
+    slug
+    label
+  }
+}
+    `;
+export type UpdateWidgetCategoryMutationFn = Apollo.MutationFunction<UpdateWidgetCategoryMutation, UpdateWidgetCategoryMutationVariables>;
+
+/**
+ * __useUpdateWidgetCategoryMutation__
+ *
+ * To run a mutation, you first call `useUpdateWidgetCategoryMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateWidgetCategoryMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateWidgetCategoryMutation, { data, loading, error }] = useUpdateWidgetCategoryMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      slug: // value for 'slug'
+ *      label: // value for 'label'
+ *   },
+ * });
+ */
+export function useUpdateWidgetCategoryMutation(baseOptions?: Apollo.MutationHookOptions<UpdateWidgetCategoryMutation, UpdateWidgetCategoryMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdateWidgetCategoryMutation, UpdateWidgetCategoryMutationVariables>(UpdateWidgetCategoryDocument, options);
+      }
+export type UpdateWidgetCategoryMutationHookResult = ReturnType<typeof useUpdateWidgetCategoryMutation>;
+export type UpdateWidgetCategoryMutationResult = Apollo.MutationResult<UpdateWidgetCategoryMutation>;
+export type UpdateWidgetCategoryMutationOptions = Apollo.BaseMutationOptions<UpdateWidgetCategoryMutation, UpdateWidgetCategoryMutationVariables>;
+export const DeleteWidgetCategoryDocument = gql`
+    mutation DeleteWidgetCategory($id: ID!) {
+  deleteWidgetCategory(id: $id)
+}
+    `;
+export type DeleteWidgetCategoryMutationFn = Apollo.MutationFunction<DeleteWidgetCategoryMutation, DeleteWidgetCategoryMutationVariables>;
+
+/**
+ * __useDeleteWidgetCategoryMutation__
+ *
+ * To run a mutation, you first call `useDeleteWidgetCategoryMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteWidgetCategoryMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteWidgetCategoryMutation, { data, loading, error }] = useDeleteWidgetCategoryMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteWidgetCategoryMutation(baseOptions?: Apollo.MutationHookOptions<DeleteWidgetCategoryMutation, DeleteWidgetCategoryMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeleteWidgetCategoryMutation, DeleteWidgetCategoryMutationVariables>(DeleteWidgetCategoryDocument, options);
+      }
+export type DeleteWidgetCategoryMutationHookResult = ReturnType<typeof useDeleteWidgetCategoryMutation>;
+export type DeleteWidgetCategoryMutationResult = Apollo.MutationResult<DeleteWidgetCategoryMutation>;
+export type DeleteWidgetCategoryMutationOptions = Apollo.BaseMutationOptions<DeleteWidgetCategoryMutation, DeleteWidgetCategoryMutationVariables>;
+export const ContentSnapshotDocument = gql`
+    query ContentSnapshot {
+  contentSnapshot
+}
+    `;
+
+/**
+ * __useContentSnapshotQuery__
+ *
+ * To run a query within a React component, call `useContentSnapshotQuery` and pass it any options that fit your needs.
+ * When your component renders, `useContentSnapshotQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useContentSnapshotQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useContentSnapshotQuery(baseOptions?: Apollo.QueryHookOptions<ContentSnapshotQuery, ContentSnapshotQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<ContentSnapshotQuery, ContentSnapshotQueryVariables>(ContentSnapshotDocument, options);
+      }
+export function useContentSnapshotLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ContentSnapshotQuery, ContentSnapshotQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<ContentSnapshotQuery, ContentSnapshotQueryVariables>(ContentSnapshotDocument, options);
+        }
+// @ts-ignore
+export function useContentSnapshotSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<ContentSnapshotQuery, ContentSnapshotQueryVariables>): Apollo.UseSuspenseQueryResult<ContentSnapshotQuery, ContentSnapshotQueryVariables>;
+export function useContentSnapshotSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<ContentSnapshotQuery, ContentSnapshotQueryVariables>): Apollo.UseSuspenseQueryResult<ContentSnapshotQuery | undefined, ContentSnapshotQueryVariables>;
+export function useContentSnapshotSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<ContentSnapshotQuery, ContentSnapshotQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<ContentSnapshotQuery, ContentSnapshotQueryVariables>(ContentSnapshotDocument, options);
+        }
+export type ContentSnapshotQueryHookResult = ReturnType<typeof useContentSnapshotQuery>;
+export type ContentSnapshotLazyQueryHookResult = ReturnType<typeof useContentSnapshotLazyQuery>;
+export type ContentSnapshotSuspenseQueryHookResult = ReturnType<typeof useContentSnapshotSuspenseQuery>;
+export type ContentSnapshotQueryResult = Apollo.QueryResult<ContentSnapshotQuery, ContentSnapshotQueryVariables>;
+export const PreviewContentRestoreDocument = gql`
+    mutation PreviewContentRestore($snapshot: JSON!) {
+  previewContentRestore(snapshot: $snapshot)
+}
+    `;
+export type PreviewContentRestoreMutationFn = Apollo.MutationFunction<PreviewContentRestoreMutation, PreviewContentRestoreMutationVariables>;
+
+/**
+ * __usePreviewContentRestoreMutation__
+ *
+ * To run a mutation, you first call `usePreviewContentRestoreMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `usePreviewContentRestoreMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [previewContentRestoreMutation, { data, loading, error }] = usePreviewContentRestoreMutation({
+ *   variables: {
+ *      snapshot: // value for 'snapshot'
+ *   },
+ * });
+ */
+export function usePreviewContentRestoreMutation(baseOptions?: Apollo.MutationHookOptions<PreviewContentRestoreMutation, PreviewContentRestoreMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<PreviewContentRestoreMutation, PreviewContentRestoreMutationVariables>(PreviewContentRestoreDocument, options);
+      }
+export type PreviewContentRestoreMutationHookResult = ReturnType<typeof usePreviewContentRestoreMutation>;
+export type PreviewContentRestoreMutationResult = Apollo.MutationResult<PreviewContentRestoreMutation>;
+export type PreviewContentRestoreMutationOptions = Apollo.BaseMutationOptions<PreviewContentRestoreMutation, PreviewContentRestoreMutationVariables>;
+export const RestoreContentSnapshotDocument = gql`
+    mutation RestoreContentSnapshot($snapshot: JSON!, $prune: Boolean) {
+  restoreContentSnapshot(snapshot: $snapshot, prune: $prune)
+}
+    `;
+export type RestoreContentSnapshotMutationFn = Apollo.MutationFunction<RestoreContentSnapshotMutation, RestoreContentSnapshotMutationVariables>;
+
+/**
+ * __useRestoreContentSnapshotMutation__
+ *
+ * To run a mutation, you first call `useRestoreContentSnapshotMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRestoreContentSnapshotMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [restoreContentSnapshotMutation, { data, loading, error }] = useRestoreContentSnapshotMutation({
+ *   variables: {
+ *      snapshot: // value for 'snapshot'
+ *      prune: // value for 'prune'
+ *   },
+ * });
+ */
+export function useRestoreContentSnapshotMutation(baseOptions?: Apollo.MutationHookOptions<RestoreContentSnapshotMutation, RestoreContentSnapshotMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<RestoreContentSnapshotMutation, RestoreContentSnapshotMutationVariables>(RestoreContentSnapshotDocument, options);
+      }
+export type RestoreContentSnapshotMutationHookResult = ReturnType<typeof useRestoreContentSnapshotMutation>;
+export type RestoreContentSnapshotMutationResult = Apollo.MutationResult<RestoreContentSnapshotMutation>;
+export type RestoreContentSnapshotMutationOptions = Apollo.BaseMutationOptions<RestoreContentSnapshotMutation, RestoreContentSnapshotMutationVariables>;
 export const MyCodeSnapshotDocument = gql`
     query MyCodeSnapshot($lessonSlug: String!, $exerciseId: String!) {
   myCodeSnapshot(lessonSlug: $lessonSlug, exerciseId: $exerciseId) {

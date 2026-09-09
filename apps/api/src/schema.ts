@@ -24,6 +24,7 @@ import { ZodError } from "zod";
 import { db } from "./db.js";
 import { requireAdmin, requireCourseOffered, requireOrgAdmin, requireUser } from "./authz-guards.js";
 import { CONTENT_BLOCK_REGISTRY, validateContentBlockData } from "./content-block-registry.js";
+import { buildContentSnapshot, diffContentSnapshot, restoreContentSnapshot, type ContentSnapshot } from "./content-snapshot.js";
 import { LESSON_LAYOUTS, LESSON_LAYOUT_VALUES } from "./lesson-layouts.js";
 import { getLessonMarkdownContent } from "./lesson-content.js";
 import { suggestLessonQuestions } from "./lesson-qa.js";
@@ -161,6 +162,11 @@ export const schema = createSchema<GraphQLContext>({
       widgets: [Widget!]!
       widgetCategories: [WidgetCategory!]!
       adminLessonLayouts: [LessonLayoutSpec!]!
+      # The full content model (course/track/module/lesson/content_block/tag/
+      # widget/widget_category), keyed by slug/key rather than uuid — see
+      # apps/api/src/content-snapshot.ts. Not course_organization or any
+      # user-data table.
+      contentSnapshot: JSON!
     }
 
     type Mutation {
@@ -239,6 +245,16 @@ export const schema = createSchema<GraphQLContext>({
       deleteWidgetCategory(id: ID!): Boolean!
 
       suggestLessonQuestions(lessonSlug: String!): [String!]!
+
+      # Compares "snapshot" (a value previously returned by contentSnapshot,
+      # possibly from a different database) against the current content
+      # without writing anything.
+      previewContentRestore(snapshot: JSON!): JSON!
+      # Applies "snapshot": every entity in it is upserted by its natural
+      # key. With prune true, anything not in "snapshot" is also deleted.
+      # Returns the same diff shape as previewContentRestore, describing
+      # what was actually done.
+      restoreContentSnapshot(snapshot: JSON!, prune: Boolean): JSON!
     }
 
     enum LessonStatus {
@@ -503,6 +519,10 @@ export const schema = createSchema<GraphQLContext>({
           with: { categories: { with: { category: true } } },
         });
         return rows.map((row) => toWidgetPayload(row, row.categories.map((c) => c.category)));
+      },
+      contentSnapshot: async (_parent, _args, ctx) => {
+        requireAdmin(ctx);
+        return buildContentSnapshot();
       },
       widgetCategories: (_parent, _args, ctx) => {
         requireAdmin(ctx);
@@ -942,6 +962,24 @@ export const schema = createSchema<GraphQLContext>({
         requireUser(ctx);
         const lessonContent = await getLessonMarkdownContent(args.lessonSlug);
         return suggestLessonQuestions(lessonContent);
+      },
+
+      previewContentRestore: async (_parent, args: { snapshot: ContentSnapshot }, ctx) => {
+        requireAdmin(ctx);
+        const current = await buildContentSnapshot();
+        try {
+          return diffContentSnapshot(current, args.snapshot);
+        } catch (err) {
+          badInput(err instanceof Error ? err.message : "Invalid snapshot.");
+        }
+      },
+      restoreContentSnapshot: async (_parent, args: { snapshot: ContentSnapshot; prune?: boolean }, ctx) => {
+        requireAdmin(ctx);
+        try {
+          return await restoreContentSnapshot(args.snapshot, { prune: args.prune ?? false });
+        } catch (err) {
+          badInput(err instanceof Error ? err.message : "Invalid snapshot.");
+        }
       },
     },
     Lesson: {
