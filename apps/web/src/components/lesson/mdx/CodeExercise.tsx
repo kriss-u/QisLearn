@@ -12,7 +12,7 @@ import { svgElementToPngBlob } from "../../../features/export/pngExport";
 import { CircuitDiagram } from "../../viz/CircuitDiagram";
 import { VizLatexToggle } from "../../viz/latexLabels";
 import { VizActions } from "../../viz/VizActions";
-import { useLessonId } from "../LessonContext";
+import { useIsLessonPreview, useLessonId } from "../LessonContext";
 import { useLessonProgress } from "../LessonProgressContext";
 import { Markdown } from "../Markdown";
 import { MdxCard } from "./MdxCard";
@@ -35,6 +35,7 @@ interface CheckResult {
 
 export function CodeExercise({ id: exerciseId, prompt, starterCode, expectedCircuit, hints = [] }: CodeExerciseProps) {
   const lessonId = useLessonId();
+  const isPreview = useIsLessonPreview();
   const { registerExercise, reportResult } = useLessonProgress();
   const { data: session } = useSession();
   const [code, setCode] = useState(starterCode);
@@ -44,7 +45,7 @@ export function CodeExercise({ id: exerciseId, prompt, starterCode, expectedCirc
 
   const { data: snapshotData, loading: snapshotLoading } = useMyCodeSnapshotQuery({
     variables: { lessonSlug: lessonId, exerciseId },
-    skip: !session,
+    skip: !session || isPreview,
     fetchPolicy: "network-only",
   });
   const [saveCodeSnapshot] = useSaveCodeSnapshotMutation();
@@ -80,7 +81,7 @@ export function CodeExercise({ id: exerciseId, prompt, starterCode, expectedCirc
   }, [snapshotLoading, session]);
 
   useEffect(() => {
-    if (!loaded || !session) return;
+    if (!loaded || !session || isPreview) return;
     const timeout = setTimeout(() => {
       saveCodeSnapshot({
         variables: {
@@ -93,7 +94,7 @@ export function CodeExercise({ id: exerciseId, prompt, starterCode, expectedCirc
       });
     }, 500);
     return () => clearTimeout(timeout);
-  }, [code, result, lessonId, exerciseId, loaded, session, saveCodeSnapshot]);
+  }, [code, result, lessonId, exerciseId, loaded, session, isPreview, saveCodeSnapshot]);
 
   const extracted = extractCircuit(code);
 

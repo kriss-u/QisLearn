@@ -99,6 +99,13 @@ entanglement) are in place and working end to end. It's meant to be built out
 lesson by lesson, see [AGENTS.md](./AGENTS.md) for known limitations (no real
 Python execution, no classical registers yet) and where to extend things.
 
+**Known issue:** the Bloch sphere preview in the admin lesson editor is
+unreliable — it can exhaust the browser's WebGL context limit and stop
+rendering (sometimes after a refresh), unlike the learner-facing lesson page
+where it works fine. See AGENTS.md's "Known limitations" for the root cause
+and options going forward (on-demand preview, shared renderer, or a
+non-3D/SVG Bloch widget instead of `@react-three/fiber`).
+
 The backend is at the scaffolding stage: the monorepo layout, a GraphQL Yoga
 stub, an LLM-service stub, and the Drizzle/Postgres wiring exist, but no real
 schema, auth, or content migration has landed yet. Lesson content, user

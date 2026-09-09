@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { LuCircleHelp } from "react-icons/lu";
 import type { QuizChoice } from "../../../content/schema";
 import { useSession } from "../../../lib/authClient";
-import { useLessonId } from "../LessonContext";
+import { useIsLessonPreview, useLessonId } from "../LessonContext";
 import { useLessonProgress } from "../LessonProgressContext";
 import { Markdown } from "../Markdown";
 import { MdxCard } from "./MdxCard";
@@ -18,6 +18,7 @@ export interface QuizProps {
 
 export function Quiz({ id: quizId, question, choices, explanation }: QuizProps) {
   const lessonId = useLessonId();
+  const isPreview = useIsLessonPreview();
   const { registerExercise, reportResult } = useLessonProgress();
   const { data: session } = useSession();
   const [selected, setSelected] = useState<string | null>(null);
@@ -25,7 +26,7 @@ export function Quiz({ id: quizId, question, choices, explanation }: QuizProps) 
 
   const { data: attemptData, loading: attemptLoading } = useMyQuizAttemptQuery({
     variables: { lessonSlug: lessonId, quizId },
-    skip: !session,
+    skip: !session || isPreview,
     fetchPolicy: "network-only",
   });
   const [saveQuizAttempt] = useSaveQuizAttemptMutation();
@@ -52,21 +53,21 @@ export function Quiz({ id: quizId, question, choices, explanation }: QuizProps) 
 
   function handleSelect(value: string) {
     setSelected(value);
-    if (!session) return;
+    if (!session || isPreview) return;
     saveQuizAttempt({ variables: { lessonSlug: lessonId, quizId, selectedChoiceId: value, submitted: false } });
   }
 
   function handleSubmit() {
     if (!selected) return;
     setChecked(true);
-    if (!session) return;
+    if (!session || isPreview) return;
     saveQuizAttempt({ variables: { lessonSlug: lessonId, quizId, selectedChoiceId: selected, submitted: true } });
   }
 
   function handleReset() {
     setSelected(null);
     setChecked(false);
-    if (!session) return;
+    if (!session || isPreview) return;
     deleteQuizAttempt({ variables: { lessonSlug: lessonId, quizId } });
   }
 

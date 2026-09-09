@@ -511,17 +511,27 @@ function ContentBlockRow({
           borderTopWidth="1px"
           borderColor="border"
         >
-          {spec ? (
-            <DynamicBlockForm
-              fields={spec.fields}
-              data={data}
-              onChange={setData}
-            />
-          ) : (
-            <Text fontSize="xs" color="fg.muted">
-              Unknown block type "{type}" — no editor form registered for it.
-            </Text>
-          )}
+          {/* Collapsible.Content only CSS-hides its children on collapse —
+              it doesn't unmount them. Gating on `open` keeps a collapsed
+              block's editor (and any WebGL <Canvas> it renders, e.g. a
+              Visualization block's Bloch sphere previews) from staying
+              mounted in the background: with many blocks in a lesson, every
+              block's canvases stayed alive at once and blew past the
+              browser's WebGL context limit, so spheres would render then
+              vanish as the browser evicted contexts. `data`/`type` live in
+              this component's own state, so nothing is lost on remount. */}
+          {open &&
+            (spec ? (
+              <DynamicBlockForm
+                fields={spec.fields}
+                data={data}
+                onChange={setData}
+              />
+            ) : (
+              <Text fontSize="xs" color="fg.muted">
+                Unknown block type "{type}" — no editor form registered for it.
+              </Text>
+            ))}
           {saveError && (
             <Alert.Root status="error" size="sm">
               <Alert.Indicator />

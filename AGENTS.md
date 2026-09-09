@@ -576,3 +576,20 @@ run the same scripts across every app/package via Turborepo (`apps/web`,
   per exercise. A learner who scrolls past a `<CodeExercise/>` without solving it
   still gets the lesson marked complete; this is intentional (reading vs. doing is
   the learner's call), not a bug to "fix" by gating completion on exercise checks.
+- **Bloch sphere rendering is unreliable in the admin lesson editor.**
+  `BlochSphere.tsx` mounts a real WebGL context (`@react-three/fiber`
+  `<Canvas>`) per qubit. On the learner-facing `/lesson/:slug` page this is
+  fine (at most a couple of contexts live at once), but in the admin editor
+  `VisualizationViewsEditor` renders a live, unconditional preview of every
+  view — including Bloch — for every `Visualization` block field being
+  edited, so browsers can exhaust their WebGL context limit and silently
+  drop/lose contexts (spheres render briefly, then vanish, sometimes only
+  after a refresh, and the behavior differs by browser). Lazy-mounting a
+  collapsed block's form (`LessonEditorPage.tsx`'s `ContentBlockRow`) and
+  scoping the admin's `Visualization`/`Quiz`/`CodeExercise` blocks to
+  preview mode (`useIsLessonPreview`, `LessonContext.tsx`) reduced but did
+  not eliminate this. Treat it as an open problem rather than a quick fix:
+  candidates are dropping the always-on per-field Bloch preview in favor of
+  an on-demand "preview this view" action, sharing a single `WebGLRenderer`
+  across canvases, or replacing the admin's live 3D preview with a cheaper
+  2D/SVG Bloch widget (see README's "Project status" for the same note).

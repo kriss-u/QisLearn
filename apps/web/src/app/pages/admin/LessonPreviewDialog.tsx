@@ -75,7 +75,7 @@ export function LessonPreviewDialog({
                   any CodeExercise/Quiz interaction here from writing into
                   the admin's own real progress on this lesson. */}
               <PreviewErrorBoundary resetKey={JSON.stringify({ frontmatter, blocks })}>
-                <LessonProvider value={{ lessonId: `preview-${frontmatter.id}` }}>
+                <LessonProvider value={{ lessonId: `preview-${frontmatter.id}`, isPreview: true }}>
                   <LessonProgressProvider lessonId={`preview-${frontmatter.id}`}>
                     <LessonLayout lesson={frontmatter}>
                       <ContentBlockList blocks={blocks} />
